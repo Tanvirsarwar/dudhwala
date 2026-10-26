@@ -160,3 +160,14 @@ test('quick add on a product card puts one item in the cart, and options product
   await multi.getByRole('link', { name: /অপশন দেখুন/ }).click();
   await expect(page).toHaveURL(/\/p\//);
 });
+
+test('production CSP allows only self, the API and configured media origins for images (no demo hosts)', async ({ request }) => {
+  const res = await request.get('/');
+  const csp = res.headers()['content-security-policy'] ?? '';
+  const img = /img-src ([^;]*)/.exec(csp)?.[1] ?? '';
+  expect(img).toContain("'self'");
+  expect(img).not.toContain('*');
+  // the stack runs the production build: the third-party demo photo host must not be allowed by default
+  expect(img).not.toContain('wellfoodonline.com');
+  expect(csp).toContain("frame-ancestors 'none'");
+});

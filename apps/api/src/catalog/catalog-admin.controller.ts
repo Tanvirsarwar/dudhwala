@@ -170,10 +170,11 @@ export class CatalogAdminController {
       const v = bySku.get(sku);
       if (!v) return fail('unknown SKU');
       let price: number;
-      let compare: number | null = null;
+      // compareAtTaka: omitted = keep the current compare-at price; "" = clear it; a value = set it.
+      let compare: number | null = v.compareAtPoisha;
       try {
         price = parseTaka(r.priceTaka);
-        if (r.compareAtTaka) compare = parseTaka(r.compareAtTaka);
+        if (r.compareAtTaka !== undefined) compare = r.compareAtTaka === '' ? null : parseTaka(r.compareAtTaka);
       } catch {
         return fail('invalid amount');
       }
@@ -190,12 +191,13 @@ export class CatalogAdminController {
           if (c.price === c.before && c.compare === c.beforeCompare) continue;
           await tx.productVariant.update({ where: { id: c.id }, data: { pricePoisha: c.price, compareAtPoisha: c.compare } });
           await this.audit.record(
-            { action: 'catalog.price_change', entityType: 'product_variant', entityId: c.id, before: { pricePoisha: c.before }, after: { pricePoisha: c.price, via: 'bulk_csv' } },
+            { action: 'catalog.price_change', entityType: 'product_variant', entityId: c.id, before: { pricePoisha: c.before, compareAtPoisha: c.beforeCompare }, after: { pricePoisha: c.price, compareAtPoisha: c.compare, via: 'bulk_csv' } },
             { principal: p },
             req,
             tx,
           );
         }
+        await this.audit.record({ action: 'catalog.bulk_price_import', entityType: 'product_variant', entityId: 'bulk', after: { rows: changes.length, changed: changes.filter((c) => c.price !== c.before || c.compare !== c.beforeCompare).length } }, { principal: p }, req, tx);
       });
     }
     return { applied, dryRun: b.dryRun, total: results.length, invalid, unchanged: changes.filter((c) => c.price === c.before && c.compare === c.beforeCompare).length, rows: results };

@@ -69,9 +69,10 @@ export function toRows(text: string): CsvRow[] {
   const price = col('priceTaka');
   const compare = col('compareAtTaka');
   if (sku < 0 || price < 0) throw new Error('"sku" ও "priceTaka" কলাম দরকার (ডাউনলোড করা ফাইলের ফরম্যাট ব্যবহার করুন)');
+  // No compareAtTaka column = compare-at prices stay as they are; a blank cell in that column clears the price.
   // Spreadsheet-escaped cells (leading ') are cleaned so a re-uploaded export still validates.
   const clean = (v: string | undefined) => (v ?? '').trim().replace(/^'/, '');
-  return body.map((r) => ({ sku: clean(r[sku]), priceTaka: clean(r[price]), ...(compare >= 0 && clean(r[compare]) ? { compareAtTaka: clean(r[compare]) } : {}) }));
+  return body.map((r) => ({ sku: clean(r[sku]), priceTaka: clean(r[price]), ...(compare >= 0 ? { compareAtTaka: clean(r[compare]) } : {}) }));
 }
 
 /** Upload → preview (dry run, nothing saved) → confirm. A file with any bad row is never partially applied. */

@@ -85,6 +85,21 @@ describe('bulk price CSV', () => {
     expect(await h.prisma.auditLog.count({ where: { action: 'catalog.price_change' } })).toBe(1);
   });
 
+  it('keeps the compare-at price when the file has no compare-at column, clears it on a blank cell', async () => {
+    const sa = await superAdmin(h);
+    const { variants } = await makeProduct(h, [120, 250]);
+    await h.prisma.productVariant.update({ where: { id: variants[0]!.id }, data: { compareAtPoisha: 20000 } });
+    await h.prisma.productVariant.update({ where: { id: variants[1]!.id }, data: { compareAtPoisha: 30000 } });
+    await sa.post('/v1/admin/variants/bulk-price').send({ dryRun: false, rows: [{ sku: variants[0]!.sku, priceTaka: '130' }, { sku: variants[1]!.sku, priceTaka: '260', compareAtTaka: '' }] }).expect(200);
+    const [a, b] = await Promise.all(variants.map((v) => h.prisma.productVariant.findUniqueOrThrow({ where: { id: v.id } })));
+    expect([a!.pricePoisha, a!.compareAtPoisha]).toEqual([13000, 20000]);
+    expect([b!.pricePoisha, b!.compareAtPoisha]).toEqual([26000, null]);
+    // an omitted compare-at that is no longer above the new price is rejected, not silently kept
+    const bad = await sa.post('/v1/admin/variants/bulk-price').send({ dryRun: true, rows: [{ sku: variants[0]!.sku, priceTaka: '250' }] }).expect(200);
+    expect(bad.body.rows[0].error).toBe('compare-at price must be higher than price');
+    expect(await h.prisma.auditLog.count({ where: { action: 'catalog.bulk_price_import' } })).toBe(1);
+  });
+
   it('rejects the whole file when any row is bad: nothing is partially imported', async () => {
     const sa = await superAdmin(h);
     const { variants } = await makeProduct(h, [120]);
