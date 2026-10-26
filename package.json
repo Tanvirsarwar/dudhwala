@@ -11,5 +11,12 @@
     "lint": "pnpm -r --if-present lint",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test"
+  },
+  "pnpm": {
+    "overrides": {
+      "body-parser": ">=2.4.0",
+      "multer": ">=2.5.0",
+      "fast-uri": ">=3.1.9"
+    }
   }
 }

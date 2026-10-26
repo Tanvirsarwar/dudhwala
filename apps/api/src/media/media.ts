@@ -59,6 +59,10 @@ export class S3MediaStorage extends MediaStorage {
       endpoint: env.STORAGE_ENDPOINT || undefined,
       forcePathStyle: Boolean(env.STORAGE_ENDPOINT),
       credentials: { accessKeyId: env.STORAGE_ACCESS_KEY_ID, secretAccessKey: env.STORAGE_SECRET_ACCESS_KEY },
+      // SDK >= 3.729 adds CRC32 checksum headers by default; several S3-compatible providers reject or ignore them.
+      // Only send checksums where the operation requires one (integrity is still covered by TLS and the signed payload hash).
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
     });
   }
   async put(key: string, body: Buffer, contentType: string): Promise<void> {
