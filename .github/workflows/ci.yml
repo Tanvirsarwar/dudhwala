@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: dw
+          POSTGRES_PASSWORD: dw_ci
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U dw" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_ADMIN_DATABASE_URL: postgresql://dw:dw_ci@localhost:5432/postgres
+      DATABASE_URL: postgresql://dw:dw_ci@localhost:5432/dudhwala_ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prepare:codegen
+      - run: pnpm lint
+      - run: pnpm typecheck
+
+      - name: Validate Prisma schema
+        run: pnpm --filter @dudhwala/api prisma:validate
+
+      - name: Create CI database
+        run: psql "$TEST_ADMIN_DATABASE_URL" -c 'CREATE DATABASE dudhwala_ci'
+
+      # Until the first migration is committed, generate it here with Prisma's
+      # native engine (unavailable in the authoring sandbox) and publish it as an
+      # artifact to commit as prisma/migrations/0001_init/migration.sql.
+      - name: Apply migrations (or generate the initial one)
+        working-directory: apps/api
+        run: |
+          if ls prisma/migrations/*/migration.sql >/dev/null 2>&1; then
+            pnpm exec prisma migrate deploy
+            # Committed migrations must produce exactly what schema.prisma describes.
+            pnpm exec prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
+          else
+            mkdir -p /tmp/migration
+            { echo 'CREATE EXTENSION IF NOT EXISTS citext;'; echo 'CREATE EXTENSION IF NOT EXISTS pg_trgm;';
+              pnpm exec prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script;
+              cat prisma/sql/constraints.sql; } > /tmp/migration/migration.sql
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f /tmp/migration/migration.sql
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: initial-migration
+          path: /tmp/migration/migration.sql
+          if-no-files-found: ignore
+
+      - name: Dev bootstrap DDL matches Prisma's migration (no drift)
+        working-directory: apps/api
+        run: |
+          psql "$TEST_ADMIN_DATABASE_URL" -c 'CREATE DATABASE dudhwala_devddl'
+          node scripts/dev-ddl.mjs | psql -v ON_ERROR_STOP=1 "postgresql://dw:dw_ci@localhost:5432/dudhwala_devddl"
+          psql -v ON_ERROR_STOP=1 "postgresql://dw:dw_ci@localhost:5432/dudhwala_devddl" -f prisma/sql/constraints.sql
+          DATABASE_URL="postgresql://dw:dw_ci@localhost:5432/dudhwala_devddl" \
+            pnpm exec prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
+
+      - name: Tests (API integration tests use the real migration)
+        env:
+          TEST_SCHEMA_SOURCE: ${{ hashFiles('apps/api/prisma/migrations/**/migration.sql') != '' && 'migrations' || 'dev-ddl' }}
+        run: pnpm test
+      - run: pnpm build

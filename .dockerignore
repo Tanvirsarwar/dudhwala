@@ -1,0 +1,14 @@
+**/node_modules
+**/.next
+**/dist
+**/coverage
+**/src/generated
+**/.env
+**/.env.*
+!.env.example
+.git
+e2e/results
+e2e/report
+e2e/.stack
+e2e/shots
+apps/api/var

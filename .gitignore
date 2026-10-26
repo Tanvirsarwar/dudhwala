@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.next/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+.turbo/
+**/src/generated/
+apps/api/var/
+*.tsbuildinfo
+e2e/.stack/
+e2e/results/
+e2e/report/
+e2e/shots/

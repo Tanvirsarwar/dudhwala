@@ -1,0 +1,15 @@
+{
+  "name": "dudhwala",
+  "private": true,
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "prepare:codegen": "pnpm --filter @dudhwala/shared build && pnpm --filter @dudhwala/api prisma:generate",
+    "build": "pnpm -r --if-present build",
+    "lint": "pnpm -r --if-present lint",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test"
+  }
+}
