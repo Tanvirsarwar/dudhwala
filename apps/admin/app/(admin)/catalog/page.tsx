@@ -3,11 +3,12 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
-import { api } from '@/lib/api';
+import { api, download, errorText } from '@/lib/api';
 import { useSession } from '@/lib/session';
 import { useAction, useLoad } from '@/lib/use-load';
 import { taka } from '@/lib/format';
 import { PRODUCT_STATUS, slugify, type Category } from '@/lib/catalog';
+import { BulkPrice } from './bulk-price';
 import { Badge, Empty, Field, Loading, Modal, Msg, PageTitle, TableWrap } from '@/components/ui';
 
 interface ProductRow {
@@ -22,7 +23,9 @@ interface ProductRow {
 
 export default function CatalogPage() {
   const s = useSession();
-  const { data, error } = useLoad<ProductRow[]>('/admin/products');
+  const { data, error, reload } = useLoad<ProductRow[]>('/admin/products');
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [dlError, setDlError] = useState<string | null>(null);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [newOpen, setNewOpen] = useState(false);
@@ -39,6 +42,14 @@ export default function CatalogPage() {
       <PageTitle title="পণ্য ও দাম">
         {s.can('catalog.manage') ? (
           <>
+            <button className="btn btn-ghost btn-sm" onClick={() => void download('/admin/variants/export.csv', 'dudhwala-variants.csv').then(() => setDlError(null), (e) => setDlError(errorText(e)))}>
+              CSV নামান
+            </button>
+            {s.can('pricing.manage_global') ? (
+              <button className="btn btn-ghost btn-sm" onClick={() => setBulkOpen(true)}>
+                CSV থেকে দাম
+              </button>
+            ) : null}
             <button className="btn btn-ghost btn-sm" onClick={() => setCatOpen(true)}>
               ক্যাটাগরি
             </button>
@@ -49,6 +60,7 @@ export default function CatalogPage() {
         ) : null}
       </PageTitle>
       <p className="mb-3 text-sm text-muted">দাম সব আউটলেটে একই। খসড়া পণ্য গ্রাহকরা দেখতে পান না — প্রকাশ করার পরই দেখা যায়।</p>
+      <Msg error={dlError} />
       <div className="mb-3 flex flex-wrap gap-2">
         <input className="field field-sm max-w-xs" aria-label="খুঁজুন" placeholder="নাম বা SKU" value={q} onChange={(e) => setQ(e.target.value)} />
         <select className="field field-sm w-auto" aria-label="অবস্থা" value={status} onChange={(e) => setStatus(e.target.value)}>
@@ -102,6 +114,7 @@ export default function CatalogPage() {
         </TableWrap>
       )}
       {newOpen ? <NewProduct onClose={() => setNewOpen(false)} /> : null}
+      {bulkOpen ? <BulkPrice onClose={() => setBulkOpen(false)} onDone={() => void reload()} /> : null}
       {catOpen ? <Categories onClose={() => setCatOpen(false)} /> : null}
     </>
   );

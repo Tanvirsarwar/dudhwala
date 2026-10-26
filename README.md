@@ -67,6 +67,12 @@ pnpm --filter @dudhwala/api test
 # E2E (Playwright): see e2e/stack.sh and e2e/package.json
 ```
 
+## Catalogue management
+
+Admin → পণ্য ও দাম: create/edit products and variants, upload product photos, publish, archive. **CSV নামান** exports every variant (SKU, price, compare-at); **CSV থেকে দাম** uploads the edited file, shows a preview and applies it only if every row is valid (all-or-nothing, audited). Needs the `catalog.manage` and `pricing.manage_global` permissions. Product photos must come from the business or be properly licensed; the demo seed's third-party photos are for private demos only.
+
+See [docs/AUDIT_2026-10-26.md](docs/AUDIT_2026-10-26.md) for the latest audit, the image-loading root cause and the UI changes.
+
 ## Verified results (2026-10-21)
 
 | Check | Result |

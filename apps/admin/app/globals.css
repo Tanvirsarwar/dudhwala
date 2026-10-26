@@ -21,8 +21,15 @@
   --font-sans: 'Hind Siliguri', 'Noto Sans Bengali', 'Inter Variable', system-ui, sans-serif;
   --font-latin: 'Inter Variable', system-ui, sans-serif;
 
-  --radius-card: 16px;
-  --shadow-card: 0 1px 2px rgba(35, 49, 94, 0.08), 0 2px 8px rgba(35, 49, 94, 0.06);
+  --radius-card: 18px;
+  --radius-control: 12px;
+  --shadow-card: 0 1px 2px rgba(35, 49, 94, 0.06), 0 4px 14px rgba(35, 49, 94, 0.06);
+  --shadow-press: inset 0 2px 4px rgba(22, 31, 64, 0.22);
+
+  /* Same motion tokens as the storefront (apps/web/app/globals.css). */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 120ms;
+  --dur-base: 220ms;
 }
 
 html {
@@ -48,6 +55,7 @@ body {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+    animation-iteration-count: 1 !important;
   }
 }
 
@@ -68,20 +76,46 @@ body {
     gap: 0.5rem;
     min-height: 44px;
     padding: 0 1.1rem;
-    border-radius: 10px;
+    border-radius: var(--radius-control);
     font-weight: 600;
-    transition: background-color 0.15s, opacity 0.15s;
+    cursor: pointer;
+    transition:
+      background-color var(--dur-base) var(--ease-out),
+      box-shadow var(--dur-base) var(--ease-out),
+      transform var(--dur-fast) var(--ease-out),
+      opacity var(--dur-base);
+  }
+  .btn:active:not(:disabled) {
+    transform: scale(0.97);
   }
   .btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
+  .btn[aria-busy='true']::after {
+    content: '';
+    width: 1em;
+    height: 1em;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
   .btn-primary {
     background: var(--color-brand-600);
     color: #fff;
   }
+  .btn-primary {
+    box-shadow: 0 1px 2px rgba(35, 49, 94, 0.25);
+  }
   .btn-primary:hover:not(:disabled) {
     background: var(--color-brand-500);
+  }
+  .btn-primary:active:not(:disabled) {
+    box-shadow: var(--shadow-press);
   }
   .btn-ghost {
     background: #fff;
@@ -98,11 +132,13 @@ body {
     min-height: 44px;
     padding: 0.5rem 0.75rem;
     border: 1px solid #c9cad8;
-    border-radius: 10px;
+    border-radius: var(--radius-control);
     background: #fff;
+    transition: border-color var(--dur-base), box-shadow var(--dur-base);
   }
   .field:focus {
     border-color: var(--color-brand-600);
+    box-shadow: 0 0 0 3px rgba(45, 48, 143, 0.15);
   }
   .label {
     display: block;
@@ -155,6 +191,9 @@ body {
     border-bottom: 1px solid var(--color-line);
     vertical-align: top;
   }
+  .tbl tbody tr {
+    transition: background-color var(--dur-fast);
+  }
   .tbl tbody tr:hover {
     background: var(--color-brand-100);
   }
@@ -176,5 +215,13 @@ body {
   }
   dialog::backdrop {
     background: rgb(0 0 0 / 0.4);
+  }
+  dialog[open] {
+    animation: dialog-in var(--dur-base) var(--ease-out);
+    box-shadow: 0 24px 60px rgba(8, 12, 40, 0.35);
+  }
+  @keyframes dialog-in {
+    from { opacity: 0; transform: translate3d(0, 12px, 0) scale(0.98); }
+    to { opacity: 1; transform: none; }
   }
 }

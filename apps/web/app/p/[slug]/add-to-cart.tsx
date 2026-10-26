@@ -33,7 +33,7 @@ export function AddToCart({ slug, variants: initial }: { slug: string; variants:
   const available = v?.availability === 'IN_STOCK';
 
   const add = async () => {
-    if (!v) return;
+    if (!v || busy) return; // ignore repeat taps while a request is in flight
     setBusy(true);
     setMsg(null);
     try {
@@ -83,22 +83,22 @@ export function AddToCart({ slug, variants: initial }: { slug: string; variants:
       {!areaChecked && <p className="text-xs text-muted">ডেলিভারি এলাকা বেছে নিলে আপনার এলাকার স্টক দেখানো হবে।</p>}
       <div className="mt-4 flex items-center gap-3">
         <div className="flex items-center rounded-xl border border-line bg-white" role="group" aria-label="সংখ্যা">
-          <button type="button" className="h-11 w-11 text-xl" onClick={() => setQty((q) => Math.max(1, q - 1))} disabled={qty <= 1} aria-label="কমান">
+          <button type="button" className="h-11 w-11 rounded-l-xl text-xl transition-colors hover:bg-brand-100 active:bg-brand-100 disabled:opacity-40" onClick={() => setQty((q) => Math.max(1, q - 1))} disabled={qty <= 1} aria-label="কমান">
             −
           </button>
           <span className="w-10 text-center font-semibold" aria-live="polite">
             {bnDigits(qty)}
           </span>
-          <button type="button" className="h-11 w-11 text-xl" onClick={() => setQty((q) => Math.min(max, q + 1))} disabled={qty >= max} aria-label="বাড়ান">
+          <button type="button" className="h-11 w-11 rounded-r-xl text-xl transition-colors hover:bg-brand-100 active:bg-brand-100 disabled:opacity-40" onClick={() => setQty((q) => Math.min(max, q + 1))} disabled={qty >= max} aria-label="বাড়ান">
             +
           </button>
         </div>
-        <button type="button" className="btn btn-primary flex-1" onClick={() => void add()} disabled={!available || busy || qty > max}>
-          {busy ? 'যোগ হচ্ছে…' : 'কার্টে যোগ করুন'}
+        <button type="button" className="btn btn-primary flex-1" onClick={() => void add()} disabled={!available || qty > max} aria-busy={busy} aria-disabled={busy || undefined}>
+          {busy ? 'যোগ হচ্ছে' : 'কার্টে যোগ করুন'}
         </button>
       </div>
       {msg && (
-        <p role="status" className={`mt-3 rounded-lg p-3 text-sm ${msg.ok ? 'bg-accent-100 text-brand-700' : 'bg-red-50 text-danger'}`}>
+        <p role="status" className={`toast mt-3 rounded-lg p-3 text-sm ${msg.ok ? 'bg-accent-100 text-brand-700' : 'bg-red-50 text-danger'}`}>
           {msg.text}
           {msg.ok && (
             <Link href="/cart" className="ml-2 font-semibold underline">

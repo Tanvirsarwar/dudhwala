@@ -144,3 +144,19 @@ test('a customer downloads their data and asks for account deletion', async ({ p
   await expect(page.getByText('অ্যাকাউন্ট মুছে ফেলার অনুরোধ প্রক্রিয়াধীন')).toBeVisible();
   await expectAccessible(page);
 });
+
+test('quick add on a product card puts one item in the cart, and options products link to their page', async ({ page }) => {
+  await page.goto('/search?q=Opera');
+  const card = page.getByRole('listitem').filter({ hasText: 'Opera Cake' }).first();
+  await card.getByRole('button', { name: /কার্টে যোগ করুন/ }).click();
+  await expect(card.getByRole('button', { name: /কার্টে যোগ করুন/ })).toContainText('যোগ হয়েছে');
+  await expect(page.getByRole('link', { name: /কার্ট, ১টি পণ্য/ })).toBeVisible();
+  await page.goto('/cart');
+  await expect(page.getByText('Opera Cake').first()).toBeVisible();
+
+  // a product with several pack sizes never adds blindly: it links to the page where the option is chosen
+  await page.goto('/');
+  const multi = page.getByRole('listitem').filter({ has: page.getByRole('link', { name: /অপশন দেখুন/ }) }).first();
+  await multi.getByRole('link', { name: /অপশন দেখুন/ }).click();
+  await expect(page).toHaveURL(/\/p\//);
+});

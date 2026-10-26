@@ -3,6 +3,8 @@ import type { NextConfig } from 'next';
 const api = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/v1';
 const apiOrigin = new URL(api).origin;
 const mediaOrigins = (process.env.NEXT_PUBLIC_MEDIA_ORIGINS ?? '').split(/\s+/).filter(Boolean);
+// Demo seed images are hot-linked from a third-party host; allow it outside production only.
+if (process.env.NODE_ENV !== 'production') mediaOrigins.push('https://wellfoodonline.com');
 
 // The admin is a client-rendered app talking to the API with the staff session cookie.
 // Strict CSP; no third-party scripts. 'unsafe-inline' scripts are needed for Next's bootstrap until nonces are wired.
