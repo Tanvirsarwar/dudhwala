@@ -8,8 +8,10 @@ export function DeveloperCredit({ size = 'footer' }: { size?: 'footer' | 'about'
   if (!DEMO_BRANDING) return null;
   return (
     <div className={`dev-credit dev-credit-${size}`}>
-      {/* aspect ratio of the supplied file (2000 x 984) is preserved by width/height + auto sizing */}
-      <img src="/petra-logo.webp" alt="PETRA Software Solutions" width={2000} height={984} loading="lazy" decoding="async" />
+      {/* The supplied 2000x984 file has transparent margins; the frame shows exactly its visible area, nothing is stretched or cropped from the logo itself. */}
+      <div className="dev-logo">
+        <img src="/petra-logo.webp" alt="PETRA Software Solutions" width={2000} height={984} loading="lazy" decoding="async" />
+      </div>
       <p>নির্মাণ ও সফটওয়্যার উন্নয়ন: PETRA Software Solutions</p>
     </div>
   );

@@ -15,7 +15,7 @@ export async function Footer() {
       <svg className="milk-wave -mt-px rotate-180" viewBox="0 0 1440 28" preserveAspectRatio="none" aria-hidden>
         <path fill="currentColor" d="M0 0h1440v10c-120 12-240 18-360 12S840 4 720 6 480 24 360 24 120 14 0 10Z" />
       </svg>
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 md:grid-cols-3">
+      <div className="page-w grid gap-6 py-8 md:grid-cols-3">
         <div>
           <p className="text-lg font-bold">দুধওয়ালা</p>
           <p className="font-latin text-sm tracking-wide text-sky-300">DUDHWALA FOOD PRODUCTS · Serving Purity</p>
@@ -38,7 +38,7 @@ export async function Footer() {
         </nav>
         <p className="text-sm text-sky-300">© {new Date().getFullYear()} Dudhwala Food Products</p>
       </div>
-      <div className="mx-auto max-w-6xl px-4 pb-8">
+      <div className="page-w pb-6">
         <DeveloperCredit size="footer" />
       </div>
     </footer>

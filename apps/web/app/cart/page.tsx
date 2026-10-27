@@ -28,7 +28,7 @@ export default function CartPage() {
   const blocked = cart.lines.some((l) => !l.available);
 
   return (
-    <div className="pt-6">
+    <div className="mx-auto max-w-5xl pt-6">
       <h1 className="mb-4 text-2xl font-bold">আপনার কার্ট</h1>
       {cart.lines.length === 0 ? (
         <div className="card p-8 text-center">

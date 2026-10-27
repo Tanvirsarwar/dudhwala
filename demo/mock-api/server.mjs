@@ -21,7 +21,7 @@ const imgUrl = (p) => `/v1/media/demo/${p.slug}.svg`;
 const avail = (v) => (v.stock > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK');
 
 // ── illustrations (own artwork, generated; no third-party photos) ──
-const HUE = { milk: 214, curd: 190, 'ghee-butter': 42, sweets: 340, cheese: 52, bakery: 28 };
+const HUE = { milk: 214, curd: 190, 'ghee-butter': 42, sweets: 340, cheese: 52, bakery: 28, snacks: 8, gur: 34, biscuits: 160, grocery: 100 };
 function art(p) {
   const h = HUE[p.categorySlug] ?? 210;
   const glyph = {
@@ -30,6 +30,9 @@ function art(p) {
     jar: '<rect x="290" y="250" width="220" height="60" rx="16" fill="#2d308f" opacity=".9"/><rect x="262" y="300" width="276" height="300" rx="48" fill="#fff"/><rect x="262" y="400" width="276" height="90" fill="#f2b705" opacity=".9"/>',
     block: '<path d="M240 400l160-110 160 110v170H240z" fill="#fff"/><path d="M240 400l160 100 160-100" fill="none" stroke="#2d308f" stroke-width="10" opacity=".7"/>',
     sweet: '<circle cx="330" cy="470" r="86" fill="#fff"/><circle cx="470" cy="470" r="86" fill="#fff"/><circle cx="400" cy="360" r="86" fill="#fff"/>',
+    pouch: '<path d="M270 250h260l30 40-20 300q-2 24-26 24H286q-24 0-26-24L240 290z" fill="#fff"/><path d="M250 300q40 24 75 0t75 0 75 0 55 0" fill="none" stroke="#2d308f" stroke-width="10" opacity=".8"/><rect x="300" y="400" width="200" height="110" rx="20" fill="#2d308f" opacity=".85"/>',
+    cookie: '<circle cx="400" cy="430" r="170" fill="#fff"/><circle cx="350" cy="380" r="16" fill="#2d308f" opacity=".7"/><circle cx="450" cy="400" r="16" fill="#2d308f" opacity=".7"/><circle cx="390" cy="480" r="16" fill="#2d308f" opacity=".7"/><circle cx="470" cy="490" r="14" fill="#2d308f" opacity=".7"/><circle cx="330" cy="470" r="14" fill="#2d308f" opacity=".7"/>',
+    sack: '<path d="M290 270q110-40 220 0l50 330q4 28-24 28H264q-28 0-24-28z" fill="#fff"/><rect x="310" y="250" width="180" height="34" rx="14" fill="#2d308f" opacity=".9"/><rect x="320" y="400" width="160" height="100" rx="18" fill="#2d308f" opacity=".8"/>',
     loaf: '<rect x="230" y="360" width="340" height="210" rx="100" fill="#fff"/><path d="M300 360q20-60 50 0M380 360q20-60 50 0M460 360q20-60 50 0" fill="#fff" stroke="#2d308f" stroke-width="8" opacity=".9"/>',
   }[p.kind];
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" role="img" aria-label="${p.nameEn}"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="hsl(${h} 70% 82%)"/><stop offset="1" stop-color="hsl(${h} 60% 62%)"/></linearGradient></defs><rect width="800" height="800" fill="url(#g)"/>${glyph}<text x="400" y="740" text-anchor="middle" font-family="Arial,sans-serif" font-size="30" font-weight="700" fill="#23315e" opacity=".55">DEMO ARTWORK</text></svg>`;

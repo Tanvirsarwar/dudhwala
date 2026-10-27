@@ -781,3 +781,116 @@ body::before {
   .about-close { margin-top: 1.75rem; padding: 1.5rem 1rem; border-radius: 22px; }
   .about-products { gap: 0.6rem; }
 }
+
+/* ───── V2.4: full-width desktop layout, search popup, category bar, related list, centred developer credit ───── */
+.page-w {
+  width: 100%;
+  max-width: 2000px;
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 2.6vw, 3.25rem);
+}
+@layer components {
+  .product-grid {
+    display: grid;
+    gap: 0.625rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (min-width: 640px) {
+    .product-grid { gap: 0.75rem; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); }
+  }
+  /* "You may also like": touch-friendly horizontal strip on phones, compact grid on larger screens */
+  .related-list {
+    display: flex;
+    gap: 0.625rem;
+    overflow-x: auto;
+    padding: 0.25rem 0.25rem 0.75rem;
+    scroll-snap-type: x proximity;
+    list-style: none;
+    margin: 0;
+  }
+  .related-list > li { flex: 0 0 172px; scroll-snap-align: start; }
+  @media (min-width: 768px) {
+    .related-list { display: grid; overflow: visible; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); max-width: 1100px; }
+    .related-list > li { flex: none; }
+  }
+  /* category bar */
+  .cat-bar {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding: 0.25rem 0.1rem 0.5rem;
+    scrollbar-width: thin;
+  }
+  .cat-pill {
+    flex: none;
+    min-height: 40px;
+    padding: 0 0.95rem;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--color-brand-600);
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 6px 16px -12px rgba(35, 49, 94, 0.5);
+    transition: background-color var(--dur-base), color var(--dur-base), box-shadow var(--dur-base), transform var(--dur-fast);
+  }
+  .cat-pill b { margin-left: 0.3rem; font-weight: 600; opacity: 0.6; font-size: 0.8em; }
+  .cat-pill:hover:not(:disabled) { background: #fff; }
+  .cat-pill:active:not(:disabled) { transform: scale(0.97); }
+  .cat-pill[aria-pressed='true'] {
+    color: #fff;
+    background: linear-gradient(135deg, var(--color-brand-600), #1f7fd0);
+    border-color: transparent;
+    box-shadow: 0 10px 22px -12px rgba(45, 48, 143, 0.8);
+  }
+  .cat-pill:disabled { opacity: 0.45; cursor: not-allowed; }
+  /* search suggestions */
+  .search-pop {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: 40;
+    max-height: min(70vh, 420px);
+    overflow: auto;
+    padding: 0.35rem;
+    border-radius: 18px;
+    color: var(--color-ink);
+    background: rgba(255, 255, 255, 0.92);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5);
+    backdrop-filter: blur(18px) saturate(1.5);
+  }
+  .search-opt {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.45rem 0.6rem;
+    border-radius: 12px;
+    text-align: left;
+    transition: background-color var(--dur-fast);
+  }
+  .search-opt[aria-selected='true'], .search-opt:hover { background: rgba(45, 48, 143, 0.09); }
+  .search-opt img { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; flex: none; }
+  /* developer credit: centred, proportional, transparent margins of the supplied file trimmed by layout only */
+  .dev-credit { flex-direction: column; justify-content: center; text-align: center; gap: 0.5rem; }
+  .dev-credit-footer { padding-top: 1rem; }
+  .dev-credit .dev-logo {
+    position: relative;
+    overflow: hidden;
+    width: 168px;
+    aspect-ratio: 1721 / 744;
+    transform-origin: center;
+  }
+  .dev-credit-about .dev-logo { width: 140px; }
+  .dev-credit .dev-logo img {
+    position: absolute;
+    width: 116.2%;
+    max-width: none;
+    height: auto;
+    left: -7.84%;
+    top: -13.3%;
+  }
+  .about { max-width: 1280px; margin-inline: auto; }
+}

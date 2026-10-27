@@ -3,11 +3,15 @@ const U = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 
 export const categories = [
   { id: U(1), slug: 'milk', nameBn: 'দুধ', nameEn: 'Milk' },
-  { id: U(2), slug: 'curd', nameBn: 'দই', nameEn: 'Curd' },
+  { id: U(2), slug: 'curd', nameBn: 'দই / ইয়োগার্ট', nameEn: 'Curd / Yogurt' },
   { id: U(3), slug: 'ghee-butter', nameBn: 'ঘি ও মাখন', nameEn: 'Ghee & Butter' },
   { id: U(4), slug: 'sweets', nameBn: 'মিষ্টি', nameEn: 'Sweets' },
   { id: U(5), slug: 'cheese', nameBn: 'পনির', nameEn: 'Paneer & Cheese' },
   { id: U(6), slug: 'bakery', nameBn: 'বেকারি', nameEn: 'Bakery' },
+  { id: U(7), slug: 'snacks', nameBn: 'চানাচুর ও স্ন্যাকস', nameEn: 'Chanachur & Snacks' },
+  { id: U(8), slug: 'gur', nameBn: 'গুড় ও মিষ্টিকারক', nameEn: 'Gur & Sweeteners' },
+  { id: U(9), slug: 'biscuits', nameBn: 'বিস্কুট ও কুকিজ', nameEn: 'Biscuits & Cookies' },
+  { id: U(10), slug: 'grocery', nameBn: 'অন্যান্য মুদি পণ্য', nameEn: 'Other Grocery' },
 ].map((c) => ({ ...c, parentId: null, active: true, sortOrder: 0 }));
 
 // kind drives the generated illustration; v = [label, price in taka, optional compare-at in taka, stock]
@@ -30,6 +34,18 @@ const P = [
   ['cream-bun', 'bakery', 'loaf', 'ক্রিম বান', 'Cream Bun', [['২ পিস', 60, 0, 30]]],
   ['rusk', 'bakery', 'loaf', 'দুধের রাস্ক', 'Milk Rusk', [['২৫০ গ্রাম', 95, 0, 38]]],
   ['cake-slice', 'bakery', 'loaf', 'ভ্যানিলা কেক', 'Vanilla Cake', [['৫০০ গ্রাম', 450, 0, 8]]],
+  ['chanachur', 'snacks', 'pouch', 'চানাচুর', 'Chanachur', [['২০০ গ্রাম', 85, 0, 40], ['৫০০ গ্রাম', 190, 210, 25]]],
+  ['dalmoth', 'snacks', 'pouch', 'ডালমুট', 'Dalmoth', [['২০০ গ্রাম', 95, 0, 30]]],
+  ['jhal-muri-mix', 'snacks', 'pouch', 'ঝাল মুড়ি মিক্স', 'Jhal Muri Mix', [['১৫০ গ্রাম', 70, 0, 0]]],
+  ['khejur-gur', 'gur', 'jar', 'খেজুর গুড়', 'Khejur Gur (Date-Palm Jaggery)', [['৫০০ গ্রাম', 260, 0, 18], ['১ কেজি', 500, 540, 12]]],
+  ['patali-gur', 'gur', 'block', 'পাটালি গুড়', 'Patali Gur', [['৫০০ গ্রাম', 300, 0, 14]]],
+  ['cane-jaggery', 'gur', 'block', 'আখের গুড়', 'Cane Jaggery', [['১ কেজি', 190, 0, 22]]],
+  ['milk-biscuit', 'biscuits', 'cookie', 'মিল্ক বিস্কুট', 'Milk Biscuit', [['২০০ গ্রাম', 60, 0, 50]]],
+  ['butter-cookies', 'biscuits', 'cookie', 'বাটার কুকিজ', 'Butter Cookies', [['২৫০ গ্রাম', 140, 160, 26]]],
+  ['coconut-biscuit', 'biscuits', 'cookie', 'নারকেল বিস্কুট', 'Coconut Biscuit', [['২০০ গ্রাম', 75, 0, 34]]],
+  ['masoor-dal', 'grocery', 'sack', 'মসুর ডাল', 'Masoor Dal', [['১ কেজি', 140, 0, 40]]],
+  ['mustard-oil', 'grocery', 'bottle', 'সরিষার তেল', 'Mustard Oil', [['১ লিটার', 260, 0, 20]]],
+  ['basmati-rice', 'grocery', 'sack', 'বাসমতি চাল', 'Basmati Rice', [['১ কেজি', 170, 0, 36], ['৫ কেজি', 800, 850, 15]]],
 ];
 
 const catBySlug = Object.fromEntries(categories.map((c) => [c.slug, c]));
@@ -61,7 +77,7 @@ export const products = P.map(([slug, cat, kind, nameBn, nameEn, vs], i) => ({
 
 export const areas = ['জিন্দাবাজার', 'আম্বরখানা', 'উপশহর', 'সুবিদবাজার', 'শাহী ঈদগাহ', 'মীরবক্সটুলা'].map((n, i) => ({ id: U(500 + i), slug: `area-${i + 1}`, nameBn: n, nameEn: null }));
 
-export const collections = [{ slug: 'todays-picks', titleBn: 'আজকের বিশেষ বাছাই', slugs: ['sweet-curd', 'pure-ghee', 'rasgulla', 'fresh-milk', 'sandesh', 'paneer', 'milk-bread', 'butter'] }];
+export const collections = [{ slug: 'todays-picks', titleBn: 'আজকের বিশেষ বাছাই', slugs: ['sweet-curd', 'pure-ghee', 'rasgulla', 'fresh-milk', 'sandesh', 'paneer', 'khejur-gur', 'chanachur'] }];
 
 export const pages = [
   { slug: 'about', titleBn: 'দুধওয়ালা সম্পর্কে', bodyBn: 'এটি স্থানীয় ক্লায়েন্ট ডেমোর নমুনা পাতা। আসল প্রতিষ্ঠানের গল্প ও তথ্য এখানে পরে বসবে।' },

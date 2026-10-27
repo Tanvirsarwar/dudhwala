@@ -44,7 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <PreviewBanner />
         <Header />
         <MaintenanceBanner />
-        <main id="main" className="mx-auto max-w-6xl px-4 pb-8">
+        <main id="main" className="page-w pb-8">
           {children}
         </main>
         <Footer />

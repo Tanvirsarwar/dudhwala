@@ -72,7 +72,7 @@ export function AreaBar() {
 
   return (
     <div className="border-t border-white/10 bg-[rgba(35,49,94,0.72)] text-sm backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-1.5">
+      <div className="page-w flex items-center gap-2 py-1.5">
         <PinIcon />
         <span>ডেলিভারি এলাকা:</span>
         <strong className="font-semibold">{current ? current.nameBn : 'বেছে নিন'}</strong>

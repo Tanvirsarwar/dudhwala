@@ -1,4 +1,4 @@
-# Dudhwala – local client demo (V2.3: glass UI, EN | বাংলা, delivery-area picker, About story, PETRA credit, compact cards)
+# Dudhwala – local client demo (V2.4: full-width layout, fuzzy search, category filtering, related products)
 
 A **temporary, offline-capable demo** of the Dudhwala storefront and admin on your own PC.
 It uses the real Premium UI code with a small **mock API** that serves **invented sample data**.
@@ -27,6 +27,13 @@ First run installs dependencies and builds the two sites (a few minutes). Later 
 | Storefront | http://127.0.0.1:3100 |
 | Admin | http://127.0.0.1:3101 – login `admin@demo.local` / password `demo1234` |
 | Mock API check | http://127.0.0.1:4010/v1/health/ready |
+
+## V2.4: shopping experience
+- **Full-width layout:** content now uses the whole screen up to 2000 px (8 cards per row on a 1920 px desktop) with balanced side padding.
+- **Fuzzy search:** the header box and the Search page give live suggestions (image, name, sample price) and tolerate typos and transliterations: `mlk`, `dudh` → Milk; `ghi`, `gee` → Ghee; `doi`, `dohi` → Curd; `biscute`, `biskut` → Biscuit; `chachachur` → Chanachur; `gur`, `jaggery` → Gur; Bangla works too. Arrow keys, Enter, Esc and touch work; no-match shows "Did you mean". Spellings live in one editable list (`SEARCH_ALIASES` in `packages/shared/src/search.ts`).
+- **Categories:** the bar above the product grid filters the grid (counts, active state, clear filters) and works together with search and sorting.
+- **Product pages:** "You May Also Like" (same category, then complementary categories) and "Recently Viewed" (kept in this browser).
+- **Sample products:** the demo catalogue now has 30 invented products in 10 categories (added snacks, gur, biscuits, grocery).
 
 ## V2.3: scroll stability and compact cards
 Cards could blank out while scrolling on real GPUs because the page stacked too many compositor-heavy layers (measured on V2.2: 39 blurred surfaces, 51 transformed elements, 21 3D contexts, 26 finished animations still applied, and a fixed background repainted every frame). V2.3 keeps blur only on the header, panels and dialogs, applies the 3D tilt only while a card is hovered, stops entrance animations from lingering after they finish, and paints the background on one fixed layer. Product cards, dashboard tiles and About cards are also smaller (5 product cards per row on a 1280 px desktop instead of 4). If you still see a card flicker on your machine, tell me the browser and GPU.

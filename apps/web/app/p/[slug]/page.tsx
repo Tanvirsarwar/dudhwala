@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { serverGet } from '@/lib/api';
+import { serverGet, type ProductList } from '@/lib/api';
+import { ProductExtras } from '@/components/related-products';
 import { ProductGallery } from '@/components/product-gallery';
 import { AddToCart } from './add-to-cart';
 
@@ -37,8 +38,9 @@ const SECTIONS: [keyof ProductDetail['content'], string][] = [
 export default async function ProductPage({ params }: Props) {
   const p = await getProduct((await params).slug);
   if (!p) notFound();
+  const all = (await serverGet<ProductList>('/catalog/products?limit=48&sort=newest', 30))?.data ?? [];
   return (
-    <article className="pt-6">
+    <article className="mx-auto max-w-6xl pt-6">
       <nav aria-label="ব্রেডক্রাম্ব" className="mb-3 text-sm text-muted">
         <Link href="/" className="hover:underline">
           প্রথম পাতা
@@ -66,6 +68,7 @@ export default async function ProductPage({ params }: Props) {
           ))}
         </div>
       )}
+      <ProductExtras all={all} slug={p.slug} categorySlug={p.category.slug} />
     </article>
   );
 }
