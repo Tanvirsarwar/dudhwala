@@ -1,4 +1,4 @@
-# Phase 2 integration points (V2.5 demo ordering)
+# Phase 2 integration points (V2.5.1 demo ordering)
 
 V2.5 runs the whole ordering experience in the browser against a mock API. Nothing below is real enforcement.
 **Frontend filtering and validation are a demo convenience, not security.** The backend must re-check every rule on every cart and order.
@@ -25,7 +25,7 @@ The functions are pure (no UI, no network, explicit time zone, `now` passed in),
 
 UI code calls only `apps/web/lib/services/index.ts`:
 
-- `orderService` -> **replace** `lib/services/demo-orders.ts` (browser `localStorage` key `dw.demo.orders`) with API calls (`POST /orders`, `GET /orders`). Keep the `OrderService` shape or adapt `components/demo-checkout.tsx` and `app/demo-orders/page.tsx`.
+- `orderService` -> (no orders list page any more; the confirmation card is the only view) **replace** `lib/services/demo-orders.ts` (browser `localStorage` key `dw.demo.orders`) with API calls (`POST /orders`, `GET /orders`). Keep the `OrderService` shape or adapt `components/demo-checkout.tsx`.
 - `outletService` -> `lib/services/outlets.ts` calls the mock-only `GET /v1/outlets`; point it at the real outlets endpoint.
 
 ## Files and data to replace in Phase 2
@@ -41,6 +41,8 @@ UI code calls only `apps/web/lib/services/index.ts`:
 | Bulk collection `BULK_CONFIG.collectionBranch.outletId = null` | the real Modina Market Branch outlet id |
 | `BULK_CONFIG` thresholds (placeholders) | owner-approved quantity and amount (stored as settings) |
 | `PICKUP_RULES.hours` (= ordering hours) | each outlet's real opening hours |
+| Product photos | none are bundled. Drop files into `demo/mock-api/media/` (`<product-id>.jpg`, or `kind-<kind>.jpg`) for the demo; Phase 2 uses the admin image upload and media storage |
+| `/bulk` page (`components/bulk-builder.tsx`) | the same page backed by the real cart/order API |
 | `NEXT_PUBLIC_DEMO_BRANDING` gates | remove once the demo pages are no longer needed |
 
 ## Backend checks the API must add

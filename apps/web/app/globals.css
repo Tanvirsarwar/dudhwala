@@ -912,3 +912,8 @@ body::before {
 .opt-card[aria-disabled='true'] { opacity: 0.5; cursor: not-allowed; }
 .price-pending { font-size: 0.8125rem; font-weight: 600; color: var(--color-muted, #5b6786); }
 .badge-ineligible { display: inline-block; padding: 0.1rem 0.55rem; border-radius: 999px; background: #fdecec; color: #8a1c1c; font-size: 0.75rem; font-weight: 700; }
+.bulk-list { display: grid; gap: 0.5rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }
+.bulk-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.55rem 0.75rem; border-radius: 0.9rem; background: rgba(255, 255, 255, 0.82); border: 2px solid transparent; }
+.bulk-row.is-on { border-color: var(--color-brand-600); background: #fff; }
+.bulk-qty { width: 3.4rem; height: 2.5rem; text-align: center; border: 0; background: transparent; font-weight: 700; }
+.bulk-bar { position: sticky; bottom: 0.75rem; z-index: 20; margin-top: 1.25rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.7rem 1rem; border-radius: 1rem; background: rgba(255, 255, 255, 0.96); box-shadow: 0 12px 30px -12px rgba(35, 49, 94, 0.55); }

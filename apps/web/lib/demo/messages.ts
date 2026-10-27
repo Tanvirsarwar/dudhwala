@@ -40,7 +40,7 @@ export const METHOD_LABEL: Record<FulfilmentMethod, string> = {
 
 /** Demo statuses. Pickup is described as confirmed only once the outlet has marked it ready. */
 export const STATUS_LABEL: Record<DemoOrderStatus, string> = {
-  DEMO_PLACED: 'ডেমো অর্ডার নেওয়া হয়েছে',
+  DEMO_PLACED: 'অর্ডার নেওয়া হয়েছে',
   DEMO_PREPARING: 'প্রস্তুত করা হচ্ছে',
   DEMO_OUT_FOR_DELIVERY: 'ডেলিভারির পথে',
   DEMO_DELIVERED: 'ডেলিভারি সম্পন্ন',

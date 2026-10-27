@@ -1,4 +1,4 @@
-# Dudhwala – local client demo (V2.5: real catalogue, delivery zones, demo ordering)
+# Dudhwala – local client demo (V2.5.1: real catalogue, zones, bulk orders)
 
 A **temporary, offline-capable demo** of the Dudhwala storefront and admin on your own PC.
 It uses the real Premium UI code with a small **mock API**.
@@ -28,12 +28,19 @@ First run installs dependencies and builds the two sites (a few minutes). Later 
 | Admin | http://127.0.0.1:3101 – login `admin@demo.local` / password `demo1234` |
 | Mock API check | http://127.0.0.1:4010/v1/health/ready |
 
+## V2.5.1: polish
+- **No delivery-area picker.** The customer simply writes their full address at checkout: anywhere in Sylhet Sadar for **In City**, anywhere outside for **Outer City**. The zone selector stays.
+- **Outer Sylhet Doi:** Bati Doi, Premium Doi, Premium Cup Doi and Cup Doi are now deliverable to Outer City (25 products there in total).
+- **No "Demo orders" section.** The order confirmation card is shown after checkout (with a "Demo: move to next step" button to simulate staff).
+- **New Bulk Order page** (`/bulk`, link in the header strip and a card on the home page): pick many products with quantities, the page shows how many more are needed, then continues to checkout as a Bulk Order (collection only from Modina Market Branch, Demo/Simulated Payment). The 20-item minimum is still a placeholder.
+- **SVG artwork removed.** Products show real photos only when image files are present in `demo/mock-api/media/` (`<product-id>.jpg|png|webp`, e.g. `ds-01.jpg`, or one shared `kind-cup.jpg`); otherwise the plain "photo coming soon" tile is shown. **No photos are bundled in this ZIP**: the build environment could not download any (see the report).
+
 ## V2.5: real catalogue, delivery zones and demo ordering
-- **Real catalogue:** 59 products in 3 categories (Dairy Sweets 23, Doi / Dairy 11, Bakery 25) replace the old invented sample products. Details, unclear names and open questions: `docs/CATALOGUE_V2_5.md`. No price, size or stock was invented.
-- **Delivery zone selector** (strip under the header). **In City**: every product, delivery within 24 hours (no instant delivery). **Outer City**: all Bakery plus only the ticked Dairy Sweets (Ghee, Nimki), delivery in 1-2 days; Doi and unconfirmed items are hidden. The cart is re-checked when you change zone: unsuitable items are **marked, never silently removed**, and block checkout until you switch zone or remove them.
+- **Real catalogue:** 59 products in 3 categories (Dairy Sweets 23, Doi / Dairy 11, Bakery 25) replace the old invented sample products. Details, unclear names and open questions: `docs/CATALOGUE_V2_5_1.md`. No price, size or stock was invented.
+- **Delivery zone selector** (strip under the header). **In City**: every product, delivery within 24 hours (no instant delivery). **Outer City**: all Bakery, the ticked Dairy Sweets (Ghee, Nimki) and four Doi items (Bati, Premium, Premium Cup, Cup), delivery in 1-2 days; everything else is hidden. The cart is re-checked when you change zone: unsuitable items are **marked, never silently removed**, and block checkout until you switch zone or remove them.
 - **Ordering hours:** 10:00-22:00 Asia/Dhaka (real clock of the computer, evaluated in the Dhaka time zone). Outside them the checkout is blocked with a bilingual message and the reopening time.
-- **Checkout (demo):** three options. *Home Delivery* (zone, address, estimated delivery, "cash on delivery - demo"); *Express Pickup* (choose an outlet; earliest pickup is at least 1 hour away; pickup counts as confirmed only when the outlet marks it ready - use "Demo: move to next step" on the Demo orders page); *Bulk Order* (carts of 20+ items; collection only from Modina Market Branch; "Demo/Simulated Payment" first; no home or instant delivery). **The bulk threshold (20 items) is a placeholder** until the shop approves real values. The amount threshold cannot be checked yet because no prices exist.
-- **Demo orders** are saved only in this browser (`localStorage`, keys `dw.demo.zone` and `dw.demo.orders`), have `DEMO-` numbers and are never real orders. There is no card form, payment gateway, SMS or login in this flow.
+- **Checkout (demo):** three options. *Home Delivery* (zone, address, estimated delivery, "cash on delivery - demo"); *Express Pickup* (choose an outlet; earliest pickup is at least 1 hour away; pickup counts as confirmed only when the outlet marks it ready - use "Demo: move to next step" on the confirmation card); *Bulk Order* (carts of 20+ items; collection only from Modina Market Branch; "Demo/Simulated Payment" first; no home or instant delivery). **The bulk threshold (20 items) is a placeholder** until the shop approves real values. The amount threshold cannot be checked yet because no prices exist.
+- **Orders** are saved only in this browser (`localStorage`, keys `dw.demo.zone` and `dw.demo.orders`), have `DEMO-` numbers and are never real orders. There is no card form, payment gateway, SMS or login in this flow.
 - The validation in the browser is for the demo only and is **not** security. Phase 2 notes: `docs/PHASE2_INTEGRATION.md`.
 - Tests: `pnpm --filter @dudhwala/shared test` (ordering rules, search, translations) and `pnpm test:demo` (catalogue and eligibility, needs `pnpm --filter @dudhwala/shared build` first).
 
@@ -61,7 +68,7 @@ NixOS cannot run the prebuilt native binaries in `node_modules` directly. `start
 ## What works
 - Storefront: home with hero and collection, categories, product listing, **search** (Bangla or English), sorting, product pages, **add to cart**, cart quantities, delivery-zone selector, demo checkout, demo orders, delivery-area picker, information pages.
 - Admin (view only): dashboard summary, order list with status filter and search, product list and product pages, inventory per branch, branch list.
-- Product pictures are simple generated illustrations marked "DEMO ARTWORK" (no real photos are included).
+- No product photos are bundled (add your own to `demo/mock-api/media/`, see V2.5.1).
 
 ## Intentionally simulated or not available
 - **Customer login does not work** and there is no SMS or real payment. The V2.5 demo checkout works without login and only saves a demo order in your browser.

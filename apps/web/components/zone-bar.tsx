@@ -73,8 +73,8 @@ export function ZoneBar() {
             <span>টি পণ্য আউটার সিটিতে ডেলিভারি হবে না — কার্ট দেখুন</span>
           </Link>
         )}
-        <Link href="/demo-orders" className="ml-auto underline decoration-accent-500 underline-offset-4">
-          ডেমো অর্ডার
+        <Link href="/bulk" className="ml-auto font-semibold underline decoration-accent-500 underline-offset-4">
+          বাল্ক অর্ডার
         </Link>
       </div>
     </div>

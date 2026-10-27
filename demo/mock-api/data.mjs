@@ -23,7 +23,7 @@ export const products = CATALOGUE.products.map((p, i) => ({
   outerCityStatus: p.outerCity ?? undefined,
   createdOrder: i,
   descriptionBn: null,
-  variants: [{ id: U(1000 + i), sku: `DW-${p.id.toUpperCase()}`, labelBn: '', labelEn: null, packSize: '1', packUnit: 'PCS', pricePoisha: null, compareAtPoisha: null, status: 'ACTIVE', sortOrder: 0, stock: null, maxQty: 20 }],
+  variants: [{ id: U(1000 + i), sku: `DW-${p.id.toUpperCase()}`, labelBn: '', labelEn: null, packSize: '1', packUnit: 'PCS', pricePoisha: null, compareAtPoisha: null, status: 'ACTIVE', sortOrder: 0, stock: null, maxQty: 999 }],
   category: catBySlug[p.category],
 }));
 

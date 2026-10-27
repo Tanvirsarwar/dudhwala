@@ -88,13 +88,13 @@ export function DemoCheckout() {
     return (
       <div className="mx-auto max-w-3xl pt-6">
         <p className="notice notice-ok" role="status">
-          <b>ডেমো অর্ডার সংরক্ষিত হয়েছে।</b> <span>এটি আসল অর্ডার নয় এবং কোনো আসল পেমেন্ট হয়নি।</span>
+          <b>অর্ডার সংরক্ষিত হয়েছে।</b> <span>এটি আসল অর্ডার নয় এবং কোনো আসল পেমেন্ট হয়নি।</span>
         </p>
         <div className="mt-3">
-          <DemoOrderCard order={placed} />
+          <DemoOrderCard order={placed} onAdvance={(id) => { const o = orderService.advance(id); if (o) setPlaced({ ...o }); }} />
         </div>
-        <Link href="/demo-orders" className="btn btn-primary mt-4">
-          সব ডেমো অর্ডার দেখুন
+        <Link href="/" className="btn btn-primary mt-4">
+          কেনাকাটা চালিয়ে যান
         </Link>
       </div>
     );
@@ -180,6 +180,7 @@ export function DemoCheckout() {
               {field('name', 'নাম', 'name')}
               {field('phone', 'মোবাইল নম্বর', 'tel', 'tel')}
               {field('line1', 'ঠিকানা', 'street-address')}
+              <p className="text-sm text-muted">{zone === 'IN_CITY' ? 'সিলেট সদরের যেকোনো জায়গায় ডেলিভারি হয়। শুধু আপনার পূর্ণ ঠিকানা লিখুন।' : 'সিলেটের বাইরের যেকোনো জায়গায় ডেলিভারি হয়। উপজেলা/জেলাসহ পূর্ণ ঠিকানা লিখুন।'}</p>
               {field('landmark', 'চেনার মতো স্থান (ঐচ্ছিক)', 'off')}
               <p className="text-sm text-muted">পেমেন্ট: ক্যাশ অন ডেলিভারি (ডেমো — কোনো আসল পেমেন্ট নেই)।</p>
             </section>
@@ -282,7 +283,7 @@ export function DemoCheckout() {
             </div>
           )}
           <button type="button" className="btn btn-primary mt-4 w-full" onClick={place} aria-disabled={!status.open || undefined} disabled={now !== null && !status.open}>
-            ডেমো অর্ডার দিন
+            অর্ডার দিন
           </button>
           <p className="mt-2 text-xs text-muted">এই যাচাই শুধু ডেমোর জন্য, নিরাপত্তা নিশ্চয়তা নয়।</p>
         </aside>

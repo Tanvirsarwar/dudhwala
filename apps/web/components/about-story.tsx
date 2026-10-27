@@ -3,10 +3,8 @@ import { DeveloperCredit } from './developer-credit';
 
 /**
  * Editorial About page for the local demo (NEXT_PUBLIC_DEMO_BRANDING=1). Story facts are limited to what the
- * 2021 Business Standard report states; nothing about present-day operations is claimed. Illustrations are the
- * demo's own generated artwork served by the mock API.
+ * 2021 Business Standard report states; nothing about present-day operations is claimed. 
  */
-const ART = (slug: string) => `/v1/media/demo/${slug}.svg`;
 
 const PRODUCTS = [
   { name: 'দুগ্ধজাত মিষ্টি', note: 'রসগোল্লা, সন্দেশ, চমচম ও আরও', slug: 'ds-01', href: '/?category=dairy-sweets#products' },
@@ -40,11 +38,6 @@ export function AboutStory() {
               পণ্য দেখুন
             </Link>
           </div>
-        </div>
-        <div className="about-art" aria-hidden>
-          {['ds-23', 'doi-01', 'ds-24'].map((s, i) => (
-            <img key={s} src={ART(s)} alt="" width={800} height={800} className={`about-tile about-tile-${i}`} />
-          ))}
         </div>
       </section>
 
@@ -82,7 +75,6 @@ export function AboutStory() {
           {PRODUCTS.map((p) => (
             <li key={p.slug}>
               <Link href={p.href} className="card card-lift about-product">
-                <img src={ART(p.slug)} alt="" width={800} height={800} loading="lazy" />
                 <span className="block p-3">
                   <span className="block font-bold">{p.name}</span>
                   <span className="block text-sm text-muted">{p.note}</span>

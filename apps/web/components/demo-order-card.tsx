@@ -13,7 +13,7 @@ export function DemoOrderCard({ order, onAdvance }: { order: DemoOrder; onAdvanc
     <article className="card p-4" aria-label={order.id}>
       <header className="flex flex-wrap items-center gap-2">
         <h3 className="font-latin text-lg font-bold">{order.id}</h3>
-        <span className="rounded-full bg-accent-100 px-2.5 py-0.5 text-xs font-bold text-brand-700">ডেমো অর্ডার</span>
+        <span className="rounded-full bg-accent-100 px-2.5 py-0.5 text-xs font-bold text-brand-700">ডেমো</span>
         <span className="text-sm font-semibold">{METHOD_LABEL[order.method]}</span>
       </header>
       <p className="mt-1 font-semibold text-brand-700" role="status">

@@ -3,6 +3,8 @@ import { fetchAllProducts, serverGet, type Area, type Category, type ProductList
 import { ProductGrid } from '@/components/product-card';
 import { CatalogBrowser } from '@/components/catalog-browser';
 import { ParallaxScene, Tilt } from '@/components/pointer-motion';
+import { DEMO_BRANDING } from '@/components/developer-credit';
+import { BulkPromo } from '@/components/bulk-promo';
 
 interface Home {
   banners: { id: string; titleBn: string; altBn: string; imageUrl: string; linkUrl: string | null }[];
@@ -101,6 +103,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         <CatalogBrowser products={products} categories={categories ?? []} initialCategory={typeof sp.category === 'string' ? sp.category : ''} initialQ={typeof sp.q === 'string' ? sp.q.slice(0, 80) : ''} initialSort={typeof sp.sort === 'string' ? sp.sort : ''} />
       </section>
 
+      {DEMO_BRANDING && <BulkPromo />}
+
+      {!DEMO_BRANDING && (
       <section className="card reveal mt-8 p-4" aria-labelledby="area-title-home">
         <h2 id="area-title-home" className="text-lg font-bold">
           যেসব এলাকায় ডেলিভারি দেওয়া হয়
@@ -117,6 +122,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
           <p className="mt-2 text-muted">ডেলিভারি এলাকার তালিকা শীঘ্রই প্রকাশ করা হবে।</p>
         )}
       </section>
+      )}
 
       {(hasPage('about') || hasPage('faq')) && (
         <section className="mt-6 grid gap-3 md:grid-cols-2">

@@ -275,7 +275,7 @@
    "nameEn": "Bati Doi",
    "kind": "cup",
    "nameVerified": true,
-   "outerCity": "pending_confirmation",
+   "outerCity": "approved",
    "source": "Doi list no. 03"
   },
   {
@@ -285,7 +285,7 @@
    "nameEn": "Premium Doi",
    "kind": "cup",
    "nameVerified": true,
-   "outerCity": "pending_confirmation",
+   "outerCity": "approved",
    "source": "Doi list no. 04"
   },
   {
@@ -305,7 +305,7 @@
    "nameEn": "Premium Cup Doi",
    "kind": "cup",
    "nameVerified": true,
-   "outerCity": "pending_confirmation",
+   "outerCity": "approved",
    "source": "Doi list no. 06"
   },
   {
@@ -315,7 +315,7 @@
    "nameEn": "Cup Doi",
    "kind": "cup",
    "nameVerified": true,
-   "outerCity": "pending_confirmation",
+   "outerCity": "approved",
    "source": "Doi list no. 07"
   },
   {

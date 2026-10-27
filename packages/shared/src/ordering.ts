@@ -18,7 +18,7 @@ export const ELIGIBILITY_RULES = {
   /** every product in these categories is eligible unless it is flagged otherwise */
   outerCityWholeCategories: ['bakery'],
   /** only products flagged outerCityStatus = "approved" are eligible */
-  outerCityApprovedOnlyCategories: ['dairy-sweets'],
+  outerCityApprovedOnlyCategories: ['dairy-sweets', 'doi-dairy'],
 } as const;
 
 export interface EligibilityProduct {

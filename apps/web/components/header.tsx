@@ -4,6 +4,7 @@ import { SearchBox } from './search-box';
 import { AreaBar, CartButton } from './header-client';
 import { LangToggle } from './lang';
 import { ZoneBar } from './zone-bar';
+import { DEMO_BRANDING } from './developer-credit';
 
 /** Royal-blue header with the supplied logo lockup (shown unmodified on its own white chip). */
 export function Header() {
@@ -28,7 +29,7 @@ export function Header() {
           <CartButton />
         </nav>
       </div>
-      <AreaBar />
+      {!DEMO_BRANDING && <AreaBar />}
       <ZoneBar />
     </header>
   );

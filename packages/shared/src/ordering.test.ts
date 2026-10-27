@@ -14,12 +14,13 @@ describe('zoneEligibility', () => {
   it('In City accepts every category and flag', () => {
     for (const p of [bakery, sweetPlain, sweetApproved, { categorySlug: 'doi-dairy' }, { categorySlug: 'x', outerCityStatus: 'pending_verification' as const }]) expect(zoneEligibility(p, 'IN_CITY').eligible).toBe(true);
   });
-  it('Outer City: all Bakery, only approved Dairy Sweets, nothing else', () => {
+  it('Outer City: all Bakery, only approved Dairy Sweets and Doi, nothing else', () => {
     expect(zoneEligibility(bakery, 'OUTER_CITY')).toEqual({ eligible: true, reason: 'category_rule' });
     expect(zoneEligibility(sweetApproved, 'OUTER_CITY')).toEqual({ eligible: true, reason: 'approved_item' });
     expect(zoneEligibility(sweetPlain, 'OUTER_CITY')).toEqual({ eligible: false, reason: 'item_not_approved' });
-    expect(zoneEligibility({ categorySlug: 'doi-dairy' }, 'OUTER_CITY')).toEqual({ eligible: false, reason: 'category_not_approved' });
-    expect(zoneEligibility({ categorySlug: 'doi-dairy', outerCityStatus: 'approved' }, 'OUTER_CITY').eligible).toBe(false); // flag alone never enables a non-approved category
+    expect(zoneEligibility({ categorySlug: 'doi-dairy' }, 'OUTER_CITY')).toEqual({ eligible: false, reason: 'item_not_approved' });
+    expect(zoneEligibility({ categorySlug: 'doi-dairy', outerCityStatus: 'approved' }, 'OUTER_CITY').eligible).toBe(true); // the four Doi items confirmed for Outer Sylhet
+    expect(zoneEligibility({ categorySlug: 'grocery', outerCityStatus: 'approved' }, 'OUTER_CITY').eligible).toBe(false); // a flag alone never enables a category that is not listed
   });
   it('uncertain flags are never enabled, even inside an eligible category or when ticked', () => {
     expect(zoneEligibility({ categorySlug: 'bakery', outerCityStatus: 'pending_verification' }, 'OUTER_CITY').eligible).toBe(false);
