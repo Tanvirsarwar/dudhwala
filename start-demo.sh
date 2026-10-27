@@ -13,6 +13,7 @@ export NEXT_PUBLIC_API_URL=/v1
 export API_PROXY_TARGET=http://127.0.0.1:4010
 export API_INTERNAL_URL=http://127.0.0.1:4010/v1
 export NEXT_TELEMETRY_DISABLED=1
+export NEXT_PUBLIC_DEMO_BRANDING=1   # editorial About page + developer credit (demo build only)
 export npm_config_package_manager_strict=false   # tolerate a different pnpm 9/10 (e.g. from Nix)
 
 if [ ! -d node_modules ]; then

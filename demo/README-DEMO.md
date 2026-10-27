@@ -1,4 +1,4 @@
-# Dudhwala – local client demo (V2.1: glass UI, EN | বাংলা, delivery-area picker)
+# Dudhwala – local client demo (V2.2: glass UI, EN | বাংলা, delivery-area picker, About story, PETRA credit)
 
 A **temporary, offline-capable demo** of the Dudhwala storefront and admin on your own PC.
 It uses the real Premium UI code with a small **mock API** that serves **invented sample data**.
@@ -27,6 +27,9 @@ First run installs dependencies and builds the two sites (a few minutes). Later 
 | Storefront | http://127.0.0.1:3100 |
 | Admin | http://127.0.0.1:3101 – login `admin@demo.local` / password `demo1234` |
 | Mock API check | http://127.0.0.1:4010/v1/health/ready |
+
+## About page and developer credit (V2.2)
+Footer → "দুধওয়ালা সম্পর্কে" / "About Dudhwala" opens an editorial About page. Its story is limited to what a 2021 report in The Business Standard states (a Sylhet dairy venture begun by four dairy farmers, starting with raw milk and growing into dairy products and traditional sweets). It is historical background, not a statement about current operations; the page says so. Product pictures are the demo's own generated artwork. The footer and the end of the About page carry a plain (non-clickable) "Designed & Developed by PETRA Software Solutions" credit with the supplied PETRA logo, unmodified.
 
 ## Delivery area picker
 Header → "Choose area" opens a card picker. Pick one card, then press **Confirm delivery area** (ডেলিভারি এলাকা নিশ্চিত করুন): the choice is saved to the cart and the page refreshes with area-specific availability. The demo data has area names only (no delivery fees or service status), so none are shown.

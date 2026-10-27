@@ -1,3 +1,4 @@
+import { DeveloperCredit } from './developer-credit';
 import Link from 'next/link';
 import { serverGet } from '@/lib/api';
 
@@ -36,6 +37,9 @@ export async function Footer() {
           </ul>
         </nav>
         <p className="text-sm text-sky-300">© {new Date().getFullYear()} Dudhwala Food Products</p>
+      </div>
+      <div className="mx-auto max-w-6xl px-4 pb-8">
+        <DeveloperCredit size="footer" />
       </div>
     </footer>
   );
