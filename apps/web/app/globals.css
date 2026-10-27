@@ -711,3 +711,73 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .about-tile { transition: none; }
 }
+
+/* ───────────── V2.3: scroll stability (compositing) + compact sizing ─────────────
+   Cause of cards vanishing while scrolling on real GPUs (see docs): too many simultaneous compositor-heavy layers.
+   Measured on V2.2 home page: 39 backdrop-filter elements, 51 transformed elements, 21 preserve-3d elements,
+   26 finished animations still applying (fill-mode both) and a fixed body background (repainted every scroll frame).
+   Fixes below keep the look: blur only on a few large surfaces, 3D only while hovered, fixed background on its own layer. */
+body {
+  background: none;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(1100px 560px at 8% -8%, rgba(5, 178, 238, 0.2), transparent 60%),
+    radial-gradient(900px 520px at 104% 2%, rgba(45, 48, 143, 0.16), transparent 58%),
+    radial-gradient(1000px 640px at 50% 112%, rgba(255, 206, 140, 0.3), transparent 62%),
+    linear-gradient(180deg, #f1f4fb 0%, #f7f5f0 58%, #f2efe7 100%);
+}
+@layer components {
+  /* repeated cards: translucent surface without per-card backdrop blur (the blur sat over a near-uniform gradient) */
+  .card,
+  .btn-ghost {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .card {
+    background: rgba(255, 255, 255, 0.76);
+    border-radius: 16px;
+  }
+  /* entrance animation must not keep applying after it ends */
+  .reveal {
+    animation-fill-mode: backwards;
+  }
+  /* 3D tilt only while hovered (Tilt sets data-active); idle cards carry no transform */
+  .tilt {
+    transform: none;
+    transform-style: flat;
+  }
+  .tilt[data-active] {
+    transform: perspective(900px) rotateX(calc(var(--rx, 0) * 1deg)) rotateY(calc(var(--ry, 0) * 1deg));
+  }
+  .btn-compact {
+    min-height: 38px;
+    padding: 0 0.8rem;
+    font-size: 0.8125rem;
+  }
+  @media (pointer: coarse) {
+    .btn-compact {
+      min-height: 44px;
+    }
+  }
+}
+
+/* compact sizing (V2.3) */
+@layer components {
+  .area-card { min-height: 58px; padding: 0.6rem 0.85rem; border-radius: 16px; gap: 0.7rem; }
+  .area-pin { width: 36px; height: 36px; border-radius: 12px; }
+  .btn-confirm { min-height: 46px; }
+  .about-hero { padding: 1.25rem; gap: 1rem; }
+  @media (min-width: 768px) { .about-hero { padding: 1.75rem 2rem; } }
+  .about-art { min-height: 210px; }
+  .about-section { margin-top: 1.75rem; }
+  .about-h2 { font-size: 1.25rem; margin-bottom: 0.5rem; }
+  .about-step { padding: 0.75rem 0.9rem; border-radius: 16px; }
+  .about-close { margin-top: 1.75rem; padding: 1.5rem 1rem; border-radius: 22px; }
+  .about-products { gap: 0.6rem; }
+}

@@ -15,7 +15,7 @@ export function QuickAdd({ slug, variantId, name }: { slug: string; variantId: s
 
   if (!variantId) {
     return (
-      <Link href={`/p/${slug}`} className="btn btn-ghost w-full text-sm" aria-label={`${name} — অপশন দেখুন`}>
+      <Link href={`/p/${slug}`} className="btn btn-ghost btn-compact w-full" aria-label={`${name} — অপশন দেখুন`}>
         অপশন দেখুন
       </Link>
     );
@@ -40,7 +40,7 @@ export function QuickAdd({ slug, variantId, name }: { slug: string; variantId: s
 
   return (
     <>
-      <button type="button" onClick={() => void add()} aria-busy={state === 'busy'} className={`btn w-full text-sm ${state === 'done' ? 'btn-accent' : 'btn-primary'}`} aria-label={`${name} — কার্টে যোগ করুন`}>
+      <button type="button" onClick={() => void add()} aria-busy={state === 'busy'} className={`btn btn-compact w-full ${state === 'done' ? 'btn-accent' : 'btn-primary'}`} aria-label={`${name} — কার্টে যোগ করুন`}>
         {state === 'done' ? '✓ যোগ হয়েছে' : state === 'busy' ? 'যোগ হচ্ছে' : 'কার্টে যোগ করুন'}
       </button>
       <span role="status" className="sr-only">

@@ -33,10 +33,10 @@ export function AboutStory() {
       <section className="about-hero reveal" aria-labelledby="about-title">
         <div className="about-hero-text">
           <p className="about-eyebrow">আমাদের গল্প</p>
-          <h1 id="about-title" className="text-3xl font-bold leading-tight md:text-5xl">
+          <h1 id="about-title" className="text-3xl font-bold leading-tight md:text-[2.5rem]">
             সিলেটের খামার থেকে, আপনার টেবিলে
           </h1>
-          <p className="mt-4 max-w-xl text-lg text-muted">দুধওয়ালার যাত্রা দুগ্ধ খামারিদের হাত ধরে — খাঁটি দুধ থেকে দই, ঘি আর ঐতিহ্যবাহী মিষ্টি পর্যন্ত। তাজা স্বাদ আর ভরসাই আমাদের পথ।</p>
+          <p className="mt-3 max-w-xl text-base text-muted">দুধওয়ালার যাত্রা দুগ্ধ খামারিদের হাত ধরে — খাঁটি দুধ থেকে দই, ঘি আর ঐতিহ্যবাহী মিষ্টি পর্যন্ত। তাজা স্বাদ আর ভরসাই আমাদের পথ।</p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link href="/" className="btn btn-primary">
               পণ্য দেখুন
@@ -54,7 +54,7 @@ export function AboutStory() {
         <h2 id="story-title" className="about-h2">
           আমাদের গল্প
         </h2>
-        <div className="card p-6 md:p-8">
+        <div className="card p-5 md:p-6">
           <p className="leading-8">দ্য বিজনেস স্ট্যান্ডার্ডের ২০২১ সালের একটি প্রতিবেদন অনুযায়ী, সিলেটের দুধওয়ালার যাত্রা শুরু হয়েছিল চারজন দুগ্ধ খামারির উদ্যোগে।</p>
           <p className="mt-3 leading-8">প্রথমে তাঁরা কাঁচা দুধ সরবরাহ করতেন। পরে শুধু কাঁচা দুধের বাইরে গিয়ে দই, ঘি, পনির ও ঐতিহ্যবাহী মিষ্টির মতো দুগ্ধজাত পণ্য তৈরির পথে এগিয়েছেন।</p>
           <p className="mt-3 leading-8">প্রতিবেদনে খেজুরের গুড় দিয়ে তৈরি মৌসুমি মিষ্টির কথাও এসেছে, এবং খামার থেকে দুধ সংগ্রহ ও পণ্য তৈরিতে পরিচ্ছন্নতা ও মানের দিকে নজর দেওয়ার কথা বলা হয়েছে।</p>
@@ -102,7 +102,7 @@ export function AboutStory() {
         <p className="mb-4 text-sm text-muted">ব্র্যান্ডের উদ্দেশ্য, স্বতন্ত্রভাবে প্রত্যয়িত দাবি নয়।</p>
         <ul className="grid gap-3 sm:grid-cols-2">
           {VALUES.map((v) => (
-            <li key={v.t} className="card p-5">
+            <li key={v.t} className="card p-4">
               <h3 className="font-bold">{v.t}</h3>
               <p className="mt-1 text-sm text-muted">{v.d}</p>
             </li>

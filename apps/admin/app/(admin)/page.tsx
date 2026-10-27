@@ -31,19 +31,19 @@ export default function DashboardPage() {
         <Loading error={error} />
       ) : (
         <>
-          <section aria-label="আজকের সারাংশ" className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <section aria-label="আজকের সারাংশ" className="mb-6 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
             <Stat label="আজকের অর্ডার" value={String(data.todayOrders)} />
             <Stat label="আজকের বিক্রি (মোট)" value={taka(data.todayRevenuePoisha)} />
             <Stat label="দেরি হওয়া অর্ডার" value={String(data.lateOrders)} tone={data.lateOrders ? 'bad' : undefined} href="/orders" />
             <Stat label="কম স্টক" value={String(data.lowStockItems)} tone={data.lowStockItems ? 'warn' : undefined} href="/inventory" />
           </section>
           <h2 className="mb-2 font-semibold">চলমান অর্ডার</h2>
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
             {OPEN.map((st) => (
               <li key={st}>
-                <Link href={`/orders?status=${st}`} className="card block p-3 hover:bg-brand-100">
+                <Link href={`/orders?status=${st}`} className="card block p-2.5 hover:bg-brand-100">
                   <p className="text-sm text-muted">{ORDER_STATUS[st]}</p>
-                  <p className="text-2xl font-bold text-brand-700">{data.openByStatus[st] ?? 0}</p>
+                  <p className="text-xl font-bold text-brand-700">{data.openByStatus[st] ?? 0}</p>
                 </Link>
               </li>
             ))}
@@ -59,14 +59,14 @@ function Stat({ label, value, tone, href }: { label: string; value: string; tone
   const body = (
     <>
       <p className="text-sm text-muted">{label}</p>
-      <p className={`text-2xl font-bold ${tone === 'bad' ? 'text-danger' : tone === 'warn' ? 'text-warning' : 'text-brand-700'}`}>{value}</p>
+      <p className={`text-xl font-bold ${tone === 'bad' ? 'text-danger' : tone === 'warn' ? 'text-warning' : 'text-brand-700'}`}>{value}</p>
     </>
   );
   return href ? (
-    <Link href={href} className="card block p-4 hover:bg-brand-100">
+    <Link href={href} className="card block p-3 hover:bg-brand-100">
       {body}
     </Link>
   ) : (
-    <div className="card p-4">{body}</div>
+    <div className="card p-3">{body}</div>
   );
 }

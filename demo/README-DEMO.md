@@ -1,4 +1,4 @@
-# Dudhwala – local client demo (V2.2: glass UI, EN | বাংলা, delivery-area picker, About story, PETRA credit)
+# Dudhwala – local client demo (V2.3: glass UI, EN | বাংলা, delivery-area picker, About story, PETRA credit, compact cards)
 
 A **temporary, offline-capable demo** of the Dudhwala storefront and admin on your own PC.
 It uses the real Premium UI code with a small **mock API** that serves **invented sample data**.
@@ -27,6 +27,9 @@ First run installs dependencies and builds the two sites (a few minutes). Later 
 | Storefront | http://127.0.0.1:3100 |
 | Admin | http://127.0.0.1:3101 – login `admin@demo.local` / password `demo1234` |
 | Mock API check | http://127.0.0.1:4010/v1/health/ready |
+
+## V2.3: scroll stability and compact cards
+Cards could blank out while scrolling on real GPUs because the page stacked too many compositor-heavy layers (measured on V2.2: 39 blurred surfaces, 51 transformed elements, 21 3D contexts, 26 finished animations still applied, and a fixed background repainted every frame). V2.3 keeps blur only on the header, panels and dialogs, applies the 3D tilt only while a card is hovered, stops entrance animations from lingering after they finish, and paints the background on one fixed layer. Product cards, dashboard tiles and About cards are also smaller (5 product cards per row on a 1280 px desktop instead of 4). If you still see a card flicker on your machine, tell me the browser and GPU.
 
 ## About page and developer credit (V2.2)
 Footer → "দুধওয়ালা সম্পর্কে" / "About Dudhwala" opens an editorial About page. Its story is limited to what a 2021 report in The Business Standard states (a Sylhet dairy venture begun by four dairy farmers, starting with raw milk and growing into dairy products and traditional sweets). It is historical background, not a statement about current operations; the page says so. Product pictures are the demo's own generated artwork. The footer and the end of the About page carry a plain (non-clickable) "Designed & Developed by PETRA Software Solutions" credit with the supplied PETRA logo, unmodified.

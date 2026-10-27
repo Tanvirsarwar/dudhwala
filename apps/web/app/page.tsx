@@ -24,14 +24,14 @@ export default async function HomePage() {
   return (
     <>
       {/* Hero: brand band. Copy is from the supplied invitation; no invented offers or awards. */}
-      <section className="hero-bg full-bleed relative overflow-hidden px-4 pb-12 pt-8 text-white md:pb-16 md:pt-14" aria-labelledby="hero-title">
+      <section className="hero-bg full-bleed relative overflow-hidden px-4 pb-9 pt-6 text-white md:pb-12 md:pt-9" aria-labelledby="hero-title">
         <ParallaxScene className="mx-auto grid max-w-6xl items-center gap-8 min-[1184px]:px-4 md:grid-cols-[1.3fr_1fr]">
           {/* Decorative depth layers: pure CSS shapes, moved by pointer on fine-pointer devices only. */}
           <span aria-hidden className="depth-layer pointer-events-none absolute -right-20 -top-10 h-56 w-56 rounded-full bg-accent-500/15 md:-right-16 md:top-4 md:h-72 md:w-72 md:bg-accent-500/20 [--depth:28]" />
           <span aria-hidden className="depth-layer pointer-events-none absolute bottom-0 left-1/3 hidden h-40 w-40 rounded-full bg-white/10 md:block [--depth:-18]" />
           <div className="relative">
             <p className="reveal font-latin text-sm uppercase tracking-[0.2em] text-sky-300">Serving Purity</p>
-            <h1 id="hero-title" className="reveal mt-2 text-3xl font-bold leading-tight md:text-5xl" style={{ ['--i' as string]: 1 }}>
+            <h1 id="hero-title" className="reveal mt-2 text-3xl font-bold leading-tight md:text-[2.75rem]" style={{ ['--i' as string]: 1 }}>
               সিলেটের নিজস্ব দুগ্ধজাত পণ্য,
               <br />
               <span className="text-accent-500">আপনার দোরগোড়ায়</span>
@@ -85,7 +85,7 @@ export default async function HomePage() {
       )}
 
       {categories && categories.length > 0 && (
-        <section className="reveal mt-8" aria-labelledby="cat-title">
+        <section className="reveal mt-6" aria-labelledby="cat-title">
           <h2 id="cat-title" className="text-xl font-bold">
             ক্যাটাগরি
           </h2>
@@ -104,7 +104,7 @@ export default async function HomePage() {
       {collections
         .filter((c) => c.products.length > 0)
         .map((c) => (
-          <section key={c.slug} className="mt-8" aria-labelledby={`col-${c.slug}`}>
+          <section key={c.slug} className="mt-6" aria-labelledby={`col-${c.slug}`}>
             <h2 id={`col-${c.slug}`} className="mb-3 text-xl font-bold">
               {c.titleBn}
             </h2>
@@ -124,7 +124,7 @@ export default async function HomePage() {
         <ProductGrid products={products?.data ?? []} />
       </section>
 
-      <section className="card reveal mt-10 p-5" aria-labelledby="area-title-home">
+      <section className="card reveal mt-8 p-4" aria-labelledby="area-title-home">
         <h2 id="area-title-home" className="text-lg font-bold">
           যেসব এলাকায় ডেলিভারি দেওয়া হয়
         </h2>
