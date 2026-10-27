@@ -18,10 +18,12 @@ try {
 const carts = new Map(); // cookie id -> { areaId, lines: Map<variantId, qty> }
 const variants = new Map(products.flatMap((p) => p.variants.map((v) => [v.id, { p, v }])));
 const imgUrl = (p) => `/v1/media/demo/${p.slug}.svg`;
-const avail = (v) => (v.stock > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK');
+// stock === null means "not tracked in this demo": shown as available, never as a quantity
+const avail = (v) => (v.stock === null || v.stock > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK');
+const minPrice = (p) => { const x = p.variants.map((v) => v.pricePoisha).filter((n) => n !== null); return x.length ? Math.min(...x) : null; };
 
 // ── illustrations (own artwork, generated; no third-party photos) ──
-const HUE = { milk: 214, curd: 190, 'ghee-butter': 42, sweets: 340, cheese: 52, bakery: 28, snacks: 8, gur: 34, biscuits: 160, grocery: 100 };
+const HUE = { 'dairy-sweets': 340, 'doi-dairy': 200, bakery: 28 };
 function art(p) {
   const h = HUE[p.categorySlug] ?? 210;
   const glyph = {
@@ -42,8 +44,9 @@ function art(p) {
 const cardOf = (p) => ({
   id: p.id, slug: p.slug, nameBn: p.nameBn, nameEn: p.nameEn, categorySlug: p.categorySlug,
   image: { url: imgUrl(p), altBn: p.nameBn },
-  fromPricePoisha: Math.min(...p.variants.map((v) => v.pricePoisha)),
-  inStock: p.variants.some((v) => v.stock > 0),
+  outerCityStatus: p.outerCityStatus,
+  fromPricePoisha: minPrice(p),
+  inStock: p.variants.some((v) => avail(v) === 'IN_STOCK'),
   variants: p.variants.map((v) => ({ id: v.id, labelBn: v.labelBn, labelEn: null, pricePoisha: v.pricePoisha, compareAtPoisha: v.compareAtPoisha, availability: avail(v) })),
 });
 function list(q) {
@@ -52,8 +55,8 @@ function list(q) {
   const col = collections.find((c) => c.slug === q.collection);
   if (q.collection) r = col ? r.filter((p) => col.slugs.includes(p.slug)) : [];
   if (q.q) { const t = q.q.toLowerCase(); r = r.filter((p) => p.nameBn.toLowerCase().includes(t) || p.nameEn.toLowerCase().includes(t)); }
-  if (q.inStock === 'true') r = r.filter((p) => p.variants.some((v) => v.stock > 0));
-  const price = (p) => Math.min(...p.variants.map((v) => v.pricePoisha));
+  if (q.inStock === 'true') r = r.filter((p) => p.variants.some((v) => avail(v) === 'IN_STOCK'));
+  const price = (p) => minPrice(p) ?? Number.MAX_SAFE_INTEGER; // unknown prices sort last
   if (q.sort === 'price_asc') r.sort((a, b) => price(a) - price(b));
   else if (q.sort === 'price_desc') r.sort((a, b) => price(b) - price(a));
   else if (q.sort === 'newest') r.sort((a, b) => b.createdOrder - a.createdOrder);
@@ -62,7 +65,7 @@ function list(q) {
 }
 function detail(p, areaChecked) {
   return {
-    id: p.id, slug: p.slug, nameBn: p.nameBn, nameEn: p.nameEn,
+    id: p.id, slug: p.slug, nameBn: p.nameBn, nameEn: p.nameEn, outerCityStatus: p.outerCityStatus,
     category: { slug: p.category.slug, nameBn: p.category.nameBn, nameEn: p.category.nameEn },
     images: [{ url: imgUrl(p), altBn: p.nameBn, altEn: p.nameEn, width: 800, height: 800 }],
     content: { descriptionBn: p.descriptionBn, descriptionEn: null },
@@ -73,14 +76,15 @@ function detail(p, areaChecked) {
 function cartView(c) {
   const lines = [...c.lines].map(([id, quantity]) => {
     const { p, v } = variants.get(id);
-    return { variantId: id, productSlug: p.slug, nameBn: p.nameBn, nameEn: p.nameEn, labelBn: v.labelBn, image: imgUrl(p), unitPricePoisha: v.pricePoisha, quantity, lineTotalPoisha: v.pricePoisha * quantity, available: v.stock > 0, maxQty: v.maxQty };
+    return { variantId: id, productSlug: p.slug, nameBn: p.nameBn, nameEn: p.nameEn, labelBn: v.labelBn, image: imgUrl(p), unitPricePoisha: v.pricePoisha, quantity, lineTotalPoisha: v.pricePoisha === null ? null : v.pricePoisha * quantity, available: avail(v) === 'IN_STOCK', outerCityStatus: p.outerCityStatus, categorySlug: p.categorySlug, maxQty: v.maxQty };
   });
-  return { id: c.id, areaId: c.areaId, couponCode: null, lines, subtotalPoisha: lines.reduce((s, l) => s + l.lineTotalPoisha, 0), itemCount: lines.reduce((s, l) => s + l.quantity, 0), warnings: [], areaChecked: Boolean(c.areaId) };
+  return { id: c.id, areaId: c.areaId, couponCode: null, lines, subtotalPoisha: lines.some((l) => l.lineTotalPoisha === null) ? null : lines.reduce((s, l) => s + (l.lineTotalPoisha ?? 0), 0), itemCount: lines.reduce((s, l) => s + l.quantity, 0), warnings: [], areaChecked: Boolean(c.areaId) };
 }
 
 // ── admin (read-only demo) ──
 const adminMe = { user: { id: '00000000-0000-4000-8000-000000000001', fullName: 'ডেমো সুপার অ্যাডমিন', email: DEMO_ADMIN.login, phone: null, mfaEnabled: true }, role: 'SUPER_ADMIN', outletId: null, mfaVerified: true };
-const inv = (o) => products.flatMap((p) => p.variants.map((v, i) => ({ variantId: v.id, sku: v.sku, name: `${p.nameBn} · ${v.labelBn}`, onHand: v.stock, reserved: i % 3, onlineBuffer: 2, availableOnline: Math.max(0, v.stock - (i % 3) - 2), lowStockThreshold: 10, lowStock: v.stock < 10, isListed: true, version: 1 })));
+// No stock data exists yet, so the admin stock list is intentionally empty rather than invented.
+const inv = () => [];
 const adminProduct = (p) => ({ id: p.id, categoryId: p.category.id, slug: p.slug, nameBn: p.nameBn, nameEn: p.nameEn, descriptionBn: p.descriptionBn, ingredientsBn: null, allergensBn: null, storageBn: null, shelfLifeBn: null, status: 'ACTIVE', contentApprovedAt: '2026-01-01T00:00:00.000Z', category: { slug: p.category.slug, nameBn: p.category.nameBn }, variants: p.variants.map((v) => ({ id: v.id, sku: v.sku, labelBn: v.labelBn, labelEn: null, packSize: v.packSize, packUnit: v.packUnit, pricePoisha: v.pricePoisha, compareAtPoisha: v.compareAtPoisha, status: 'ACTIVE', sortOrder: v.sortOrder })), images: [{ id: `${p.id}-img`, url: imgUrl(p), altBn: p.nameBn, sortOrder: 0 }] });
 function ordersView(q) {
   let r = [...orders];
@@ -116,7 +120,7 @@ createServer(async (req, res) => {
     if (path === '/health/ready' || path === '/health/live') return send(res, 200, { status: 'ok', demo: true });
     if (path === '/auth/csrf') return send(res, 200, { csrfToken: 'demo-token' });
     let mm;
-    if ((mm = path.match(/^\/media\/demo\/([a-z-]+)\.svg$/))) {
+    if ((mm = path.match(/^\/media\/demo\/([a-z0-9-]+)\.svg$/))) {
       const p = products.find((x) => x.slug === mm[1]);
       return p ? send(res, 200, art(p), { 'cache-control': 'public, max-age=3600' }) : err(res, 404, 'NOT_FOUND', 'Not found');
     }
