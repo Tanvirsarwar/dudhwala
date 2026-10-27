@@ -1,4 +1,4 @@
-# Dudhwala – local client demo
+# Dudhwala – local client demo (V2: glass UI + EN | বাংলা)
 
 A **temporary, offline-capable demo** of the Dudhwala storefront and admin on your own PC.
 It uses the real Premium UI code with a small **mock API** that serves **invented sample data**.
@@ -16,6 +16,7 @@ It uses the real Premium UI code with a small **mock API** that serves **invente
 | System | Command |
 |---|---|
 | Linux / macOS | `./start-demo.sh` (run `chmod +x start-demo.sh` once if needed) |
+| **NixOS** | `./start-demo-nixos.sh` (uses `nix-shell -p nodejs_22 pnpm steam-run`; see the NixOS note below) |
 | Windows | double-click `start-demo.bat` (or run it in Command Prompt) |
 
 First run installs dependencies and builds the two sites (a few minutes). Later runs start in seconds.
@@ -26,6 +27,12 @@ First run installs dependencies and builds the two sites (a few minutes). Later 
 | Storefront | http://127.0.0.1:3100 |
 | Admin | http://127.0.0.1:3101 – login `admin@demo.local` / password `demo1234` |
 | Mock API check | http://127.0.0.1:4010/v1/health/ready |
+
+## Language: EN | বাংলা
+The `EN | বাংলা` switch is in the storefront header and the admin top bar (and on the admin login page). The choice is remembered in the browser and survives refresh and navigation. English uses Montserrat; Bangla uses Hind Siliguri with Noto Sans Bengali as fallback. The storefront (home, categories, search, product pages, cart, area picker, sign-in) and the main admin screens (menu, dashboard, orders list, products, stock, branches) are translated. Rarely used admin screens (delivery rules, coupons, payments, reports, staff forms, long help texts) remain in Bangla.
+
+## NixOS note
+NixOS cannot run the prebuilt native binaries in `node_modules` directly. `start-demo-nixos.sh` wraps the normal script in `steam-run`. If that does not work on your machine, enable `programs.nix-ld.enable = true;` in `configuration.nix` (then rebuild) and run `./start-demo.sh` inside `nix-shell -p nodejs_22 pnpm`. **This NixOS path was not tested** (no NixOS machine was available when this package was made).
 
 ## What works
 - Storefront: home with hero and collection, categories, product listing, **search** (Bangla or English), sorting, product pages with pack sizes, **add to cart**, cart quantities, delivery-area picker, information pages, out-of-stock items, offer badges.

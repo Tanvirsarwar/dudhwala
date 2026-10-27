@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import { SearchIcon, UserIcon } from './icons';
 import { AreaBar, CartButton } from './header-client';
+import { LangToggle } from './lang';
 
 /** Royal-blue header with the supplied logo lockup (shown unmodified on its own white chip). */
 export function Header() {
   return (
-    <header className="sticky top-0 z-30 bg-brand-600 text-white shadow-sm">
+    <header className="sticky top-0 z-30 glass-nav text-white">
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2 focus:text-brand-700">
         মূল বিষয়ে যান
       </a>
@@ -23,6 +24,7 @@ export function Header() {
           </button>
         </form>
         <nav className="ml-auto flex items-center gap-1" aria-label="অ্যাকাউন্ট ও কার্ট">
+          <LangToggle />
           <Link href="/search" className="inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-brand-500 md:hidden" aria-label="খুঁজুন">
             <SearchIcon />
           </Link>

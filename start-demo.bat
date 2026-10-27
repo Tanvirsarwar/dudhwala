@@ -13,6 +13,7 @@ set NEXT_PUBLIC_API_URL=/v1
 set API_PROXY_TARGET=http://127.0.0.1:4010
 set API_INTERNAL_URL=http://127.0.0.1:4010/v1
 set NEXT_TELEMETRY_DISABLED=1
+set npm_config_package_manager_strict=false
 
 if not exist node_modules (
   echo == Installing dependencies - first run only, needs internet ==

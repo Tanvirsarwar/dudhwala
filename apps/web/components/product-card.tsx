@@ -3,13 +3,16 @@ import type { ProductCardData } from '@/lib/api';
 import { taka } from '@/lib/format';
 import { ProductImage } from './product-image';
 import { QuickAdd } from './quick-add';
+import { Tilt } from './pointer-motion';
 
 export function ProductCard({ p, index = 0 }: { p: ProductCardData; index?: number }) {
   const multi = p.variants.length > 1;
   const single = !multi && p.inStock && p.variants[0]?.availability === 'IN_STOCK' ? p.variants[0].id : null;
   const offer = p.variants.some((v) => v.compareAtPoisha && v.compareAtPoisha > v.pricePoisha);
   return (
-    <li className="card card-lift reveal flex flex-col overflow-hidden" style={{ ['--i' as string]: Math.min(index, 8) }}>
+    <li className="reveal" style={{ ['--i' as string]: Math.min(index, 8) }}>
+      <Tilt max={4} className="h-full">
+      <div className="card card-lift flex h-full flex-col overflow-hidden">
       <Link href={`/p/${p.slug}`} className="group flex flex-1 flex-col">
         <div className={`relative aspect-square overflow-hidden bg-white ${p.inStock ? '' : 'grayscale'}`}>
           <ProductImage src={p.image?.url ?? null} alt={p.image?.altBn ?? p.nameBn} />
@@ -27,6 +30,8 @@ export function ProductCard({ p, index = 0 }: { p: ProductCardData; index?: numb
         </div>
       </Link>
       <div className="p-3 pt-1">{p.inStock ? <QuickAdd slug={p.slug} variantId={single} name={p.nameBn} /> : <span className="btn btn-ghost w-full text-sm" aria-disabled="true">স্টকে নেই</span>}</div>
+      </div>
+      </Tilt>
     </li>
   );
 }

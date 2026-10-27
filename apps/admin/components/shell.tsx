@@ -6,6 +6,7 @@ import { useState } from 'react';
 import type { Permission } from '@dudhwala/shared';
 import { useSession } from '@/lib/session';
 import { ROLE } from '@/lib/format';
+import { LangToggle } from './lang';
 
 interface NavItem {
   href: string;
@@ -62,7 +63,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:p-2">
         মূল অংশে যান
       </a>
-      <aside className={`${open ? 'block' : 'hidden'} border-r border-line bg-white md:block`}>
+      <aside className={`${open ? 'block' : 'hidden'} glass-side border-r border-line md:block`}>
         <div className="flex items-center gap-2 border-b border-line px-4 py-3">
           <img src="/logo.png" alt="দুধওয়ালা" width={36} height={36} className="h-9 w-9 rounded" />
           <div className="leading-tight">
@@ -98,7 +99,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="min-w-0">
-        <header className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b border-line bg-white px-4 py-2">
+        <header className="sticky top-0 z-10 flex flex-wrap items-center gap-2 glass-bar border-b border-line px-4 py-2">
           <button type="button" className="btn btn-ghost btn-sm md:hidden" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
             মেনু
           </button>
@@ -120,6 +121,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             </span>
           )}
           <div className="ml-auto flex items-center gap-3 text-sm">
+            <LangToggle />
             <span className="hidden text-muted sm:inline">
               {s.me.user.fullName ?? s.me.user.email} · {ROLE[s.me.role]}
             </span>

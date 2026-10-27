@@ -1,4 +1,6 @@
 export * from './money.js';
+export * from './i18n-en.js';
+export { EN_DICT } from './i18n-dict.js';
 export * from './phone.js';
 export * from './order-state.js';
 export * from './payment-state.js';

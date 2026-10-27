@@ -1,4 +1,11 @@
 import type { Metadata, Viewport } from 'next';
+import '@fontsource/montserrat/400.css';
+import '@fontsource/montserrat/500.css';
+import '@fontsource/montserrat/600.css';
+import '@fontsource/montserrat/700.css';
+import '@fontsource/noto-sans-bengali/400.css';
+import '@fontsource/noto-sans-bengali/600.css';
+import '@fontsource/noto-sans-bengali/700.css';
 import '@fontsource/hind-siliguri/400.css';
 import '@fontsource/hind-siliguri/500.css';
 import '@fontsource/hind-siliguri/600.css';
@@ -9,6 +16,7 @@ import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { MaintenanceBanner } from '@/components/maintenance-banner';
 import { PreviewBanner } from '@/components/preview-banner';
+import { LANG_BOOT_SCRIPT, LangRuntime } from '@/components/lang';
 
 export const metadata: Metadata = {
   title: { default: 'দুধওয়ালা — Dudhwala Food Products', template: '%s · দুধওয়ালা' },
@@ -27,8 +35,12 @@ export const viewport: Viewport = { themeColor: '#2d308f', width: 'device-width'
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="bn">
+    <html lang="bn" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: LANG_BOOT_SCRIPT }} />
+      </head>
       <body className="min-h-screen font-sans">
+        <LangRuntime />
         <PreviewBanner />
         <Header />
         <MaintenanceBanner />

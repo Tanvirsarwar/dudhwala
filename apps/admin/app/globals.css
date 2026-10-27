@@ -225,3 +225,141 @@ body {
     to { opacity: 1; transform: none; }
   }
 }
+
+/* ───────────── V2: glass surfaces, layered background, language fonts ─────────────
+   Glass is used selectively (navigation, cards, panels); text always sits on >= 62% white. */
+html[lang='bn'] {
+  --font-sans: 'Hind Siliguri', 'Noto Sans Bengali', 'Montserrat', system-ui, sans-serif;
+  --font-latin: 'Montserrat', 'Hind Siliguri', system-ui, sans-serif;
+}
+html[lang='en'] {
+  --font-sans: 'Montserrat', 'Hind Siliguri', 'Noto Sans Bengali', system-ui, sans-serif;
+  --font-latin: 'Montserrat', 'Hind Siliguri', system-ui, sans-serif;
+}
+html[data-lang-pending] body {
+  visibility: hidden; /* English visitors: no flash of Bangla before the dictionary is applied */
+}
+html {
+  background: #eef1f8;
+}
+body {
+  background:
+    radial-gradient(1100px 560px at 8% -8%, rgba(5, 178, 238, 0.2), transparent 60%),
+    radial-gradient(900px 520px at 104% 2%, rgba(45, 48, 143, 0.16), transparent 58%),
+    radial-gradient(1000px 640px at 50% 112%, rgba(255, 206, 140, 0.3), transparent 62%),
+    linear-gradient(180deg, #f1f4fb 0%, #f7f5f0 58%, #f2efe7 100%);
+  background-attachment: fixed;
+}
+
+@layer components {
+  .glass,
+  .card {
+    background: rgba(255, 255, 255, 0.66);
+    -webkit-backdrop-filter: blur(14px) saturate(1.5);
+    backdrop-filter: blur(14px) saturate(1.5);
+    border: 1px solid rgba(255, 255, 255, 0.78);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      0 12px 32px -14px rgba(35, 49, 94, 0.3);
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass,
+    .card {
+      background: rgba(255, 255, 255, 0.94);
+    }
+  }
+  .btn-ghost {
+    background: rgba(255, 255, 255, 0.7);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border-color: rgba(255, 255, 255, 0.85);
+  }
+  .field {
+    background: rgba(255, 255, 255, 0.82);
+  }
+  /* navigation bars */
+  .glass-nav {
+    background: rgba(45, 48, 143, 0.8);
+    -webkit-backdrop-filter: blur(16px) saturate(1.6);
+    backdrop-filter: blur(16px) saturate(1.6);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 8px 28px -12px rgba(22, 31, 64, 0.5);
+  }
+  .glass-side,
+  .glass-bar {
+    background: rgba(255, 255, 255, 0.6);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5);
+    backdrop-filter: blur(18px) saturate(1.5);
+  }
+  .glass-bar {
+    box-shadow: 0 8px 24px -16px rgba(35, 49, 94, 0.4);
+  }
+  .auth-bg {
+    background:
+      radial-gradient(900px 520px at 15% 0%, rgba(5, 178, 238, 0.45), transparent 60%),
+      linear-gradient(160deg, #2d308f 0%, #23315e 100%);
+  }
+
+  /* EN | বাংলা switch (on dark bars by default, tinted variant on light bars) */
+  .lang-toggle {
+    display: inline-flex;
+    padding: 3px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
+  .lang-seg {
+    min-width: 44px;
+    min-height: 34px;
+    padding: 0 0.75rem;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: inherit;
+    cursor: pointer;
+    transition:
+      background-color var(--dur-base) var(--ease-out),
+      color var(--dur-base) var(--ease-out),
+      box-shadow var(--dur-base) var(--ease-out);
+  }
+  .lang-seg:hover:not(.is-active) {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  .lang-seg.is-active {
+    background: #fff;
+    color: var(--color-brand-700);
+    box-shadow: 0 2px 8px rgba(8, 12, 40, 0.28);
+  }
+  .glass-bar .lang-toggle {
+    background: rgba(45, 48, 143, 0.08);
+    border-color: rgba(45, 48, 143, 0.2);
+    color: var(--color-brand-700);
+  }
+  .glass-bar .lang-seg:hover:not(.is-active) {
+    background: rgba(45, 48, 143, 0.12);
+  }
+  .glass-bar .lang-seg.is-active {
+    background: var(--color-brand-600);
+    color: #fff;
+  }
+
+  /* depth for linked cards (dashboard tiles, info cards) on devices that really hover */
+  @media (hover: hover) and (pointer: fine) {
+    a.card {
+      transition:
+        transform var(--dur-base) var(--ease-out),
+        box-shadow var(--dur-base) var(--ease-out);
+    }
+    a.card:hover {
+      transform: translate3d(0, -3px, 0);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        0 18px 38px -14px rgba(35, 49, 94, 0.4);
+    }
+  }
+  .tbl th {
+    background: rgba(255, 255, 255, 0.55);
+  }
+}

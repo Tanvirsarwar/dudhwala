@@ -85,7 +85,7 @@ export default async function HomePage() {
       )}
 
       {categories && categories.length > 0 && (
-        <section className="mt-8" aria-labelledby="cat-title">
+        <section className="reveal mt-8" aria-labelledby="cat-title">
           <h2 id="cat-title" className="text-xl font-bold">
             ক্যাটাগরি
           </h2>
@@ -124,7 +124,7 @@ export default async function HomePage() {
         <ProductGrid products={products?.data ?? []} />
       </section>
 
-      <section className="card mt-10 p-5" aria-labelledby="area-title-home">
+      <section className="card reveal mt-10 p-5" aria-labelledby="area-title-home">
         <h2 id="area-title-home" className="text-lg font-bold">
           যেসব এলাকায় ডেলিভারি দেওয়া হয়
         </h2>

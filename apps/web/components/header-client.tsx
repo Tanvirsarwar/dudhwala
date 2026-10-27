@@ -55,7 +55,7 @@ export function AreaBar() {
   };
 
   return (
-    <div className="border-t border-brand-500 bg-brand-700 text-sm">
+    <div className="border-t border-white/10 bg-[rgba(35,49,94,0.72)] text-sm backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-1.5">
         <PinIcon />
         <span>ডেলিভারি এলাকা:</span>
