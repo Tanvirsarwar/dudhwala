@@ -1,5 +1,6 @@
-import { Body, Controller, Get, HttpCode, Inject, Param, ParseUUIDPipe, Patch, Post, Req } from '@nestjs/common';
-import type { Request } from 'express';
+import { Body, Controller, Get, HttpCode, Inject, Param, ParseUUIDPipe, Patch, Post, Req, Res } from '@nestjs/common';
+import type { Request, Response } from 'express';
+import { parseTaka } from '@dudhwala/shared';
 import { z } from 'zod';
 import { AppError, notFound } from '../common/errors.js';
 import { newId } from '../common/crypto.js';
@@ -10,6 +11,7 @@ import { AuditService } from '../audit/audit.service.js';
 import { CurrentPrincipal, RequirePermission } from '../access/decorators.js';
 import type { StaffPrincipal } from '../access/principal.js';
 import { MediaService } from '../media/media.js';
+import { toCsv } from '../finance/finance.controller.js';
 
 const slug = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'lowercase letters, digits and hyphens').max(120);
 const text = (max: number) => z.string().trim().min(1).max(max);
@@ -53,6 +55,23 @@ const UpdateVariant = z
     sortOrder: z.number().int().optional(),
   })
   .strict();
+
+const MAX_BULK_ROWS = 500;
+const BulkPrice = z
+  .object({
+    dryRun: z.boolean(),
+    rows: z.array(z.object({ sku: z.string().trim().max(40), priceTaka: z.string().trim().max(20), compareAtTaka: z.string().trim().max(20).optional() }).strict()).min(1).max(MAX_BULK_ROWS),
+  })
+  .strict();
+
+export interface BulkPriceRowResult {
+  row: number;
+  sku: string;
+  ok: boolean;
+  error?: string;
+  beforePoisha?: number;
+  afterPoisha?: number;
+}
 
 /**
  * Minimal catalogue administration (M3). Global catalogue, single price per
@@ -103,6 +122,85 @@ export class CatalogAdminController {
   @RequirePermission('catalog.read_admin')
   products() {
     return this.prisma.product.findMany({ include: { variants: { orderBy: { sortOrder: 'asc' } }, category: { select: { slug: true, nameBn: true } } }, orderBy: { createdAt: 'desc' } });
+  }
+
+  /** Variant price list for spreadsheet editing; round-trips through POST variants/bulk-price. */
+  @Get('variants/export.csv')
+  @RequirePermission('catalog.read_admin')
+  async exportVariants(@CurrentPrincipal() p: StaffPrincipal, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const variants = await this.prisma.productVariant.findMany({ include: { product: { select: { slug: true, nameBn: true, status: true } } }, orderBy: [{ product: { slug: 'asc' } }, { sortOrder: 'asc' }] });
+    const rows = variants.map((v) => ({
+      sku: v.sku,
+      product: v.product.slug,
+      name: v.product.nameBn,
+      label: v.labelBn,
+      status: v.status,
+      priceTaka: (v.pricePoisha / 100).toFixed(2),
+      compareAtTaka: v.compareAtPoisha == null ? '' : (v.compareAtPoisha / 100).toFixed(2),
+    }));
+    await this.audit.record({ action: 'catalog.export_csv', entityType: 'product_variant', entityId: 'all', after: { rows: rows.length } }, { principal: p }, req);
+    res.setHeader('content-type', 'text/csv; charset=utf-8');
+    res.setHeader('content-disposition', 'attachment; filename="dudhwala-variants.csv"');
+    return '\uFEFF' + (toCsv(rows) || 'sku,product,name,label,status,priceTaka,compareAtTaka\n'); // BOM so Excel shows Bangla correctly
+  }
+
+  /**
+   * Bulk price edit by SKU. All-or-nothing: every row is validated first; one bad row (unknown SKU,
+   * bad amount, duplicate SKU, compare-at not above price) rejects the whole file and nothing is saved.
+   * `dryRun` returns the same per-row report without writing, for the preview step.
+   */
+  @Post('variants/bulk-price')
+  @RequirePermission('catalog.manage')
+  @HttpCode(200)
+  async bulkPrice(@CurrentPrincipal() p: StaffPrincipal, @Body() body: unknown, @Req() req: Request) {
+    const b = parse(BulkPrice, body);
+    if (!(await this.hasPermission(p, 'pricing.manage_global'))) throw new AppError('FORBIDDEN', 'Permission denied');
+    const skus = b.rows.map((r) => r.sku.toUpperCase());
+    const found = await this.prisma.productVariant.findMany({ where: { sku: { in: skus } } });
+    const bySku = new Map(found.map((v) => [v.sku, v]));
+    const seen = new Set<string>();
+    const results: BulkPriceRowResult[] = [];
+    const changes: { id: string; sku: string; price: number; compare: number | null; before: number; beforeCompare: number | null }[] = [];
+    b.rows.forEach((r, i) => {
+      const sku = r.sku.toUpperCase();
+      const res: BulkPriceRowResult = { row: i + 1, sku, ok: false };
+      const fail = (error: string) => results.push({ ...res, error });
+      if (seen.has(sku)) return fail('duplicate SKU in file');
+      seen.add(sku);
+      const v = bySku.get(sku);
+      if (!v) return fail('unknown SKU');
+      let price: number;
+      // compareAtTaka: omitted = keep the current compare-at price; "" = clear it; a value = set it.
+      let compare: number | null = v.compareAtPoisha;
+      try {
+        price = parseTaka(r.priceTaka);
+        if (r.compareAtTaka !== undefined) compare = r.compareAtTaka === '' ? null : parseTaka(r.compareAtTaka);
+      } catch {
+        return fail('invalid amount');
+      }
+      if (price <= 0 || price > 100_000_000) return fail('price out of range');
+      if (compare !== null && compare <= price) return fail('compare-at price must be higher than price');
+      results.push({ ...res, ok: true, beforePoisha: v.pricePoisha, afterPoisha: price });
+      changes.push({ id: v.id, sku, price, compare, before: v.pricePoisha, beforeCompare: v.compareAtPoisha });
+    });
+    const invalid = results.filter((r) => !r.ok).length;
+    const applied = !b.dryRun && invalid === 0;
+    if (applied) {
+      await this.prisma.$transaction(async (tx) => {
+        for (const c of changes) {
+          if (c.price === c.before && c.compare === c.beforeCompare) continue;
+          await tx.productVariant.update({ where: { id: c.id }, data: { pricePoisha: c.price, compareAtPoisha: c.compare } });
+          await this.audit.record(
+            { action: 'catalog.price_change', entityType: 'product_variant', entityId: c.id, before: { pricePoisha: c.before, compareAtPoisha: c.beforeCompare }, after: { pricePoisha: c.price, compareAtPoisha: c.compare, via: 'bulk_csv' } },
+            { principal: p },
+            req,
+            tx,
+          );
+        }
+        await this.audit.record({ action: 'catalog.bulk_price_import', entityType: 'product_variant', entityId: 'bulk', after: { rows: changes.length, changed: changes.filter((c) => c.price !== c.before || c.compare !== c.beforeCompare).length } }, { principal: p }, req, tx);
+      });
+    }
+    return { applied, dryRun: b.dryRun, total: results.length, invalid, unchanged: changes.filter((c) => c.price === c.before && c.compare === c.beforeCompare).length, rows: results };
   }
 
   @Get('products/:id')

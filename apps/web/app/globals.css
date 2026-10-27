@@ -21,16 +21,41 @@
   --font-sans: 'Hind Siliguri', 'Noto Sans Bengali', 'Inter Variable', system-ui, sans-serif;
   --font-latin: 'Inter Variable', system-ui, sans-serif;
 
-  --radius-card: 16px;
-  --shadow-card: 0 1px 2px rgba(35, 49, 94, 0.08), 0 2px 8px rgba(35, 49, 94, 0.06);
+  --color-cream: #fbf9f4;
+  --color-brand-50: #f3f4fb;
+  --color-brand-900: #161f40;
+
+  --radius-card: 18px;
+  --radius-control: 12px;
+  --shadow-card: 0 1px 2px rgba(35, 49, 94, 0.06), 0 4px 14px rgba(35, 49, 94, 0.06);
+  --shadow-lift: 0 2px 4px rgba(35, 49, 94, 0.08), 0 14px 32px rgba(35, 49, 94, 0.16);
+  --shadow-press: inset 0 2px 4px rgba(22, 31, 64, 0.22);
+
+  /* Motion: one easing curve and three durations everywhere (transform/opacity only). */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 120ms;
+  --dur-base: 220ms;
+  --dur-slow: 480ms;
+
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-shimmer: shimmer 1.4s linear infinite;
+
+  @keyframes float {
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    50% { transform: translate3d(0, -10px, 0); }
+  }
+  @keyframes shimmer {
+    to { transform: translateX(100%); }
+  }
 }
 
 html {
   color: var(--color-ink);
-  background: var(--color-milk);
+  background: var(--color-cream);
 }
 
 body {
+  overflow-x: clip;
   line-height: 1.7; /* Bangla conjuncts need room */
   -webkit-font-smoothing: antialiased;
 }
@@ -48,40 +73,84 @@ body {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+    animation-iteration-count: 1 !important;
+  }
+  .tilt,
+  .depth-layer,
+  .card-lift:hover {
+    transform: none !important;
   }
 }
 
 /* Component classes live in the components layer so Tailwind utilities (e.g. md:hidden) can override them. */
 @layer components {
   /* Milk-wave divider (flat, no gradients — UI_UX_SPEC §5). */
+  /* Break out of the centred <main> to the viewport edges (body clips the scrollbar-width overflow). */
+  .full-bleed {
+    margin-inline: calc(50% - 50vw);
+    width: 100vw;
+  }
+
   .milk-wave {
     display: block;
     width: 100%;
     height: 28px;
-    color: var(--color-milk);
+    color: var(--color-cream);
   }
 
   .btn {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
     min-height: 44px;
     padding: 0 1.1rem;
-    border-radius: 10px;
+    border-radius: var(--radius-control);
     font-weight: 600;
-    transition: background-color 0.15s, opacity 0.15s;
+    cursor: pointer;
+    user-select: none;
+    transition:
+      background-color var(--dur-base) var(--ease-out),
+      box-shadow var(--dur-base) var(--ease-out),
+      transform var(--dur-fast) var(--ease-out),
+      opacity var(--dur-base);
   }
-  .btn:disabled {
+  .btn:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+  .btn:disabled,
+  .btn[aria-disabled='true'] {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+  .btn[aria-busy='true'] {
+    cursor: progress;
+  }
+  /* Spinner shown while a button has aria-busy="true"; the label stays so the button never changes width. */
+  .btn[aria-busy='true']::after {
+    content: '';
+    width: 1em;
+    height: 1em;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
   }
   .btn-primary {
     background: var(--color-brand-600);
     color: #fff;
+    box-shadow: 0 1px 2px rgba(35, 49, 94, 0.25), 0 4px 10px rgba(45, 48, 143, 0.22);
   }
   .btn-primary:hover:not(:disabled) {
     background: var(--color-brand-500);
+    box-shadow: 0 2px 4px rgba(35, 49, 94, 0.25), 0 8px 18px rgba(45, 48, 143, 0.3);
+  }
+  .btn-primary:active:not(:disabled) {
+    box-shadow: var(--shadow-press);
   }
   .btn-ghost {
     background: #fff;
@@ -90,6 +159,27 @@ body {
   }
   .btn-ghost:hover:not(:disabled) {
     background: var(--color-brand-100);
+    border-color: var(--color-brand-100);
+  }
+  .btn-accent {
+    background: var(--color-accent-500);
+    color: var(--color-brand-900);
+  }
+  .btn-accent:hover:not(:disabled) {
+    background: #2cc3f5;
+  }
+  .btn-danger {
+    background: var(--color-danger);
+    color: #fff;
+  }
+  .btn-danger:hover:not(:disabled) {
+    background: #8f1c12;
+  }
+  .btn-tertiary {
+    background: transparent;
+    color: var(--color-accent-ink);
+    text-decoration: underline;
+    text-underline-offset: 4px;
   }
 
   .field {
@@ -98,11 +188,16 @@ body {
     min-height: 44px;
     padding: 0.5rem 0.75rem;
     border: 1px solid #c9cad8;
-    border-radius: 10px;
+    border-radius: var(--radius-control);
     background: #fff;
+    transition: border-color var(--dur-base), box-shadow var(--dur-base);
   }
   .field:focus {
     border-color: var(--color-brand-600);
+    box-shadow: 0 0 0 3px rgba(45, 48, 143, 0.15);
+  }
+  .field[aria-invalid='true'] {
+    border-color: var(--color-danger);
   }
   .label {
     display: block;
@@ -114,5 +209,72 @@ body {
     background: #fff;
     border-radius: var(--radius-card);
     box-shadow: var(--shadow-card);
+  }
+
+  /* Product card: lift on devices that really hover; never on touch. */
+  .card-lift {
+    transition:
+      transform var(--dur-base) var(--ease-out),
+      box-shadow var(--dur-base) var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .card-lift:hover {
+      transform: translate3d(0, -4px, 0);
+      box-shadow: var(--shadow-lift);
+    }
+    .card-lift:hover .img-zoom {
+      transform: scale(1.06);
+    }
+  }
+  .img-zoom {
+    transition: transform var(--dur-slow) var(--ease-out);
+  }
+
+  /* Loading placeholder for images. */
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    background: var(--color-brand-100);
+  }
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+    animation: var(--animate-shimmer);
+  }
+
+  /* Staggered entrance: set --i on each child. */
+  .reveal {
+    animation: reveal var(--dur-slow) var(--ease-out) both;
+    animation-delay: calc(var(--i, 0) * 60ms);
+  }
+  @keyframes reveal {
+    from { opacity: 0; transform: translate3d(0, 14px, 0); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* Hero: layered depth. Layers shift with the pointer through --px/--py (see HeroScene). */
+  .hero-bg {
+    background:
+      radial-gradient(60rem 30rem at 85% -10%, rgba(5, 178, 238, 0.28), transparent 60%),
+      linear-gradient(160deg, var(--color-brand-600) 0%, var(--color-brand-700) 100%);
+  }
+  .depth-layer {
+    transform: translate3d(calc(var(--px, 0) * var(--depth, 10) * 1px), calc(var(--py, 0) * var(--depth, 10) * 1px), 0);
+    transition: transform var(--dur-base) var(--ease-out);
+    will-change: transform;
+  }
+
+  /* Pointer tilt (Tilt component sets --rx/--ry). */
+  .tilt {
+    transform: perspective(900px) rotateX(calc(var(--rx, 0) * 1deg)) rotateY(calc(var(--ry, 0) * 1deg));
+    transition: transform var(--dur-base) var(--ease-out);
+    transform-style: preserve-3d;
+  }
+
+  .toast {
+    animation: reveal var(--dur-base) var(--ease-out) both;
   }
 }

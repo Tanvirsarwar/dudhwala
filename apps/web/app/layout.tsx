@@ -8,6 +8,7 @@ import './globals.css';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { MaintenanceBanner } from '@/components/maintenance-banner';
+import { PreviewBanner } from '@/components/preview-banner';
 
 export const metadata: Metadata = {
   title: { default: 'দুধওয়ালা — Dudhwala Food Products', template: '%s · দুধওয়ালা' },
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="bn">
       <body className="min-h-screen font-sans">
+        <PreviewBanner />
         <Header />
         <MaintenanceBanner />
         <main id="main" className="mx-auto max-w-6xl px-4 pb-8">

@@ -191,7 +191,7 @@ async function main(): Promise<void> {
     console.error('Usage: DATABASE_URL=… demo-seed.js seed|purge');
     process.exit(2);
   }
-  const prisma = new PrismaService({ DATABASE_URL: url } as Env);
+  const prisma = new PrismaService({ DATABASE_URL: url, DATABASE_CA_CERT: process.env.DATABASE_CA_CERT ?? '' } as Env);
   try {
     if (mode === 'seed') {
       assertNotProduction();

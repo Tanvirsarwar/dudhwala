@@ -94,7 +94,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
           </button>
         ) : null}
         {canEdit && p.status !== 'ARCHIVED' ? (
-          <button className="btn btn-ghost btn-sm text-danger" disabled={a.busy} onClick={() => void a.run(() => api(`/admin/products/${p.id}/archive`, { method: 'POST' }), 'আর্কাইভ করা হয়েছে').then((ok) => (ok ? reload() : undefined))}>
+          <button className="btn btn-ghost btn-sm text-danger" disabled={a.busy} onClick={() => window.confirm('এই পণ্য আর্কাইভ করলে গ্রাহকরা আর দেখতে পাবেন না। পুরনো অর্ডার অক্ষত থাকবে। চালিয়ে যাবেন?') && void a.run(() => api(`/admin/products/${p.id}/archive`, { method: 'POST' }), 'আর্কাইভ করা হয়েছে').then((ok) => (ok ? reload() : undefined))}>
             আর্কাইভ
           </button>
         ) : null}
@@ -293,7 +293,7 @@ function Images({ product, canEdit, onChange }: { product: Product; canEdit: boo
               {canEdit ? (
                 <button
                   className="btn btn-ghost btn-sm mt-1 w-full text-danger"
-                  onClick={() => void a.run(() => api(`/admin/product-images/${img.id}/delete`, { method: 'POST' })).then((ok) => (ok ? onChange() : undefined))}
+                  onClick={() => window.confirm('ছবিটি মুছে ফেলবেন?') && void a.run(() => api(`/admin/product-images/${img.id}/delete`, { method: 'POST' })).then((ok) => (ok ? onChange() : undefined))}
                 >
                   মুছুন
                 </button>

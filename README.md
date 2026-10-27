@@ -67,6 +67,12 @@ pnpm --filter @dudhwala/api test
 # E2E (Playwright): see e2e/stack.sh and e2e/package.json
 ```
 
+## Catalogue management
+
+Admin → পণ্য ও দাম: create/edit products and variants, upload product photos, publish, archive. **CSV নামান** exports every variant (SKU, price, compare-at); **CSV থেকে দাম** uploads the edited file, shows a preview and applies it only if every row is valid (all-or-nothing, audited). Needs the `catalog.manage` and `pricing.manage_global` permissions. Product photos must come from the business or be properly licensed; the demo seed's third-party photos are for private demos only.
+
+See [docs/AUDIT_2026-10-26.md](docs/AUDIT_2026-10-26.md) for the latest audit, the image-loading root cause and the UI changes.
+
 ## Verified results (2026-10-21)
 
 | Check | Result |
@@ -76,7 +82,7 @@ pnpm --filter @dudhwala/api test
 | API integration tests (real PostgreSQL 16) | 237/237 |
 | End-to-end (Playwright: mobile + desktop storefront, admin, rider, axe accessibility) | 21/21 |
 | Production builds (API, storefront, admin) | pass; container images built in GitHub Actions |
-| `pnpm audit` | no known vulnerabilities |
+| `pnpm audit` | no known vulnerabilities on 2026-10-21; **re-run 2026-10-26: 1 high (zod 3.x, fix only in zod 4) after overriding body-parser, multer and fast-uri — see docs/AUDIT_2026-10-26.md** |
 | Lighthouse mobile (local) | home 97 performance / 100 accessibility; product page 78 performance (below the 85 budget — re-measure on staging) |
 
 GitHub Actions on `a6ef3c8`: CI, E2E and Images all green. Details and history: [QA_TEST_PLAN §9](docs/QA_TEST_PLAN.md#9-results-log). CI runs lint, type check, migrations, tests and builds on every push; E2E and image builds run on every push to `main`.
@@ -136,5 +142,9 @@ GitHub Actions on `a6ef3c8`: CI, E2E and Images all green. Details and history: 
 | [OPERATIONS_GUIDE](docs/OPERATIONS_GUIDE.md) | Day-to-day instructions for staff, riders and Super Admin |
 | [IMPLEMENTATION_PLAN](docs/IMPLEMENTATION_PLAN.md) | Milestones, launch checklist, progress log |
 | [OPEN_DECISIONS](docs/OPEN_DECISIONS.md) | Everything the business still has to decide |
+| [FREE_STAGING](docs/FREE_STAGING.md) | Free demo preview: Vercel + Render + Supabase, same-origin API proxy, dashboard steps |
+| [STAGING_CHECKLIST](docs/STAGING_CHECKLIST.md) | Step-by-step staging release: variables, safe migration commands, health checks, rollback |
+| [DEPLOY_VERCEL_SUPABASE](docs/DEPLOY_VERCEL_SUPABASE.md) | Vercel + Supabase PostgreSQL + separate API: variables, image storage, safe staging migration (not yet executed) |
+| [AUDIT_2026-10-26](docs/AUDIT_2026-10-26.md) | Image-loading root cause, UI changes, PR review addendum |
 
 Brand reference: `assets/reference/opening-invitation.png`; logo raster: `assets/brand/logo-lockup-from-invitation.png`.

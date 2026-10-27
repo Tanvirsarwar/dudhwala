@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { serverGet } from '@/lib/api';
-import { ProductImage } from '@/components/product-image';
+import { ProductGallery } from '@/components/product-gallery';
 import { AddToCart } from './add-to-cart';
 
 export interface ProductDetail {
@@ -37,7 +37,6 @@ const SECTIONS: [keyof ProductDetail['content'], string][] = [
 export default async function ProductPage({ params }: Props) {
   const p = await getProduct((await params).slug);
   if (!p) notFound();
-  const main = p.images[0];
   return (
     <article className="pt-6">
       <nav aria-label="ব্রেডক্রাম্ব" className="mb-3 text-sm text-muted">
@@ -50,9 +49,7 @@ export default async function ProductPage({ params }: Props) {
         </Link>
       </nav>
       <div className="grid gap-6 md:grid-cols-2">
-        <div className="card aspect-square overflow-hidden">
-          <ProductImage src={main?.url ?? null} alt={main?.altBn ?? p.nameBn} eager />
-        </div>
+        <ProductGallery images={p.images} name={p.nameBn} />
         <div>
           <h1 className="text-2xl font-bold leading-snug md:text-3xl">{p.nameBn}</h1>
           {p.nameEn && p.nameEn !== p.nameBn && <p className="font-latin text-muted">{p.nameEn}</p>}

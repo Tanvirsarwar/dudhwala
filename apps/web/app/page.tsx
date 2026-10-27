@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { serverGet, type Area, type Category, type ProductList } from '@/lib/api';
 import { ProductGrid } from '@/components/product-card';
+import { ParallaxScene, Tilt } from '@/components/pointer-motion';
 
 interface Home {
   banners: { id: string; titleBn: string; altBn: string; imageUrl: string; linkUrl: string | null }[];
@@ -23,30 +24,48 @@ export default async function HomePage() {
   return (
     <>
       {/* Hero: brand band. Copy is from the supplied invitation; no invented offers or awards. */}
-      <section className="-mx-4 bg-brand-600 px-4 pb-10 pt-8 text-white md:pb-14 md:pt-12" aria-labelledby="hero-title">
-        <div className="mx-auto max-w-6xl">
-          <p className="font-latin text-sm uppercase tracking-[0.2em] text-sky-300">Serving Purity</p>
-          <h1 id="hero-title" className="mt-2 text-3xl font-bold leading-tight md:text-5xl">
-            সিলেটের নিজস্ব দুগ্ধজাত পণ্য,
-            <br />
-            <span className="text-accent-500">আপনার দোরগোড়ায়</span>
-          </h1>
-          <p className="mt-4 max-w-xl text-lg text-brand-100">গরুর খাঁটি কাঁচা দুধ, দই, মিষ্টি, ঘি এবং বেকারি পণ্য — অনলাইনে অর্ডার করুন, পছন্দের সময়ে ডেলিভারি নিন।</p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="#products" className="btn bg-white text-brand-700 hover:bg-brand-100">
-              পণ্য দেখুন
-            </Link>
-            {hasPage('delivery-policy') && (
-              <Link href="/pages/delivery-policy" className="btn border border-white/40 text-white hover:bg-brand-500">
-                ডেলিভারি তথ্য
+      <section className="hero-bg full-bleed relative overflow-hidden px-4 pb-12 pt-8 text-white md:pb-16 md:pt-14" aria-labelledby="hero-title">
+        <ParallaxScene className="mx-auto grid max-w-6xl items-center gap-8 min-[1184px]:px-4 md:grid-cols-[1.3fr_1fr]">
+          {/* Decorative depth layers: pure CSS shapes, moved by pointer on fine-pointer devices only. */}
+          <span aria-hidden className="depth-layer pointer-events-none absolute -right-20 -top-10 h-56 w-56 rounded-full bg-accent-500/15 md:-right-16 md:top-4 md:h-72 md:w-72 md:bg-accent-500/20 [--depth:28]" />
+          <span aria-hidden className="depth-layer pointer-events-none absolute bottom-0 left-1/3 hidden h-40 w-40 rounded-full bg-white/10 md:block [--depth:-18]" />
+          <div className="relative">
+            <p className="reveal font-latin text-sm uppercase tracking-[0.2em] text-sky-300">Serving Purity</p>
+            <h1 id="hero-title" className="reveal mt-2 text-3xl font-bold leading-tight md:text-5xl" style={{ ['--i' as string]: 1 }}>
+              সিলেটের নিজস্ব দুগ্ধজাত পণ্য,
+              <br />
+              <span className="text-accent-500">আপনার দোরগোড়ায়</span>
+            </h1>
+            <p className="reveal mt-4 max-w-xl text-lg text-brand-100" style={{ ['--i' as string]: 2 }}>
+              গরুর খাঁটি কাঁচা দুধ, দই, মিষ্টি, ঘি এবং বেকারি পণ্য — অনলাইনে অর্ডার করুন, পছন্দের সময়ে ডেলিভারি নিন।
+            </p>
+            <div className="reveal mt-6 flex flex-wrap gap-3" style={{ ['--i' as string]: 3 }}>
+              <Link href="#products" className="btn bg-white text-brand-700 shadow-lg hover:bg-brand-100">
+                পণ্য দেখুন
               </Link>
-            )}
+              {hasPage('delivery-policy') && (
+                <Link href="/pages/delivery-policy" className="btn border border-white/40 text-white hover:bg-white/10">
+                  ডেলিভারি তথ্য
+                </Link>
+              )}
+            </div>
           </div>
-        </div>
+          <div className="relative hidden justify-self-center md:block" aria-hidden>
+            <div className="depth-layer [--depth:12]">
+              <Tilt max={8}>
+                <div className="animate-float rounded-3xl bg-white p-5 shadow-[0_30px_60px_rgba(8,12,40,0.45)]">
+                  <img src="/logo.png" alt="" width={450} height={240} className="h-auto w-64" />
+                </div>
+              </Tilt>
+            </div>
+          </div>
+        </ParallaxScene>
       </section>
-      <svg className="milk-wave -mx-4 -mt-px w-[calc(100%+2rem)] bg-brand-600" viewBox="0 0 1440 28" preserveAspectRatio="none" aria-hidden>
-        <path fill="currentColor" d="M0 28V12c120 10 240 16 360 10S600 0 720 2s240 20 360 20 240-10 360-14v20Z" />
-      </svg>
+      <div className="full-bleed -mt-px bg-brand-700">
+        <svg className="milk-wave" viewBox="0 0 1440 28" preserveAspectRatio="none" aria-hidden>
+          <path fill="currentColor" d="M0 28V12c120 10 240 16 360 10S600 0 720 2s240 20 360 20 240-10 360-14v20Z" />
+        </svg>
+      </div>
 
       {home && home.banners.length > 0 && (
         <section aria-label="ঘোষণা" className="mt-6 grid gap-3 md:grid-cols-2">

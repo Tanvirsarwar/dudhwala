@@ -144,3 +144,30 @@ test('a customer downloads their data and asks for account deletion', async ({ p
   await expect(page.getByText('অ্যাকাউন্ট মুছে ফেলার অনুরোধ প্রক্রিয়াধীন')).toBeVisible();
   await expectAccessible(page);
 });
+
+test('quick add on a product card puts one item in the cart, and options products link to their page', async ({ page }) => {
+  await page.goto('/search?q=Opera');
+  const card = page.getByRole('listitem').filter({ hasText: 'Opera Cake' }).first();
+  await card.getByRole('button', { name: /কার্টে যোগ করুন/ }).click();
+  await expect(card.getByRole('button', { name: /কার্টে যোগ করুন/ })).toContainText('যোগ হয়েছে');
+  await expect(page.getByRole('link', { name: /কার্ট, ১টি পণ্য/ })).toBeVisible();
+  await page.goto('/cart');
+  await expect(page.getByText('Opera Cake').first()).toBeVisible();
+
+  // a product with several pack sizes never adds blindly: it links to the page where the option is chosen
+  await page.goto('/');
+  const multi = page.getByRole('listitem').filter({ has: page.getByRole('link', { name: /অপশন দেখুন/ }) }).first();
+  await multi.getByRole('link', { name: /অপশন দেখুন/ }).click();
+  await expect(page).toHaveURL(/\/p\//);
+});
+
+test('production CSP allows only self, the API and configured media origins for images (no demo hosts)', async ({ request }) => {
+  const res = await request.get('/');
+  const csp = res.headers()['content-security-policy'] ?? '';
+  const img = /img-src ([^;]*)/.exec(csp)?.[1] ?? '';
+  expect(img).toContain("'self'");
+  expect(img).not.toContain('*');
+  // the stack runs the production build: the third-party demo photo host must not be allowed by default
+  expect(img).not.toContain('wellfoodonline.com');
+  expect(csp).toContain("frame-ancestors 'none'");
+});

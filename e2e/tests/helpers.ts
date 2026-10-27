@@ -35,6 +35,16 @@ export async function otpLogin(page: Page, phone: string): Promise<void> {
 
 /** Accessibility gate (QA_TEST_PLAN §6): no serious or critical axe violations. */
 export async function expectAccessible(page: Page): Promise<void> {
+  // Entrance animations fade content in; axe would measure half-transparent colours. Wait for finite animations
+  // to end so the check sees the settled page (looping decorative animations are ignored).
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((a) => a.effect?.getComputedTiming().iterations !== Infinity)
+        .map((a) => a.finished.catch(() => undefined)),
+    ),
+  );
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
   const bad = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
   expect(bad.map((v) => `${v.id}: ${v.help} (${v.nodes.length}) e.g. ${v.nodes[0]?.target.join(" ")} — ${v.nodes[0]?.failureSummary?.split("\n")[1]?.trim() ?? ""}`)).toEqual([]);
