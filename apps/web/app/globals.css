@@ -416,3 +416,154 @@ body {
     background: rgba(255, 255, 255, 0.55);
   }
 }
+
+/* ── Delivery-area picker (V2.1) ── */
+@layer components {
+  .area-dialog {
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 28px;
+    background:
+      radial-gradient(520px 220px at 0% 0%, rgba(5, 178, 238, 0.16), transparent 70%),
+      radial-gradient(480px 240px at 100% 100%, rgba(255, 206, 140, 0.22), transparent 70%),
+      rgba(255, 255, 255, 0.78);
+    -webkit-backdrop-filter: blur(24px) saturate(1.6);
+    backdrop-filter: blur(24px) saturate(1.6);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      0 40px 80px -24px rgba(22, 31, 64, 0.55);
+  }
+  .area-dialog::backdrop {
+    background: rgba(22, 31, 64, 0.38);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+  }
+  .area-dialog[open] {
+    animation: area-in var(--dur-slow) var(--ease-out);
+  }
+  @keyframes area-in {
+    from { opacity: 0; transform: translate3d(0, 16px, 0) scale(0.97); }
+    to { opacity: 1; transform: none; }
+  }
+  .area-close {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    color: var(--color-muted);
+    transition: background-color var(--dur-base);
+  }
+  .area-close:hover {
+    background: rgba(45, 48, 143, 0.1);
+  }
+  .area-pin {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    color: #fff;
+    background: linear-gradient(145deg, var(--color-brand-500), var(--color-accent-500));
+    box-shadow: 0 8px 18px -8px rgba(45, 48, 143, 0.7);
+  }
+  .area-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    min-height: 68px;
+    padding: 0.8rem 1rem;
+    border-radius: 20px;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.62);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow:
+      inset 0 1px 0 #fff,
+      0 10px 24px -16px rgba(35, 49, 94, 0.5);
+    transition:
+      transform var(--dur-base) var(--ease-out),
+      box-shadow var(--dur-base) var(--ease-out),
+      border-color var(--dur-base),
+      background-color var(--dur-base);
+  }
+  .area-card:active {
+    transform: scale(0.985);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .area-card:hover {
+      transform: translate3d(0, -2px, 0);
+      box-shadow:
+        inset 0 1px 0 #fff,
+        0 16px 30px -14px rgba(35, 49, 94, 0.55);
+    }
+  }
+  .area-card:has(input:focus-visible) {
+    outline: 3px solid var(--color-accent-500);
+    outline-offset: 2px;
+  }
+  .area-card[data-selected='true'] {
+    border-color: rgba(45, 48, 143, 0.6);
+    background: linear-gradient(135deg, rgba(231, 232, 246, 0.95), rgba(225, 245, 253, 0.92));
+    box-shadow:
+      0 0 0 3px rgba(5, 178, 238, 0.28),
+      0 18px 34px -16px rgba(45, 48, 143, 0.6);
+  }
+  .area-check {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: transparent;
+    border: 1.5px solid rgba(45, 48, 143, 0.25);
+    transition:
+      transform var(--dur-base) var(--ease-out),
+      background-color var(--dur-base),
+      color var(--dur-base);
+  }
+  .area-card[data-selected='true'] .area-check {
+    color: #fff;
+    background: var(--color-brand-600);
+    border-color: var(--color-brand-600);
+    transform: scale(1.08);
+  }
+  .btn-confirm {
+    min-height: 52px;
+    border-radius: 999px;
+    color: #fff;
+    font-size: 1rem;
+    letter-spacing: 0.01em;
+    background: linear-gradient(135deg, var(--color-brand-600) 0%, #1f7fd0 55%, var(--color-accent-500) 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.35),
+      0 14px 28px -12px rgba(45, 48, 143, 0.75);
+  }
+  .btn-confirm:hover:not(:disabled) {
+    filter: brightness(1.08) saturate(1.05);
+    transform: translate3d(0, -1px, 0);
+  }
+  .btn-confirm:active:not(:disabled) {
+    transform: scale(0.985);
+    filter: brightness(0.96);
+  }
+  .btn-confirm:disabled {
+    opacity: 1;
+    color: rgba(35, 49, 94, 0.55);
+    background: rgba(255, 255, 255, 0.55);
+    box-shadow: inset 0 0 0 1px rgba(45, 48, 143, 0.15);
+    cursor: not-allowed;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .area-card,
+  .area-card:hover,
+  .area-check,
+  .btn-confirm:hover:not(:disabled) {
+    transform: none !important;
+  }
+}

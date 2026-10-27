@@ -329,5 +329,8 @@ export const EN_DICT: Record<string, string> = {
  "ক্রিম বান": "Cream Bun",
  "দুধের রাস্ক": "Milk Rusk",
  "ভ্যানিলা কেক": "Vanilla Cake",
- "(Asia/Dhaka)। বিক্রির হিসাবে বাতিল, প্রত্যাখ্যাত ও পেমেন্ট-বাকি অনলাইন অর্ডার ধরা হয় না।": "(Asia/Dhaka). Sales figures exclude cancelled, rejected and unpaid online orders."
+ "(Asia/Dhaka)। বিক্রির হিসাবে বাতিল, প্রত্যাখ্যাত ও পেমেন্ট-বাকি অনলাইন অর্ডার ধরা হয় না।": "(Asia/Dhaka). Sales figures exclude cancelled, rejected and unpaid online orders.",
+ "ডেলিভারি এলাকা নিশ্চিত করুন": "Confirm delivery area",
+ "নির্বাচিত": "Selected",
+ "এলাকা সংরক্ষণ করা যায়নি, আবার চেষ্টা করুন": "Could not save the area, please try again"
 };

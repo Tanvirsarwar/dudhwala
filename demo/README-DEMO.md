@@ -1,4 +1,4 @@
-# Dudhwala – local client demo (V2: glass UI + EN | বাংলা)
+# Dudhwala – local client demo (V2.1: glass UI, EN | বাংলা, delivery-area picker)
 
 A **temporary, offline-capable demo** of the Dudhwala storefront and admin on your own PC.
 It uses the real Premium UI code with a small **mock API** that serves **invented sample data**.
@@ -27,6 +27,9 @@ First run installs dependencies and builds the two sites (a few minutes). Later 
 | Storefront | http://127.0.0.1:3100 |
 | Admin | http://127.0.0.1:3101 – login `admin@demo.local` / password `demo1234` |
 | Mock API check | http://127.0.0.1:4010/v1/health/ready |
+
+## Delivery area picker
+Header → "Choose area" opens a card picker. Pick one card, then press **Confirm delivery area** (ডেলিভারি এলাকা নিশ্চিত করুন): the choice is saved to the cart and the page refreshes with area-specific availability. The demo data has area names only (no delivery fees or service status), so none are shown.
 
 ## Language: EN | বাংলা
 The `EN | বাংলা` switch is in the storefront header and the admin top bar (and on the admin login page). The choice is remembered in the browser and survives refresh and navigation. English uses Montserrat; Bangla uses Hind Siliguri with Noto Sans Bengali as fallback. The storefront (home, categories, search, product pages, cart, area picker, sign-in) and the main admin screens (menu, dashboard, orders list, products, stock, branches) are translated. Rarely used admin screens (delivery rules, coupons, payments, reports, staff forms, long help texts) remain in Bangla.
