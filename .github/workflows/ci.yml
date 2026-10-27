@@ -79,3 +79,5 @@ jobs:
           TEST_SCHEMA_SOURCE: ${{ hashFiles('apps/api/prisma/migrations/**/migration.sql') != '' && 'migrations' || 'dev-ddl' }}
         run: pnpm test
       - run: pnpm build
+        env:
+          NEXT_PUBLIC_API_URL: https://api.example.invalid/v1
