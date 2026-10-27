@@ -142,6 +142,7 @@ GitHub Actions on `a6ef3c8`: CI, E2E and Images all green. Details and history: 
 | [OPERATIONS_GUIDE](docs/OPERATIONS_GUIDE.md) | Day-to-day instructions for staff, riders and Super Admin |
 | [IMPLEMENTATION_PLAN](docs/IMPLEMENTATION_PLAN.md) | Milestones, launch checklist, progress log |
 | [OPEN_DECISIONS](docs/OPEN_DECISIONS.md) | Everything the business still has to decide |
+| [FREE_STAGING](docs/FREE_STAGING.md) | Free demo preview: Vercel + Render + Supabase, same-origin API proxy, dashboard steps |
 | [STAGING_CHECKLIST](docs/STAGING_CHECKLIST.md) | Step-by-step staging release: variables, safe migration commands, health checks, rollback |
 | [DEPLOY_VERCEL_SUPABASE](docs/DEPLOY_VERCEL_SUPABASE.md) | Vercel + Supabase PostgreSQL + separate API: variables, image storage, safe staging migration (not yet executed) |
 | [AUDIT_2026-10-26](docs/AUDIT_2026-10-26.md) | Image-loading root cause, UI changes, PR review addendum |

@@ -45,7 +45,7 @@ async function main(): Promise<void> {
     process.exit(2);
   }
   // The CLI only needs the database connection, not the full HTTP configuration.
-  const prisma = new PrismaService({ DATABASE_URL: databaseUrl } as Env);
+  const prisma = new PrismaService({ DATABASE_URL: databaseUrl, DATABASE_CA_CERT: process.env.DATABASE_CA_CERT ?? '' } as Env);
   try {
     const id = await createSuperAdmin(prisma, { email: values.email, name: values.name, password });
     console.log(`Super Admin created (${id}). Log in at the admin site and enrol two-factor authentication.`);

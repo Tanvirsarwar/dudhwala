@@ -1,0 +1,51 @@
+# Render Blueprint for the FREE STAGING preview of the Dudhwala API (docs/FREE_STAGING.md).
+# Staging only: free instances sleep after ~15 minutes without traffic and have no shell or pre-deploy command,
+# so the image's entrypoint applies migrations and the optional demo/admin bootstrap on start.
+# Values marked `sync: false` are typed into the Render dashboard; they are never stored in Git.
+services:
+  - type: web
+    name: dudhwala-api-staging
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: claude/premium-ui-catalog-images   # change to the branch you deploy from (e.g. main after review)
+    dockerfilePath: ./infra/docker/api.staging.Dockerfile
+    dockerContext: .
+    healthCheckPath: /v1/health/ready
+    autoDeploy: false
+    envVars:
+      - { key: NODE_ENV, value: staging }
+      - { key: API_PORT, value: "10000" }   # Render routes to port 10000 by default
+      - { key: LOG_LEVEL, value: info }
+      # public URLs (https, no trailing slash): the API's own URL and the two Vercel sites
+      - { key: API_PUBLIC_URL, sync: false }
+      - { key: WEB_ORIGIN, sync: false }
+      - { key: ADMIN_ORIGIN, sync: false }
+      # database (Supabase session pooler string, IPv4) and the CA that signed its certificate
+      - { key: DATABASE_URL, sync: false }
+      - { key: DATABASE_CA_CERT, sync: false }
+      # secrets Render can generate for you (one per environment, never reused)
+      - { key: SESSION_SECRET, generateValue: true }
+      - { key: OTP_HMAC_KEY, generateValue: true }
+      - { key: DATA_ENCRYPTION_KEY, generateValue: true }
+      - { key: PAYMENTS_WEBHOOK_SECRET, generateValue: true }
+      # media: Supabase Storage through its S3-compatible API
+      - { key: MEDIA_STORAGE, value: s3 }
+      - { key: STORAGE_ENDPOINT, sync: false }
+      - { key: STORAGE_REGION, sync: false }
+      - { key: STORAGE_BUCKET, sync: false }
+      - { key: STORAGE_ACCESS_KEY_ID, sync: false }
+      - { key: STORAGE_SECRET_ACCESS_KEY, sync: false }
+      - { key: MEDIA_PUBLIC_URL, sync: false }
+      # payments: simulator only (fake money). Online payment stays hidden at checkout until a Super Admin turns it on.
+      - { key: PAYMENTS_PROVIDER, value: fake }
+      - { key: ALLOW_PAYMENT_SIMULATOR, value: "true" }
+      # SMS: the API refuses to start on staging without an https SMS URL. This reserved ".invalid" host can never
+      # resolve, so no SMS is ever sent (and customer OTP login is therefore unavailable in this preview).
+      - { key: SMS_PROVIDER, value: http }
+      - { key: SMS_HTTP_URL, value: "https://sms-disabled.invalid/send" }
+      # one-time bootstrap (see docs/FREE_STAGING.md): remove SUPER_ADMIN_PASSWORD after the first successful boot
+      - { key: STAGING_SEED_DEMO, value: "true" }
+      - { key: STAGING_ADMIN_EMAIL, sync: false }
+      - { key: STAGING_ADMIN_NAME, value: Staging Admin }
+      - { key: SUPER_ADMIN_PASSWORD, sync: false }

@@ -29,7 +29,7 @@ async function main(): Promise<void> {
     console.error('Usage: DATABASE_URL=… reset-mfa --email <email>');
     process.exit(2);
   }
-  const prisma = new PrismaService({ DATABASE_URL: url } as Env);
+  const prisma = new PrismaService({ DATABASE_URL: url, DATABASE_CA_CERT: process.env.DATABASE_CA_CERT ?? '' } as Env);
   try {
     await resetMfa(prisma, values.email);
     console.log('Two-factor cleared. The person must enrol a new authenticator at the next login.');

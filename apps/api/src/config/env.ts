@@ -13,6 +13,8 @@ const EnvSchema = z
     ADMIN_ORIGIN: z.string().url(),
     API_PUBLIC_URL: z.string().url(),
     DATABASE_URL: z.string().min(1),
+    /** PEM text of the CA that signed the database server certificate (e.g. Supabase). Enables verified TLS; see docs/FREE_STAGING.md. */
+    DATABASE_CA_CERT: z.string().default(''),
     SESSION_SECRET: z.string().min(32),
     OTP_HMAC_KEY: z.string().min(32),
     DATA_ENCRYPTION_KEY: base64Key32,
