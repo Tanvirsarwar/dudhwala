@@ -6,6 +6,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, ApiError, cartChanged, type Area, type CartView } from '@/lib/api';
 import { bnDigits, dayLabel, dhakaDayKey, taka, timeLabel } from '@/lib/format';
 import { OtpLogin } from '@/components/otp-login';
+import { DEMO_BRANDING } from '@/components/developer-credit';
+import { DemoCheckout } from '@/components/demo-checkout';
 
 interface SavedAddress {
   id: string;
@@ -49,7 +51,7 @@ const REASONS: Record<string, string> = {
 
 const newKey = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}-key`);
 
-export default function CheckoutPage() {
+function RealCheckout() {
   const router = useRouter();
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [cart, setCart] = useState<CartView | null>(null);
@@ -411,4 +413,9 @@ export default function CheckoutPage() {
       </aside>
     </div>
   );
+}
+
+/** Demo build: no OTP/payment-provider flow; the demo checkout (components/demo-checkout.tsx) is shown instead. */
+export default function CheckoutPage() {
+  return DEMO_BRANDING ? <DemoCheckout /> : <RealCheckout />;
 }

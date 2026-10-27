@@ -7,8 +7,9 @@ import { Tilt } from './pointer-motion';
 
 export function ProductCard({ p, index = 0 }: { p: ProductCardData; index?: number }) {
   const multi = p.variants.length > 1;
+  const labels = p.variants.map((v) => v.labelBn).filter(Boolean).join(' · ');
   const single = !multi && p.inStock && p.variants[0]?.availability === 'IN_STOCK' ? p.variants[0].id : null;
-  const offer = p.variants.some((v) => v.compareAtPoisha && v.compareAtPoisha > v.pricePoisha);
+  const offer = p.variants.some((v) => v.compareAtPoisha && v.pricePoisha !== null && v.compareAtPoisha > v.pricePoisha);
   return (
     <li className="reveal" style={{ ['--i' as string]: Math.min(index, 8) }}>
       <Tilt max={4} className="h-full">
@@ -22,11 +23,15 @@ export function ProductCard({ p, index = 0 }: { p: ProductCardData; index?: numb
         <div className="flex flex-1 flex-col gap-0.5 p-2.5 pb-1.5">
           <h3 className="line-clamp-2 text-[0.9375rem] font-semibold leading-snug transition-colors group-hover:text-brand-600">{p.nameBn}</h3>
           {p.nameEn && p.nameEn !== p.nameBn && <p className="font-latin text-xs text-muted">{p.nameEn}</p>}
-          <p className="mt-auto pt-0.5 text-base font-bold text-brand-700">
-            {multi && <span className="text-sm font-normal text-muted">শুরু </span>}
-            {taka(p.fromPricePoisha)}
-          </p>
-          <p className="line-clamp-1 text-xs text-muted">{p.variants.map((v) => v.labelBn).join(' · ')}</p>
+          {p.fromPricePoisha === null ? (
+            <p className="price-pending mt-auto pt-0.5">{taka(null)}</p>
+          ) : (
+            <p className="mt-auto pt-0.5 text-base font-bold text-brand-700">
+              {multi && <span className="text-sm font-normal text-muted">শুরু </span>}
+              {taka(p.fromPricePoisha)}
+            </p>
+          )}
+          {labels && <p className="line-clamp-1 text-xs text-muted">{labels}</p>}
         </div>
       </Link>
       <div className="p-2.5 pt-0.5">{p.inStock ? <QuickAdd slug={p.slug} variantId={single} name={p.nameBn} /> : <span className="btn btn-ghost btn-compact w-full" aria-disabled="true">স্টকে নেই</span>}</div>

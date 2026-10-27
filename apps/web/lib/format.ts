@@ -1,6 +1,8 @@
 import { formatTaka } from '@dudhwala/shared';
 
-export const taka = (poisha: number) => formatTaka(poisha, 'bn');
+/** Price text. A missing price is shown as pending, never guessed. */
+export const PRICE_PENDING = 'দাম শীঘ্রই জানানো হবে';
+export const taka = (poisha: number | null) => (poisha === null ? PRICE_PENDING : formatTaka(poisha, 'bn'));
 
 const BN = '০১২৩৪৫৬৭৮৯';
 export const bnDigits = (s: string | number) => String(s).replace(/\d/g, (d) => BN[Number(d)] ?? d);

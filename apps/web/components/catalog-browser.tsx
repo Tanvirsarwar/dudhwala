@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import type { Category, ProductCardData } from '@/lib/api';
 import { bnDigits } from '@/lib/format';
 import { corrections, makeCatalog, rank } from '@/lib/catalog-search';
+import { DEMO_ORDERING, useEligibility, useZone } from '@/lib/demo/zone';
 import { ProductGrid } from './product-card';
 import { SearchBox } from './search-box';
 
@@ -18,7 +19,12 @@ const SORTS: [Sort, string][] = [
  * Category bar + search + sort over the whole (small) catalogue, filtered in the browser. Category and search work
  * together; state is mirrored into the URL (?category=&q=&sort=) so links and refresh keep it.
  */
-export function CatalogBrowser({ products, categories, initialQ = '', initialCategory = '', initialSort = 'relevance', withSearch = false, title }: { products: ProductCardData[]; categories: Category[]; initialQ?: string; initialCategory?: string; initialSort?: string; withSearch?: boolean; title?: string }) {
+export function CatalogBrowser({ products: allProducts, categories, initialQ = '', initialCategory = '', initialSort = 'relevance', withSearch = false, title }: { products: ProductCardData[]; categories: Category[]; initialQ?: string; initialCategory?: string; initialSort?: string; withSearch?: boolean; title?: string }) {
+  // Demo zone filter (UI convenience only; the real backend must enforce eligibility itself).
+  const eligible = useEligibility();
+  const { zone } = useZone();
+  const products = useMemo(() => allProducts.filter((p) => eligible(p).eligible), [allProducts, eligible]);
+  const hidden = allProducts.length - products.length;
   const catalog = useMemo(() => makeCatalog(products, categories), [products, categories]);
   const [q, setQ] = useState(initialQ);
   const [cat, setCat] = useState(categories.some((c) => c.slug === initialCategory) ? initialCategory : '');
@@ -45,7 +51,10 @@ export function CatalogBrowser({ products, categories, initialQ = '', initialCat
   const shown = useMemo(() => {
     const list = cat ? matched.filter((p) => p.categorySlug === cat) : matched;
     if (sort === 'relevance') return list;
-    return [...list].sort((a, b) => (sort === 'price_asc' ? a.fromPricePoisha - b.fromPricePoisha : b.fromPricePoisha - a.fromPricePoisha));
+    // products without a price yet always sort last
+    const key = (p: ProductCardData, dir: 1 | -1) => (p.fromPricePoisha === null ? Number.POSITIVE_INFINITY : dir * p.fromPricePoisha);
+    const dir = sort === 'price_asc' ? 1 : -1;
+    return [...list].sort((a, b) => key(a, dir) - key(b, dir) || 0);
   }, [matched, cat, sort]);
   const fixes = useMemo(() => (q.trim() && matched.length === 0 ? corrections(catalog, q) : []), [catalog, q, matched.length]);
   const filtered = Boolean(q.trim() || cat || sort !== 'relevance');
@@ -82,6 +91,11 @@ export function CatalogBrowser({ products, categories, initialQ = '', initialCat
           {bnDigits(shown.length)}টি পণ্য
         </span>
       </div>
+      {DEMO_ORDERING && zone === 'OUTER_CITY' && (
+        <p className="notice notice-info mb-3" role="note">
+          <span>আউটার সিটির জন্য শুধু ডেলিভারিযোগ্য পণ্য দেখানো হচ্ছে।</span> <span>লুকানো পণ্য:</span> <b>{bnDigits(hidden)}</b>
+        </p>
+      )}
       <nav aria-label="ক্যাটাগরি অনুযায়ী পণ্য" className="cat-bar">
         <button type="button" className="cat-pill" aria-pressed={cat === ''} onClick={() => pick('')}>
           সব পণ্য <b>{bnDigits(matched.length)}</b>

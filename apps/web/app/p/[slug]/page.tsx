@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { serverGet, type ProductList } from '@/lib/api';
+import { fetchAllProducts, serverGet } from '@/lib/api';
 import { ProductExtras } from '@/components/related-products';
 import { ProductGallery } from '@/components/product-gallery';
 import { AddToCart } from './add-to-cart';
+import { DeliveryInfo } from '@/components/delivery-info';
 
 export interface ProductDetail {
   id: string;
@@ -14,7 +15,8 @@ export interface ProductDetail {
   category: { slug: string; nameBn: string };
   images: { url: string; altBn: string }[];
   content: Partial<Record<'descriptionBn' | 'ingredientsBn' | 'allergensBn' | 'storageBn' | 'shelfLifeBn', string>>;
-  variants: { id: string; labelBn: string; pricePoisha: number; compareAtPoisha: number | null; availability: 'IN_STOCK' | 'OUT_OF_STOCK'; maxQty: number }[];
+  outerCityStatus?: import('@dudhwala/shared').OuterCityStatus | null;
+  variants: { id: string; labelBn: string; pricePoisha: number | null; compareAtPoisha: number | null; availability: 'IN_STOCK' | 'OUT_OF_STOCK'; maxQty: number }[];
 }
 
 type Props = { params: Promise<{ slug: string }> };
@@ -38,7 +40,7 @@ const SECTIONS: [keyof ProductDetail['content'], string][] = [
 export default async function ProductPage({ params }: Props) {
   const p = await getProduct((await params).slug);
   if (!p) notFound();
-  const all = (await serverGet<ProductList>('/catalog/products?limit=48&sort=newest', 30))?.data ?? [];
+  const all = await fetchAllProducts((p) => serverGet(p, 30));
   return (
     <article className="mx-auto max-w-6xl pt-6">
       <nav aria-label="ব্রেডক্রাম্ব" className="mb-3 text-sm text-muted">
@@ -55,7 +57,8 @@ export default async function ProductPage({ params }: Props) {
         <div>
           <h1 className="text-2xl font-bold leading-snug md:text-3xl">{p.nameBn}</h1>
           {p.nameEn && p.nameEn !== p.nameBn && <p className="font-latin text-muted">{p.nameEn}</p>}
-          <AddToCart slug={p.slug} variants={p.variants} />
+          <DeliveryInfo categorySlug={p.category.slug} outerCityStatus={p.outerCityStatus} />
+          <AddToCart slug={p.slug} variants={p.variants} categorySlug={p.category.slug} outerCityStatus={p.outerCityStatus} />
         </div>
       </div>
       {SECTIONS.some(([k]) => p.content[k]) && (

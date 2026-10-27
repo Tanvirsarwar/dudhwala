@@ -23,7 +23,7 @@ export const ELIGIBILITY_RULES = {
 
 export interface EligibilityProduct {
   categorySlug: string;
-  outerCityStatus?: OuterCityStatus | undefined;
+  outerCityStatus?: OuterCityStatus | null | undefined;
 }
 export type EligibilityReason = 'in_city_all' | 'category_rule' | 'approved_item' | 'pending_verification' | 'pending_confirmation' | 'disabled' | 'item_not_approved' | 'category_not_approved';
 export interface Eligibility {

@@ -138,6 +138,7 @@ createServer(async (req, res) => {
       return pg ? send(res, 200, pg) : err(res, 404, 'NOT_FOUND', 'পাতা পাওয়া যায়নি');
     }
     if (m === 'GET' && path === '/delivery/areas') return send(res, 200, areas);
+    if (m === 'GET' && path === '/outlets') return send(res, 200, outlets.map(({ id, code, nameBn, nameEn, addressLine }) => ({ id, code, nameBn, nameEn, addressLine })));
     if (m === 'GET' && path === '/delivery/check') return send(res, 200, { serviceable: true });
 
     // cart (the only storefront write that works)

@@ -9,11 +9,9 @@ import { DeveloperCredit } from './developer-credit';
 const ART = (slug: string) => `/v1/media/demo/${slug}.svg`;
 
 const PRODUCTS = [
-  { name: 'দুধ', note: 'তাজা তরল দুধ', slug: 'fresh-milk', href: '/c/milk' },
-  { name: 'দই', note: 'মিষ্টি ও টক দই', slug: 'sweet-curd', href: '/c/curd' },
-  { name: 'ঘি ও মাখন', note: 'ঘি ও বাটার', slug: 'pure-ghee', href: '/c/ghee-butter' },
-  { name: 'পনির', note: 'পনির ও চিজ', slug: 'paneer', href: '/c/cheese' },
-  { name: 'মিষ্টি', note: 'ঐতিহ্যবাহী মিষ্টি', slug: 'rasgulla', href: '/c/sweets' },
+  { name: 'দুগ্ধজাত মিষ্টি', note: 'রসগোল্লা, সন্দেশ, চমচম ও আরও', slug: 'ds-01', href: '/?category=dairy-sweets#products' },
+  { name: 'দই ও দুগ্ধজাত', note: 'দই, মাঠা ও ঘোল', slug: 'doi-01', href: '/?category=doi-dairy#products' },
+  { name: 'বেকারি', note: 'বিস্কুট, কেক, টোস্ট ও আরও', slug: 'bk-fruit-cake', href: '/?category=bakery#products' },
 ];
 const STEPS = [
   { n: '১', t: 'কাঁচা দুধ', d: 'শুরুটা ছিল দুগ্ধ খামার থেকে কাঁচা দুধ সরবরাহ দিয়ে।' },
@@ -44,7 +42,7 @@ export function AboutStory() {
           </div>
         </div>
         <div className="about-art" aria-hidden>
-          {['fresh-milk', 'sweet-curd', 'pure-ghee'].map((s, i) => (
+          {['ds-23', 'doi-01', 'ds-24'].map((s, i) => (
             <img key={s} src={ART(s)} alt="" width={800} height={800} className={`about-tile about-tile-${i}`} />
           ))}
         </div>

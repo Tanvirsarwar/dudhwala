@@ -1,9 +1,9 @@
-# Dudhwala – local client demo (V2.4: full-width layout, fuzzy search, category filtering, related products)
+# Dudhwala – local client demo (V2.5: real catalogue, delivery zones, demo ordering)
 
 A **temporary, offline-capable demo** of the Dudhwala storefront and admin on your own PC.
-It uses the real Premium UI code with a small **mock API** that serves **invented sample data**.
+It uses the real Premium UI code with a small **mock API**.
 
-> Everything you see is demo data: product names, prices, stock, orders and the admin account are **not real**.
+> **Product names and the delivery-eligibility marks come from the shop's real printed lists. Prices, pack sizes and stock were not supplied, so they are empty ("Price to be announced").** Orders, outlets, the admin dashboard and the admin account are demo data and **not real**.
 > No database, payment gateway, SMS or cloud service is used. Nothing is sent anywhere, no orders or money are taken.
 
 ## Requirements
@@ -28,12 +28,20 @@ First run installs dependencies and builds the two sites (a few minutes). Later 
 | Admin | http://127.0.0.1:3101 – login `admin@demo.local` / password `demo1234` |
 | Mock API check | http://127.0.0.1:4010/v1/health/ready |
 
+## V2.5: real catalogue, delivery zones and demo ordering
+- **Real catalogue:** 59 products in 3 categories (Dairy Sweets 23, Doi / Dairy 11, Bakery 25) replace the old invented sample products. Details, unclear names and open questions: `docs/CATALOGUE_V2_5.md`. No price, size or stock was invented.
+- **Delivery zone selector** (strip under the header). **In City**: every product, delivery within 24 hours (no instant delivery). **Outer City**: all Bakery plus only the ticked Dairy Sweets (Ghee, Nimki), delivery in 1-2 days; Doi and unconfirmed items are hidden. The cart is re-checked when you change zone: unsuitable items are **marked, never silently removed**, and block checkout until you switch zone or remove them.
+- **Ordering hours:** 10:00-22:00 Asia/Dhaka (real clock of the computer, evaluated in the Dhaka time zone). Outside them the checkout is blocked with a bilingual message and the reopening time.
+- **Checkout (demo):** three options. *Home Delivery* (zone, address, estimated delivery, "cash on delivery - demo"); *Express Pickup* (choose an outlet; earliest pickup is at least 1 hour away; pickup counts as confirmed only when the outlet marks it ready - use "Demo: move to next step" on the Demo orders page); *Bulk Order* (carts of 20+ items; collection only from Modina Market Branch; "Demo/Simulated Payment" first; no home or instant delivery). **The bulk threshold (20 items) is a placeholder** until the shop approves real values. The amount threshold cannot be checked yet because no prices exist.
+- **Demo orders** are saved only in this browser (`localStorage`, keys `dw.demo.zone` and `dw.demo.orders`), have `DEMO-` numbers and are never real orders. There is no card form, payment gateway, SMS or login in this flow.
+- The validation in the browser is for the demo only and is **not** security. Phase 2 notes: `docs/PHASE2_INTEGRATION.md`.
+- Tests: `pnpm --filter @dudhwala/shared test` (ordering rules, search, translations) and `pnpm test:demo` (catalogue and eligibility, needs `pnpm --filter @dudhwala/shared build` first).
+
 ## V2.4: shopping experience
 - **Full-width layout:** content now uses the whole screen up to 2000 px (8 cards per row on a 1920 px desktop) with balanced side padding.
-- **Fuzzy search:** the header box and the Search page give live suggestions (image, name, sample price) and tolerate typos and transliterations: `mlk`, `dudh` → Milk; `ghi`, `gee` → Ghee; `doi`, `dohi` → Curd; `biscute`, `biskut` → Biscuit; `chachachur` → Chanachur; `gur`, `jaggery` → Gur; Bangla works too. Arrow keys, Enter, Esc and touch work; no-match shows "Did you mean". Spellings live in one editable list (`SEARCH_ALIASES` in `packages/shared/src/search.ts`).
+- **Fuzzy search:** the header box and the Search page give live suggestions (image, name, sample price) and tolerate typos and transliterations: `mlk`, `dudh` → Milk; `ghi`, `gee` → Ghee; `doi`, `dohi` → Doi; `biscute`, `biskut` → Biscuit; `sandsh`, `shondesh` → Sandesh; `roshogolla` → Rasgulla; Bangla works too. Arrow keys, Enter, Esc and touch work; no-match shows "Did you mean". Spellings live in one editable list (`SEARCH_ALIASES` in `packages/shared/src/search.ts`).
 - **Categories:** the bar above the product grid filters the grid (counts, active state, clear filters) and works together with search and sorting.
 - **Product pages:** "You May Also Like" (same category, then complementary categories) and "Recently Viewed" (kept in this browser).
-- **Sample products:** the demo catalogue now has 30 invented products in 10 categories (added snacks, gur, biscuits, grocery).
 
 ## V2.3: scroll stability and compact cards
 Cards could blank out while scrolling on real GPUs because the page stacked too many compositor-heavy layers (measured on V2.2: 39 blurred surfaces, 51 transformed elements, 21 3D contexts, 26 finished animations still applied, and a fixed background repainted every frame). V2.3 keeps blur only on the header, panels and dialogs, applies the 3D tilt only while a card is hovered, stops entrance animations from lingering after they finish, and paints the background on one fixed layer. Product cards, dashboard tiles and About cards are also smaller (5 product cards per row on a 1280 px desktop instead of 4). If you still see a card flicker on your machine, tell me the browser and GPU.
@@ -51,14 +59,14 @@ The `EN | বাংলা` switch is in the storefront header and the admin top 
 NixOS cannot run the prebuilt native binaries in `node_modules` directly. `start-demo-nixos.sh` wraps the normal script in `steam-run`. If that does not work on your machine, enable `programs.nix-ld.enable = true;` in `configuration.nix` (then rebuild) and run `./start-demo.sh` inside `nix-shell -p nodejs_22 pnpm`. **This NixOS path was not tested** (no NixOS machine was available when this package was made).
 
 ## What works
-- Storefront: home with hero and collection, categories, product listing, **search** (Bangla or English), sorting, product pages with pack sizes, **add to cart**, cart quantities, delivery-area picker, information pages, out-of-stock items, offer badges.
+- Storefront: home with hero and collection, categories, product listing, **search** (Bangla or English), sorting, product pages, **add to cart**, cart quantities, delivery-zone selector, demo checkout, demo orders, delivery-area picker, information pages.
 - Admin (view only): dashboard summary, order list with status filter and search, product list and product pages, inventory per branch, branch list.
 - Product pictures are simple generated illustrations marked "DEMO ARTWORK" (no real photos are included).
 
 ## Intentionally simulated or not available
-- **Customer login and checkout do not work**: they show "demo mode". There is no SMS or payment in this package.
+- **Customer login does not work** and there is no SMS or real payment. The V2.5 demo checkout works without login and only saves a demo order in your browser.
 - **Admin changes are not saved** (editing, publishing, uploads, price import show a "demo mode" message). Order detail pages, reports, delivery and coupon screens are empty or unavailable.
-- The cart lives in memory and **resets when the demo is restarted**.
+- The cart lives in the mock server's memory and **resets when the demo is restarted**; demo orders and the zone choice stay in your browser until you clear them.
 - The numbers on the admin dashboard are computed from the invented sample orders.
 
 ## Stop

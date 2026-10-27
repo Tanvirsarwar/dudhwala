@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { serverGet, type Area, type Category, type ProductList } from '@/lib/api';
+import { fetchAllProducts, serverGet, type Area, type Category, type ProductList } from '@/lib/api';
 import { ProductGrid } from '@/components/product-card';
 import { CatalogBrowser } from '@/components/catalog-browser';
 import { ParallaxScene, Tilt } from '@/components/pointer-motion';
@@ -15,7 +15,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const [home, categories, products, areas] = await Promise.all([
     serverGet<Home>('/content/home'),
     serverGet<Category[]>('/catalog/categories'),
-    serverGet<ProductList>('/catalog/products?limit=48&sort=newest'),
+    fetchAllProducts(serverGet),
     serverGet<Area[]>('/delivery/areas'),
   ]);
   const collections = await Promise.all(
@@ -98,7 +98,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         ))}
 
       <section id="products" className="mt-6 scroll-mt-28" aria-labelledby="all-title">
-        <CatalogBrowser products={products?.data ?? []} categories={categories ?? []} initialCategory={typeof sp.category === 'string' ? sp.category : ''} initialQ={typeof sp.q === 'string' ? sp.q.slice(0, 80) : ''} initialSort={typeof sp.sort === 'string' ? sp.sort : ''} />
+        <CatalogBrowser products={products} categories={categories ?? []} initialCategory={typeof sp.category === 'string' ? sp.category : ''} initialQ={typeof sp.q === 'string' ? sp.q.slice(0, 80) : ''} initialSort={typeof sp.sort === 'string' ? sp.sort : ''} />
       </section>
 
       <section className="card reveal mt-8 p-4" aria-labelledby="area-title-home">

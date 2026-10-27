@@ -1,18 +1,11 @@
 import { buildSearchIndex, searchIndex, suggestCorrections, type SearchIndex } from '@dudhwala/shared';
-import { api, type Category, type ProductCardData, type ProductList } from './api';
+import { api, fetchAllProducts, type Category, type ProductCardData } from './api';
 
 /** Complementary categories for "You may also like" (same-category products always come first). */
 export const COMPLEMENTS: Record<string, string[]> = {
-  milk: ['biscuits', 'bakery', 'curd'],
-  curd: ['sweets', 'milk', 'bakery'],
-  'ghee-butter': ['bakery', 'sweets', 'gur'],
-  sweets: ['curd', 'milk', 'gur'],
-  cheese: ['bakery', 'milk', 'grocery'],
-  bakery: ['milk', 'ghee-butter', 'biscuits'],
-  snacks: ['biscuits', 'milk', 'sweets'],
-  gur: ['sweets', 'ghee-butter', 'bakery'],
-  biscuits: ['milk', 'snacks', 'bakery'],
-  grocery: ['ghee-butter', 'cheese', 'gur'],
+  'dairy-sweets': ['doi-dairy', 'bakery'],
+  'doi-dairy': ['dairy-sweets', 'bakery'],
+  bakery: ['dairy-sweets', 'doi-dairy'],
 };
 
 export interface Catalog {
@@ -38,8 +31,8 @@ export const corrections = (c: Catalog, q: string) => suggestCorrections(c.index
 let loading: Promise<Catalog> | null = null;
 /** Browser-side catalogue for search suggestions; loaded once. */
 export function loadCatalog(): Promise<Catalog> {
-  loading ??= Promise.all([api<ProductList>('/catalog/products?limit=48&sort=newest'), api<Category[]>('/catalog/categories')])
-    .then(([l, c]) => makeCatalog(l.data, c))
+  loading ??= Promise.all([fetchAllProducts((p) => api(p)), api<Category[]>('/catalog/categories')])
+    .then(([l, c]) => makeCatalog(l, c))
     .catch((e) => {
       loading = null;
       throw e;

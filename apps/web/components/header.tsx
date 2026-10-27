@@ -3,6 +3,7 @@ import { SearchIcon, UserIcon } from './icons';
 import { SearchBox } from './search-box';
 import { AreaBar, CartButton } from './header-client';
 import { LangToggle } from './lang';
+import { ZoneBar } from './zone-bar';
 
 /** Royal-blue header with the supplied logo lockup (shown unmodified on its own white chip). */
 export function Header() {
@@ -28,6 +29,7 @@ export function Header() {
         </nav>
       </div>
       <AreaBar />
+      <ZoneBar />
     </header>
   );
 }

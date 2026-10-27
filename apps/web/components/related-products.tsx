@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { ProductCardData } from '@/lib/api';
 import { related } from '@/lib/catalog-search';
+import { useEligibility } from '@/lib/demo/zone';
 import { ProductCard } from './product-card';
 
 const KEY = 'dw.recent';
@@ -16,7 +17,9 @@ const readRecent = (): string[] => {
 };
 
 /** "You may also like" (same category, then complementary categories) and "Recently viewed", below a product. */
-export function ProductExtras({ all, slug, categorySlug }: { all: ProductCardData[]; slug: string; categorySlug: string }) {
+export function ProductExtras({ all: everything, slug, categorySlug }: { all: ProductCardData[]; slug: string; categorySlug: string }) {
+  const eligible = useEligibility();
+  const all = everything.filter((p) => p.slug === slug || eligible(p).eligible);
   const [recent, setRecent] = useState<ProductCardData[]>([]);
   const likes = related(all, slug, categorySlug, 6);
 

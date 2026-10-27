@@ -17,6 +17,7 @@ import { Footer } from '@/components/footer';
 import { MaintenanceBanner } from '@/components/maintenance-banner';
 import { PreviewBanner } from '@/components/preview-banner';
 import { LANG_BOOT_SCRIPT, LangRuntime } from '@/components/lang';
+import { ZoneProvider } from '@/lib/demo/zone';
 
 export const metadata: Metadata = {
   title: { default: 'দুধওয়ালা — Dudhwala Food Products', template: '%s · দুধওয়ালা' },
@@ -41,13 +42,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-screen font-sans">
         <LangRuntime />
-        <PreviewBanner />
-        <Header />
-        <MaintenanceBanner />
-        <main id="main" className="page-w pb-8">
-          {children}
-        </main>
-        <Footer />
+        <ZoneProvider>
+          <PreviewBanner />
+          <Header />
+          <MaintenanceBanner />
+          <main id="main" className="page-w pb-8">
+            {children}
+          </main>
+          <Footer />
+        </ZoneProvider>
       </body>
     </html>
   );

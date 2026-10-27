@@ -93,6 +93,20 @@ export async function api<T = unknown>(path: string, init: { method?: string; bo
 /** Notifies header badges etc. that the cart changed. */
 export const cartChanged = () => window.dispatchEvent(new Event('dw:cart'));
 
+import type { OuterCityStatus } from '@dudhwala/shared';
+
+/** Whole-catalogue load: the API caps a page at 48, so fetch pages until `total` is reached. */
+export async function fetchAllProducts(get: <T>(path: string) => Promise<T | null>): Promise<ProductCardData[]> {
+  const out: ProductCardData[] = [];
+  for (let page = 1; page <= 20; page++) {
+    const r = await get<ProductList>(`/catalog/products?limit=48&page=${page}&sort=newest`);
+    if (!r) break;
+    out.push(...r.data);
+    if (out.length >= r.total || r.data.length === 0) break;
+  }
+  return out;
+}
+
 // ── Shared response types ──
 
 export interface ProductCardData {
@@ -102,9 +116,11 @@ export interface ProductCardData {
   nameEn: string | null;
   categorySlug: string;
   image: { url: string; altBn: string } | null;
-  fromPricePoisha: number;
+  /** null = price not supplied yet (never invented) */
+  fromPricePoisha: number | null;
+  outerCityStatus?: OuterCityStatus | null;
   inStock: boolean;
-  variants: { id: string; labelBn: string; pricePoisha: number; compareAtPoisha: number | null; availability: 'IN_STOCK' | 'OUT_OF_STOCK' }[];
+  variants: { id: string; labelBn: string; pricePoisha: number | null; compareAtPoisha: number | null; availability: 'IN_STOCK' | 'OUT_OF_STOCK' }[];
 }
 
 export interface ProductList {
@@ -132,8 +148,8 @@ export interface CartView {
   id: string | null;
   areaId: string | null;
   couponCode: string | null;
-  lines: { variantId: string; productSlug: string; nameBn: string; nameEn: string | null; labelBn: string; image: string | null; unitPricePoisha: number; quantity: number; lineTotalPoisha: number; available: boolean; maxQty: number }[];
-  subtotalPoisha: number;
+  lines: { variantId: string; productSlug: string; nameBn: string; nameEn: string | null; labelBn: string; image: string | null; unitPricePoisha: number | null; quantity: number; lineTotalPoisha: number | null; available: boolean; maxQty: number; categorySlug?: string; outerCityStatus?: OuterCityStatus | null }[];
+  subtotalPoisha: number | null;
   itemCount: number;
   warnings: { variantId: string; code: string }[];
 }
