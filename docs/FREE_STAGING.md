@@ -35,6 +35,15 @@ The API's cookies are host-only and `SameSite=Strict/Lax`, so a browser on `x.ve
 
 ### 3.1 Supabase (about 10 minutes)
 
+**Security-sensitive steps, read before you start:**
+
+- **Never paste a password, key or connection string into chat, a GitHub issue, a commit or a screenshot.** Paste them only into the Render/Vercel/Supabase dashboard fields.
+- **The database password** is the master password of the `postgres` role. In this preview the API connects as `postgres` (Supabase's owner role), so a leak of `DATABASE_URL` exposes the whole staging database. That is acceptable only because the database holds synthetic demo data. Use a generated password, store it in a password manager, and reset it (Project Settings → Database → Reset database password) if it is ever exposed. The least-privilege role is deferred (section 7).
+- **The S3 access keys** (step 4) grant read/write to every bucket in the project and bypass storage policies. Create them only in this dedicated staging project, copy the secret once into Render, and delete the key (Storage → S3 Connection) when the preview is retired or if it leaks.
+- **The Data API** is on by default and exposes tables to anyone holding the project's public `anon` key (which is not secret). Turn it off (step 2) before loading data.
+- Do **not** use the Supabase `anon` or `service_role` keys anywhere; this app never needs them.
+- The CA certificate is public information, not a secret.
+
 1. supabase.com → sign in with GitHub → **New project**. Organisation: your own. Name `dudhwala-staging`. **Database password: use "Generate a password", keep it in a password manager, never paste it into chat, a commit or an issue.** Region: Singapore (`ap-southeast-1`). Plan: Free. Create and wait until the project is "Healthy".
 2. **Disable the Data API** (Project Settings → Data API, switch off or remove `public` from exposed schemas). The app does not use it.
 3. **Storage:** Storage → New bucket → name `dudhwala-media`, **Public bucket: on**.
@@ -80,8 +89,8 @@ Do this twice (storefront `apps/web`, admin `apps/admin`). vercel.com → sign i
 | Project name | from 3.2 |
 | Framework preset | Next.js |
 | Root Directory | `apps/web` (admin: `apps/admin`); keep "Include source files outside of the Root Directory" enabled |
-| Install Command (override) | `pnpm install --frozen-lockfile` |
-| Build Command (override) | `pnpm --filter @dudhwala/shared build && pnpm --filter @dudhwala/web build` (admin: `@dudhwala/admin`) |
+| Install Command | leave default (Vercel detects the pnpm workspace) |
+| Build Command | **leave default** (`pnpm run build`; since commit `02fbccf` the app's `build` script builds `@dudhwala/shared` first). If you ever override it with plain `next build`, the build fails with `Module not found: Can't resolve '@dudhwala/shared'` (reproduced) because the shared package is only usable after it is compiled. |
 | Node.js version | 22.x |
 
 Environment variables (all environments). Those marked build are compiled in: change then redeploy.
@@ -95,7 +104,7 @@ Environment variables (all environments). Those marked build are compiled in: ch
 | `NEXT_PUBLIC_MEDIA_ORIGINS` | `https://<project-ref>.supabase.co https://wellfoodonline.com` (second entry only for the third-party demo photos) | same | build |
 | `NEXT_PUBLIC_ALLOW_INDEXING` | leave unset | n/a | build |
 
-Then **Settings → Git → Production Branch**: set it to the branch you deploy (`claude/premium-ui-catalog-images`, because the repository has no `main`). Deploy. The production URL of each project is the one to share. Preview deployment URLs may ask for a Vercel login (Vercel's deployment protection); the production URL should not.
+**Branch:** the repository's default branch is `claude/vibrant-brahmagupta-r00411` (the initial import: it has none of the preview changes, no proxy, no staging files). Vercel and Render propose the default branch, so choose `claude/premium-ui-catalog-images` explicitly when importing, and under **Settings → Git → Production Branch** set `claude/premium-ui-catalog-images` (the repository has no `main`). Merging PR #1 is your decision; until then deploy from this branch. Deploy. The production URL of each project is the one to share. Preview deployment URLs may ask for a Vercel login (Vercel's deployment protection); the production URL should not.
 
 ### 3.5 Finish wiring
 
