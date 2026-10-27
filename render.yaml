@@ -8,7 +8,6 @@ services:
     runtime: docker
     plan: free
     region: singapore
-    branch: claude/premium-ui-catalog-images   # change to the branch you deploy from (e.g. main after review)
     dockerfilePath: ./infra/docker/api.staging.Dockerfile
     dockerContext: .
     healthCheckPath: /v1/health/ready

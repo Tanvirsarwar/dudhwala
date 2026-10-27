@@ -7,7 +7,9 @@
  */
 
 export const PUBLIC_API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/v1';
-const SERVER_API = process.env.API_INTERNAL_URL ?? PUBLIC_API;
+// Server components need an absolute URL. In same-origin mode (NEXT_PUBLIC_API_URL="/v1") that is API_INTERNAL_URL,
+// or the proxy target plus the same path.
+const SERVER_API = process.env.API_INTERNAL_URL ?? (PUBLIC_API.startsWith('/') && process.env.API_PROXY_TARGET ? `${process.env.API_PROXY_TARGET}${PUBLIC_API}` : PUBLIC_API);
 
 export class ApiError extends Error {
   constructor(
@@ -22,6 +24,7 @@ export class ApiError extends Error {
 
 /** Server-side fetch of public data. Returns null on 404 so pages can call notFound(). */
 export async function serverGet<T>(path: string, revalidate = 30): Promise<T | null> {
+  if (SERVER_API.startsWith('/')) throw new Error('API_INTERNAL_URL (or API_PROXY_TARGET) must be set: server-side requests need an absolute API URL');
   const res = await fetch(`${SERVER_API}${path}`, { next: { revalidate }, headers: { 'x-dw-audience': 'customer' } });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`API ${res.status} for ${path}`);

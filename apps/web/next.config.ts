@@ -21,6 +21,10 @@ function parseMediaOrigins(raw: string, dev: boolean): string[] {
     });
 }
 
+// No silent fallback to localhost in a production build: the browser bundle would call 127.0.0.1:4000 on every visitor's machine.
+if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_API_URL) {
+  throw new Error('NEXT_PUBLIC_API_URL is required for production builds: "/v1" (same-origin proxy, also set API_PROXY_TARGET) or the API URL such as https://api.example.com/v1');
+}
 const api = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/v1';
 // Same-origin mode: NEXT_PUBLIC_API_URL is a path such as "/v1" and this app proxies it to API_PROXY_TARGET (see rewrites()).
 // The browser then only talks to this site, so the API's host-only cookies belong to this site and no custom domain is needed.

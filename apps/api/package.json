@@ -8,7 +8,7 @@
     "prisma:generate": "prisma generate",
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
-    "build": "tsc -p tsconfig.build.json && mkdir -p dist/seed/demo && cp src/seed/demo/*.json dist/seed/demo/",
+    "build": "prisma generate && tsc -p tsconfig.build.json && mkdir -p dist/seed/demo && cp src/seed/demo/*.json dist/seed/demo/",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src test",
     "test": "vitest run",
