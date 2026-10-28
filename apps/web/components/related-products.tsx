@@ -39,7 +39,7 @@ export function ProductExtras({ all: everything, slug, categorySlug }: { all: Pr
     <>
       {likes.length > 0 && (
         <section className="mt-8" aria-labelledby="like-title">
-          <h2 id="like-title" className="mb-3 text-xl font-bold">
+          <h2 id="like-title" className="h-dots mb-3 text-xl font-bold">
             আপনার আরও পছন্দ হতে পারে
           </h2>
           <ul className="related-list">
@@ -51,7 +51,7 @@ export function ProductExtras({ all: everything, slug, categorySlug }: { all: Pr
       )}
       {recent.length > 0 && (
         <section className="mt-8" aria-labelledby="recent-title">
-          <h2 id="recent-title" className="mb-3 text-xl font-bold">
+          <h2 id="recent-title" className="h-dots mb-3 text-xl font-bold">
             সম্প্রতি দেখা পণ্য
           </h2>
           <ul className="related-list">

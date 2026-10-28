@@ -84,7 +84,7 @@ export function CatalogBrowser({ products: allProducts, categories, initialQ = '
         />
       )}
       <div className="mb-3 flex items-end justify-between gap-3">
-        <h2 id="all-title" className="text-xl font-bold">
+        <h2 id="all-title" className="h-dots text-xl font-bold">
           {title ?? 'সব পণ্য'}
         </h2>
         <span className="text-sm text-muted" role="status">
@@ -97,11 +97,11 @@ export function CatalogBrowser({ products: allProducts, categories, initialQ = '
         </p>
       )}
       <nav aria-label="ক্যাটাগরি অনুযায়ী পণ্য" className="cat-bar">
-        <button type="button" className="cat-pill" aria-pressed={cat === ''} onClick={() => pick('')}>
+        <button type="button" className="pill" aria-pressed={cat === ''} onClick={() => pick('')}>
           সব পণ্য <b>{bnDigits(matched.length)}</b>
         </button>
         {categories.map((c) => (
-          <button key={c.slug} type="button" className="cat-pill" aria-pressed={cat === c.slug} disabled={q.trim() !== '' && !counts.get(c.slug)} onClick={() => pick(c.slug)}>
+          <button key={c.slug} type="button" className="pill" aria-pressed={cat === c.slug} disabled={q.trim() !== '' && !counts.get(c.slug)} onClick={() => pick(c.slug)}>
             {c.nameBn} <b>{bnDigits(counts.get(c.slug) ?? 0)}</b>
           </button>
         ))}

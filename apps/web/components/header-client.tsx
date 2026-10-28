@@ -71,12 +71,12 @@ export function AreaBar() {
   };
 
   return (
-    <div className="border-t border-white/10 bg-[rgba(35,49,94,0.72)] text-sm backdrop-blur-md">
+    <div className="zone-bar">
       <div className="page-w flex items-center gap-2 py-1.5">
         <PinIcon />
         <span>ডেলিভারি এলাকা:</span>
         <strong className="font-semibold">{current ? current.nameBn : 'বেছে নিন'}</strong>
-        <button type="button" onClick={openDialog} className="ml-1 underline decoration-accent-500 underline-offset-4 hover:text-accent-100">
+        <button type="button" onClick={openDialog} className="ml-1 underline decoration-accent-500 underline-offset-4 hover:text-white">
           {current ? 'পরিবর্তন' : 'এলাকা নির্বাচন'}
         </button>
       </div>
@@ -97,7 +97,7 @@ export function AreaBar() {
             </button>
           </div>
           {areas.length === 0 ? (
-            <p className="mt-5 rounded-2xl bg-white/70 p-4 text-sm">এখনো কোনো ডেলিভারি এলাকা চালু হয়নি।</p>
+            <p className="mt-5 rounded-2xl bg-surface-2 p-4 text-sm">এখনো কোনো ডেলিভারি এলাকা চালু হয়নি।</p>
           ) : (
             <ul role="radiogroup" aria-labelledby="area-title" className="mt-5 grid max-h-[52vh] gap-3 overflow-auto p-1 sm:grid-cols-2">
               {areas.map((a) => {
@@ -121,7 +121,7 @@ export function AreaBar() {
             </ul>
           )}
           {error && (
-            <p role="alert" className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-danger">
+            <p role="alert" className="mt-4 rounded-xl bg-danger-bg px-3 py-2 text-sm text-danger">
               {error}
             </p>
           )}

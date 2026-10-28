@@ -22,11 +22,6 @@ function dhakaParts(iso: string | Date) {
 }
 const two = (n: number) => String(n).padStart(2, '0');
 
-export function todayDhaka(): string {
-  const p = dhakaParts(new Date());
-  return `${p.y}-${two(p.m)}-${two(p.day)}`;
-}
-
 export function dateTime(iso: string | Date | null | undefined): string {
   if (!iso) return '—';
   const p = dhakaParts(iso);

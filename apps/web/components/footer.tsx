@@ -11,7 +11,7 @@ export async function Footer() {
   const home = await serverGet<Home>('/content/home', 60).catch(() => null);
   const pages = home?.pages ?? [];
   return (
-    <footer className="mt-16 bg-brand-700 text-white">
+    <footer className="mt-16 bg-bar-2 text-on-brand">
       <svg className="milk-wave -mt-px rotate-180" viewBox="0 0 1440 28" preserveAspectRatio="none" aria-hidden>
         <path fill="currentColor" d="M0 0h1440v10c-120 12-240 18-360 12S840 4 720 6 480 24 360 24 120 14 0 10Z" />
       </svg>
@@ -24,13 +24,13 @@ export async function Footer() {
           <ul className="grid gap-2 text-sm">
             {pages.map((p) => (
               <li key={p.slug}>
-                <Link href={`/pages/${p.slug}`} className="hover:text-accent-100 hover:underline">
+                <Link href={`/pages/${p.slug}`} className="hover:text-white hover:underline">
                   {p.titleBn}
                 </Link>
               </li>
             ))}
             <li>
-              <Link href="/account" className="hover:text-accent-100 hover:underline">
+              <Link href="/account" className="hover:text-white hover:underline">
                 আমার অর্ডার
               </Link>
             </li>

@@ -151,6 +151,10 @@ function summary() {
 }
 const orderRow = (o) => ({ id: o.id, createdAt: o.createdAt, method: o.method, zone: o.zone, status: o.status, totalPoisha: o.totalPoisha, itemCount: o.lines.reduce((s, l) => s + l.quantity, 0), customer: (o.address ?? o.contact)?.name ?? null, outletNameBn: o.outlet?.nameBn ?? null });
 const publicOrder = (o) => ({ id: o.id, status: o.status, method: o.method });
+/** What staff see: everything except the customer's private lookup token. */
+const staffOrder = ({ token, ...o }) => o;
+/** What the customer who placed the order sees (needs the token returned at creation). */
+const customerOrder = ({ token, history, ...o }) => ({ ...o, history: history.map(({ status, at }) => ({ status, at })) });
 
 // ── orders ──
 function buildOrder(b) {
@@ -178,7 +182,7 @@ function buildOrder(b) {
       if (bad) throw new Bad(`${bad.nameBn} cannot be delivered to this zone`, 'NOT_DELIVERABLE', 422);
     }
   }
-  const o = { id: `DEMO-${++state.orderSeq}`, demo: true, createdAt: new Date().toISOString(), method: b.method, zone: b.method === 'HOME_DELIVERY' ? zone : null, status: STATUS_FLOW[b.method][0], lines: lines.map(({ categorySlug, outerCityStatus, ...l }) => l), totalPoisha: lines.some((l) => l.linePoisha === null) ? null : lines.reduce((s, l) => s + l.linePoisha, 0), payment: 'NOT_REQUIRED_DEMO', history: [] };
+  const o = { id: `DEMO-${++state.orderSeq}`, demo: true, createdAt: new Date().toISOString(), method: b.method, zone: b.method === 'HOME_DELIVERY' ? zone : null, status: STATUS_FLOW[b.method][0], lines: lines.map(({ categorySlug, outerCityStatus, ...l }) => l), totalPoisha: lines.some((l) => l.linePoisha === null) ? null : lines.reduce((s, l) => s + l.linePoisha, 0), payment: 'NOT_REQUIRED_DEMO', history: [], token: randomBytes(16).toString('hex') };
   const a = b.method === 'HOME_DELIVERY' ? b.address ?? {} : b.contact ?? {};
   const name = text(a.name, 80, { required: true, label: 'name' });
   const phone = text(a.phone, 20, { required: true, label: 'phone' });
@@ -288,6 +292,13 @@ createServer(async (req, res) => {
       state.orders.unshift(o);
       save();
       return send(res, 201, o);
+    }
+    if (m === 'GET' && (mm = path.match(/^\/orders\/(DEMO-\d+)$/))) {
+      const o = state.orders.find((x) => x.id === mm[1]);
+      const t = String(req.headers['x-order-token'] ?? '');
+      // same answer for "no such order" and "wrong token": ids are guessable, tokens are not
+      if (!o || !t || !same(o.token, t)) return err(res, 404, 'NOT_FOUND', 'Not found');
+      return send(res, 200, customerOrder(o));
     }
     if (m === 'GET' && (mm = path.match(/^\/orders\/(DEMO-\d+)\/status$/))) {
       const o = state.orders.find((x) => x.id === mm[1]);
@@ -429,7 +440,7 @@ createServer(async (req, res) => {
       if ((mm = path.match(/^\/admin\/orders\/(DEMO-\d+)$/))) {
         const o = state.orders.find((x) => x.id === mm[1]);
         if (!o) return err(res, 404, 'NOT_FOUND', 'Not found');
-        if (m === 'GET') return send(res, 200, { ...o, flow: STATUS_FLOW[o.method] });
+        if (m === 'GET') return send(res, 200, { ...staffOrder(o), flow: STATUS_FLOW[o.method] });
         if (m === 'PATCH') {
           const next = String((await body(req)).status ?? '');
           const flow = STATUS_FLOW[o.method];
@@ -439,7 +450,7 @@ createServer(async (req, res) => {
           if (next !== CANCELLED && !(to > from)) throw new Bad('Choose a later step', 'INVALID_TRANSITION', 409);
           o.status = next; o.history.push({ status: next, at: new Date().toISOString(), by: sess.login });
           save();
-          return send(res, 200, { ...o, flow });
+          return send(res, 200, { ...staffOrder(o), flow });
         }
       }
       return err(res, 404, 'NOT_FOUND', 'Not found');

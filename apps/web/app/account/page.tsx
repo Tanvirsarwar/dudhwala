@@ -6,6 +6,8 @@ import { api, ApiError, cartChanged, type Area } from '@/lib/api';
 import { ORDER_STATUS_BN, slotLabel, taka } from '@/lib/format';
 import { OtpLogin } from '@/components/otp-login';
 import { PrivacyControls } from '@/components/privacy-controls';
+import { DEMO_BRANDING } from '@/components/developer-credit';
+import { DemoMyOrders } from '@/components/demo-my-orders';
 
 interface Profile {
   id: string;
@@ -30,7 +32,7 @@ interface OrderRow {
   slotEndsAt: string;
 }
 
-export default function AccountPage() {
+function RealAccount() {
   const [state, setState] = useState<'loading' | 'anon' | 'ready'>('loading');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [name, setName] = useState('');
@@ -195,4 +197,9 @@ export default function AccountPage() {
       <PrivacyControls />
     </div>
   );
+}
+
+/** Demo build: no customer login; "My orders" lists the orders placed from this browser. */
+export default function AccountPage() {
+  return DEMO_BRANDING ? <DemoMyOrders /> : <RealAccount />;
 }

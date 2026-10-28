@@ -89,7 +89,7 @@ export function BulkBuilder({ products, categories }: { products: ProductCardDat
                 return (
                   <li key={p.id} className={`bulk-row ${n > 0 ? 'is-on' : ''}`}>
                     <span className="min-w-0 flex-1 font-semibold leading-snug">{p.nameBn}</span>
-                    <div className="flex items-center rounded-lg border border-line bg-white" role="group" aria-label={`${p.nameBn} সংখ্যা`}>
+                    <div className="flex items-center rounded-lg border border-line bg-surface" role="group" aria-label={`${p.nameBn} সংখ্যা`}>
                       <button type="button" className="h-10 w-10 text-lg" aria-label="কমান" disabled={n <= 0} onClick={() => set(p, n - 1)}>
                         −
                       </button>
@@ -107,7 +107,7 @@ export function BulkBuilder({ products, categories }: { products: ProductCardDat
       })}
       {shown.length === 0 && <p className="card mt-4 p-6 text-center">আপনার সার্চের সাথে মেলে এমন কোনো পণ্য নেই</p>}
 
-      <div className="bulk-bar" role="region" aria-label="বাল্ক অর্ডারের সারাংশ">
+      <div className="action-bar" role="region" aria-label="বাল্ক অর্ডারের সারাংশ">
         <p className="text-sm">
           <span>মোট:</span> <b>{bnDigits(total)}</b> <span>টি</span>
           {!ready && (

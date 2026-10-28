@@ -90,7 +90,7 @@ export function SearchBox({ initial = '', onQuery, className = '', inputClass = 
           } else if (e.key === 'Escape') setOpen(false);
         }}
       />
-      <button type="submit" className="absolute right-1 top-1 inline-flex h-9 w-9 items-center justify-center rounded-full text-brand-600" aria-label="খুঁজুন">
+      <button type="submit" className="absolute right-1 top-1 inline-flex h-9 w-9 items-center justify-center rounded-full text-link" aria-label="খুঁজুন">
         <SearchIcon />
       </button>
       {open && q.trim() && (

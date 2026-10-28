@@ -35,7 +35,7 @@ export function OrdersTable({ rows }: { rows: OrderRow[] }) {
           {rows.map((r) => (
             <tr key={r.id}>
               <td>
-                <Link href={`/orders/${r.id}`} className="font-latin font-semibold text-brand-600 underline">
+                <Link href={`/orders/${r.id}`} className="font-latin font-semibold text-link underline">
                   {r.id}
                 </Link>
               </td>

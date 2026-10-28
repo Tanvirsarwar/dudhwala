@@ -31,8 +31,6 @@ const api = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/v1';
 const sameOriginApi = api.startsWith('/');
 const apiOrigin = sameOriginApi ? '' : new URL(api).origin;
 const mediaOrigins = parseMediaOrigins(process.env.NEXT_PUBLIC_MEDIA_ORIGINS ?? '', process.env.NODE_ENV !== 'production');
-// Demo seed images are hot-linked from a third-party host; allow it outside production only.
-if (process.env.NODE_ENV !== 'production') mediaOrigins.push('https://wellfoodonline.com');
 
 // The admin is a client-rendered app talking to the API with the staff session cookie.
 // Strict CSP; no third-party scripts. 'unsafe-inline' scripts are needed for Next's bootstrap until nonces are wired.
@@ -52,7 +50,7 @@ const config: NextConfig = {
   output: 'standalone',
   reactStrictMode: true,
   poweredByHeader: false,
-  transpilePackages: ['@dudhwala/shared'],
+  transpilePackages: ['@dudhwala/shared', '@dudhwala/ui'],
   async rewrites() {
     if (!sameOriginApi) return [];
     const target = process.env.API_PROXY_TARGET ?? '';

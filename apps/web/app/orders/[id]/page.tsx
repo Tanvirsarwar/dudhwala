@@ -6,6 +6,8 @@ import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { api, ApiError, cartChanged } from '@/lib/api';
 import { bnDigits, ORDER_STATUS_BN, PAYMENT_STATUS_BN, slotLabel, taka } from '@/lib/format';
 import { OtpLogin } from '@/components/otp-login';
+import { DEMO_BRANDING } from '@/components/developer-credit';
+import { DemoOrderDetail } from '@/components/demo-order-detail';
 
 interface OrderDetail {
   id: string;
@@ -195,10 +197,15 @@ function OrderInner() {
   );
 }
 
-export default function OrderPage() {
+function RealOrderPage() {
   return (
     <Suspense fallback={<p className="pt-10 text-center">লোড হচ্ছে…</p>}>
       <OrderInner />
     </Suspense>
   );
+}
+
+export default function OrderPage() {
+  const { id } = useParams<{ id: string }>();
+  return DEMO_BRANDING ? <DemoOrderDetail id={id} /> : <RealOrderPage />;
 }

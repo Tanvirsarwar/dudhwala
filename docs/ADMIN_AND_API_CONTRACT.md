@@ -1,4 +1,4 @@
-# Admin panel and API contract (V2.6 demo)
+# Admin panel and API contract (V2.7 demo)
 
 This is what the rebuilt admin (`apps/admin`) and the storefront expect from the API. The demo implements it in `demo/mock-api/server.mjs` (one file, JSON file storage). The real backend (NestJS + PostgreSQL) should implement the same behaviour; items marked **MUST** are things the demo only does in the browser or skips.
 
@@ -17,9 +17,10 @@ Each account signs in only on its own page (the other page answers with the same
 | `GET /config` | `{hours:{openMinute,closeMinute}, bulk:{minTotalQuantity,minTotalPoisha,isPlaceholder}}` |
 | `GET/PUT /cart...` | cart (demo: in memory) |
 | `POST /orders` | create an order. Body: `method`, `zone`, `lines:[{variantId,quantity}]`, `address` (home) or `contact` (pickup/bulk), `outletId`+`pickupAt` (pickup), `payment` (bulk). The server prices the lines itself |
+| `GET /orders/:id` + header `x-order-token` | the customer's own view of an order (items, address/contact, status). The token is returned once by `POST /orders`; wrong token and unknown id both answer 404. Demo only: the real API uses the signed-in customer |
 | `GET /orders/:id/status` | `{id,status,method}` only (no personal data) |
 
-`POST /orders` in the demo checks: product exists and is active, quantity within stock and max, Outer City eligibility for home delivery, bulk threshold (a bulk cart cannot use home delivery/pickup; a non-bulk cart cannot use BULK_ORDER), bulk prepayment flag. **MUST (real backend):** also enforce ordering hours, pickup lead time and outlet hours, payment confirmation from the provider, stock reservation, idempotency, and require login or an unguessable order token (the demo's order id `DEMO-1001` is guessable, which is why the public status call exposes no personal data).
+`POST /orders` returns the order including a private `token` (never shown in staff views). In the demo checks: product exists and is active, quantity within stock and max, Outer City eligibility for home delivery, bulk threshold (a bulk cart cannot use home delivery/pickup; a non-bulk cart cannot use BULK_ORDER), bulk prepayment flag. **MUST (real backend):** also enforce ordering hours, pickup lead time and outlet hours, payment confirmation from the provider, stock reservation, idempotency, and require login or an unguessable order token (the demo's order id `DEMO-1001` is guessable, which is why the public status call exposes no personal data).
 
 ## Staff (`/admin/*`)
 | Call | ADMIN | MANAGER |

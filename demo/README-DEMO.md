@@ -1,101 +1,92 @@
-# Dudhwala – local client demo (V2.6: rebuilt admin + manager login)
+# Dudhwala — local demo (V2.7)
 
-A **temporary, offline-capable demo** of the Dudhwala storefront and admin on your own PC.
-It uses the real Premium UI code with a small **mock API**.
+A runnable **frontend demo** of the Dudhwala storefront and admin/manager panels on your own computer. It uses the project's real Next.js apps with a small **mock API** (`demo/mock-api`, plain Node, saves to a JSON file).
 
-> **Product names and the delivery-eligibility marks come from the shop's real printed lists. Prices, pack sizes and stock were not supplied, so they are empty ("Price to be announced").** Orders, outlets, the admin dashboard and the admin account are demo data and **not real**.
-> No database, payment gateway, SMS or cloud service is used. Nothing is sent anywhere, no orders or money are taken.
+> Product **names** and delivery-eligibility marks come from the shop's real printed lists. **Prices, pack sizes, stock and photos were not supplied**, so they are empty ("Price to be announced") until the admin enters them. Orders, outlets, accounts and payments are **demo/simulated**. This is not a production e-commerce system: it needs the backend phase (see "What is simulated").
 
 ## Requirements
-- **Node.js 22 or newer** (https://nodejs.org)
-- **pnpm 9.15.9** – installed automatically if you run `corepack enable` (ships with Node), or `npm install -g pnpm@9.15.9`
-- Internet is needed **only on the first run** to download dependencies. Afterwards the demo runs offline.
-- About 1.5 GB free disk space and a few minutes for the first build.
+- **Node.js 22+** and **pnpm 9.15.9** (`corepack enable` is enough on most systems).
+- Internet **only on the first run** (downloads dependencies). About 1.5 GB disk and a few minutes for the first build.
 
 ## Start
-| System | Command |
-|---|---|
-| Linux / macOS | `./start-demo.sh` (run `chmod +x start-demo.sh` once if needed) |
-| **NixOS** | `./start-demo-nixos.sh` (uses `nix-shell -p nodejs_22 pnpm steam-run`; see the NixOS note below) |
-| Windows | double-click `start-demo.bat` (or run it in Command Prompt) |
 
-First run installs dependencies and builds the two sites (a few minutes). Later runs start in seconds.
+### NixOS
+```bash
+unzip dudhwala-premium-local-demo-v2.7.zip
+cd dudhwala-premium-local-demo-v2.7
+chmod +x start-demo.sh start-demo-nixos.sh
+./start-demo-nixos.sh          # nix-shell: nodejs_22 + pnpm + steam-run (needed for the prebuilt native binaries)
+```
+If `steam-run` does not work on your machine, add `programs.nix-ld.enable = true;` to `configuration.nix`, rebuild, then run `./start-demo.sh` inside `nix-shell -p nodejs_22 pnpm`. *The NixOS path could not be run in the environment where this package was built; the script is a thin wrapper around `start-demo.sh`, which was verified.*
 
-## Addresses (127.0.0.1 only – not reachable from other computers)
-| What | URL |
-|---|---|
-| Storefront | http://127.0.0.1:3100 |
-| Admin | http://127.0.0.1:3101 – login `admin@demo.local` / password `demo1234` |
-| Mock API check | http://127.0.0.1:4010/v1/health/ready |
+### Linux / macOS
+```bash
+unzip dudhwala-premium-local-demo-v2.7.zip && cd dudhwala-premium-local-demo-v2.7
+chmod +x start-demo.sh && ./start-demo.sh
+```
+### Windows
+Unzip, then double-click **`start-demo.bat`** (or run it in Command Prompt). *Reviewed but not executed on Windows when this package was built.*
 
-## V2.6: rebuilt admin panel, manager login, live orders
-- **Admin** (http://127.0.0.1:3101, `admin@demo.local` / `demo1234`): dashboard (orders and product counts), **Products** (search, filters, quick price entry for many products at once, full product page: names, category, show/hide in shop, sizes with prices, offer price, stock, descriptions, **photo upload/replace/remove**, Outer City delivery switch), **Categories** (rename, reorder, show/hide, add), **Orders** (list, filters, detail, move to the next status, cancel), **Settings** (ordering hours, bulk order minimum, reset demo data).
-- **Manager** (http://127.0.0.1:3101/manager/login, `manager@demo.local` / `manager1234`): a separate login page. Managers see the dashboard, orders (with customer details) and products with counts, but **cannot change anything** (fields are disabled and the API refuses every write with 403).
-- Changes reach the storefront at once (prices, names, photos, hidden products, Outer City flags, ordering hours, bulk minimum).
-- **Orders placed in the shop now reach the admin.** The customer sees the status the admin sets; a pickup is shown as confirmed to the customer only after the admin marks it ready.
-- Everything is saved in `demo/mock-api/runtime/store.json` (and uploaded photos in `demo/mock-api/media/`), so it survives a restart. Settings → "Reset demo data" (type RESET) returns to the product list from the supplied files.
-- These demo accounts and the local file store are **not** real authentication or a database. The API contract for the real backend is in `docs/ADMIN_AND_API_CONTRACT.md`.
+The first run installs dependencies and builds both sites (a few minutes); later runs start in seconds. Wait for **"Dudhwala DEMO is running"**.
 
-## V2.5.1: polish
-- **No delivery-area picker.** The customer simply writes their full address at checkout: anywhere in Sylhet Sadar for **In City**, anywhere outside for **Outer City**. The zone selector stays.
-- **Outer Sylhet Doi:** Bati Doi, Premium Doi, Premium Cup Doi and Cup Doi are now deliverable to Outer City (25 products there in total).
-- **No "Demo orders" section.** The order confirmation card is shown after checkout (with a "Demo: move to next step" button to simulate staff).
-- **New Bulk Order page** (`/bulk`, link in the header strip and a card on the home page): pick many products with quantities, the page shows how many more are needed, then continues to checkout as a Bulk Order (collection only from Modina Market Branch, Demo/Simulated Payment). The 20-item minimum is still a placeholder.
-- **SVG artwork removed.** Products show real photos only when image files are present in `demo/mock-api/media/` (`<product-slug>.jpg|png|webp`, e.g. `ds-01.jpg`) or, easier, upload them in the admin product page; otherwise the plain "photo coming soon" tile is shown. **No photos are bundled in this ZIP**: the build environment could not download any (see the report).
+### Stop
+Linux/macOS/NixOS: press **Ctrl+C** in the terminal (all three processes stop). Windows: run `stop-demo.bat` or close the three "Dudhwala demo" windows.
 
-## V2.5: real catalogue, delivery zones and demo ordering
-- **Real catalogue:** 59 products in 3 categories (Dairy Sweets 23, Doi / Dairy 11, Bakery 25) replace the old invented sample products. Details, unclear names and open questions: `docs/CATALOGUE_V2_5_1.md`. No price, size or stock was invented.
-- **Delivery zone selector** (strip under the header). **In City**: every product, delivery within 24 hours (no instant delivery). **Outer City**: all Bakery, the ticked Dairy Sweets (Ghee, Nimki) and four Doi items (Bati, Premium, Premium Cup, Cup), delivery in 1-2 days; everything else is hidden. The cart is re-checked when you change zone: unsuitable items are **marked, never silently removed**, and block checkout until you switch zone or remove them.
-- **Ordering hours:** 10:00-22:00 Asia/Dhaka (real clock of the computer, evaluated in the Dhaka time zone). Outside them the checkout is blocked with a bilingual message and the reopening time.
-- **Checkout (demo):** three options. *Home Delivery* (zone, address, estimated delivery, "cash on delivery - demo"); *Express Pickup* (choose an outlet; earliest pickup is at least 1 hour away; pickup counts as confirmed only when the outlet marks it ready - use "Demo: move to next step" on the confirmation card); *Bulk Order* (carts of 20+ items; collection only from Modina Market Branch; "Demo/Simulated Payment" first; no home or instant delivery). **The bulk threshold (20 items) is a placeholder** until the shop approves real values. The amount threshold cannot be checked yet because no prices exist.
-- **Orders** are saved only in this browser (`localStorage`, keys `dw.demo.zone` and `dw.demo.orders`), have `DEMO-` numbers and are never real orders. There is no card form, payment gateway, SMS or login in this flow.
-- The validation in the browser is for the demo only and is **not** security. Phase 2 notes: `docs/PHASE2_INTEGRATION.md`.
-- Tests: `pnpm --filter @dudhwala/shared test` (ordering rules, search, translations) and `pnpm test:demo` (catalogue and eligibility, needs `pnpm --filter @dudhwala/shared build` first).
+## Addresses and demo logins (127.0.0.1 only)
+| What | URL | Login |
+|---|---|---|
+| Storefront | http://127.0.0.1:3100 | none (customers order without logging in) |
+| Admin | http://127.0.0.1:3101 | `admin@demo.local` / `demo1234` |
+| Manager (view only) | http://127.0.0.1:3101/manager/login | `manager@demo.local` / `manager1234` |
+| Mock API check | http://127.0.0.1:4010/v1/health/ready | |
 
-## V2.4: shopping experience
-- **Full-width layout:** content now uses the whole screen up to 2000 px (8 cards per row on a 1920 px desktop) with balanced side padding.
-- **Fuzzy search:** the header box and the Search page give live suggestions (image, name, sample price) and tolerate typos and transliterations: `mlk`, `dudh` → Milk; `ghi`, `gee` → Ghee; `doi`, `dohi` → Doi; `biscute`, `biskut` → Biscuit; `sandsh`, `shondesh` → Sandesh; `roshogolla` → Rasgulla; Bangla works too. Arrow keys, Enter, Esc and touch work; no-match shows "Did you mean". Spellings live in one editable list (`SEARCH_ALIASES` in `packages/shared/src/search.ts`).
-- **Categories:** the bar above the product grid filters the grid (counts, active state, clear filters) and works together with search and sorting.
-- **Product pages:** "You May Also Like" (same category, then complementary categories) and "Recently Viewed" (kept in this browser).
+Each staff account works only on its own login page. These are **demo credentials in a demo server, not real authentication.**
 
-## V2.3: scroll stability and compact cards
-Cards could blank out while scrolling on real GPUs because the page stacked too many compositor-heavy layers (measured on V2.2: 39 blurred surfaces, 51 transformed elements, 21 3D contexts, 26 finished animations still applied, and a fixed background repainted every frame). V2.3 keeps blur only on the header, panels and dialogs, applies the 3D tilt only while a card is hovered, stops entrance animations from lingering after they finish, and paints the background on one fixed layer. Product cards, dashboard tiles and About cards are also smaller (5 product cards per row on a 1280 px desktop instead of 4). If you still see a card flicker on your machine, tell me the browser and GPU.
+## What you can do
+**Storefront (EN | বাংলা, Day | Night):** 59 real products in 3 categories; typo-tolerant search in English and Bangla; sorting and category filters; product pages; cart; **delivery zones** (In City = everything within 24 h; Outer City = all Bakery + approved Dairy Sweets/Doi, 1–2 days; ineligible cart lines are flagged, never silently removed); **ordering hours** 10:00–22:00 Asia/Dhaka (browsing always allowed); **three fulfilment modes** — Home Delivery (write your address), Express Pickup (≥ 1 hour ahead; confirmed only when the outlet marks it ready), Bulk Order (collection only at Modina Market Branch, simulated prepayment, no delivery); **My orders** (orders placed from this browser, auto-refreshing status); About page.
+**Admin:** dashboard counts; products (quick price entry, sizes/prices/offers/stock, descriptions, photo upload, show/hide, Outer City switch); categories; orders (filter, detail, status steps, cancel); settings (ordering hours, bulk minimum, reset demo data). **Manager:** the same screens, read-only (the API refuses writes with 403).
+Admin changes appear on the storefront at once. Data is kept in `demo/mock-api/runtime/store.json` and uploaded photos in `demo/mock-api/media/` (Settings → Reset demo data, or delete `runtime/`, to start over). Product/category **deletion is not offered**: products are hidden, categories are switched off.
 
-## About page and developer credit (V2.2)
-Footer → "দুধওয়ালা সম্পর্কে" / "About Dudhwala" opens an editorial About page. Its story is limited to what a 2021 report in The Business Standard states (a Sylhet dairy venture begun by four dairy farmers, starting with raw milk and growing into dairy products and traditional sweets). It is historical background, not a statement about current operations; the page says so. Product pictures are the demo's own generated artwork. The footer and the end of the About page carry a plain (non-clickable) "Designed & Developed by PETRA Software Solutions" credit with the supplied PETRA logo, unmodified.
+## What is simulated / known limits
+- No database, customer login, SMS, payment gateway or email. "Payment" is a labelled simulation; bulk prepayment is a button. Orders are saved in the mock API.
+- The ordering-hours, pickup lead-time and zone checks run in the browser for UX; the mock API repeats zone and bulk checks but **not** the hours. None of this is a security guarantee.
+- The bulk minimum (20 items / ৳20,000) is a **placeholder** until the owner approves values (Admin → Settings).
+- 11 product names are marked "unverified" and kept out of Outer City (see `docs/CATALOGUE_V2_5_1.md`); English names are transliterations needing owner approval.
+- No product photos are bundled (none could be downloaded); products show an intentional category tile until you upload a photo.
+- Delivery slots, coupons, payments, stock counts, transfers and the rider app from the real backend design are not part of this demo.
 
-## Delivery area picker
-Header → "Choose area" opens a card picker. Pick one card, then press **Confirm delivery area** (ডেলিভারি এলাকা নিশ্চিত করুন): the choice is saved to the cart and the page refreshes with area-specific availability. The demo data has area names only (no delivery fees or service status), so none are shown.
+## Commands (from the project folder)
+```bash
+pnpm typecheck                       # all workspaces
+pnpm lint
+pnpm --filter @dudhwala/shared test  # business rules, search, translations (vitest)
+pnpm test:demo                       # mock API + catalogue tests (node:test; build shared first)
+pnpm --filter @dudhwala/web build    # production build (needs NEXT_PUBLIC_API_URL, see docs/DEPLOYMENT_FRONTEND.md)
+# browser tests (need a running demo and Chromium: `pnpm --filter @dudhwala/e2e exec playwright install chromium`):
+pnpm install --filter @dudhwala/e2e...
+pnpm test:demo:browser               # storefront, admin, platform (theme/a11y/responsive), resilience
+```
+Set `PW_CHROMIUM_PATH=/path/to/chromium` to use an installed browser.
 
-## Language: EN | বাংলা
-The `EN | বাংলা` switch is in the storefront header and the admin top bar (and on the admin login page). The choice is remembered in the browser and survives refresh and navigation. English uses Montserrat; Bangla uses Hind Siliguri with Noto Sans Bengali as fallback. The storefront (home, categories, search, product pages, cart, area picker, sign-in) and the main admin screens (menu, dashboard, orders list, products, stock, branches) are translated. Rarely used admin screens (delivery rules, coupons, payments, reports, staff forms, long help texts) remain in Bangla.
+## Production deployment (frontend only)
+See `docs/DEPLOYMENT_FRONTEND.md` (environment variables, same-origin API proxy, checklist) and `docs/ADMIN_AND_API_CONTRACT.md` (the API the frontends expect). Leave `NEXT_PUBLIC_DEMO_BRANDING` unset in production. `docs/PHASE2_INTEGRATION.md` lists the demo parts to replace. `docs/AUDIT_V2_7.md` records the V2.7 audit.
 
-## NixOS note
-NixOS cannot run the prebuilt native binaries in `node_modules` directly. `start-demo-nixos.sh` wraps the normal script in `steam-run`. If that does not work on your machine, enable `programs.nix-ld.enable = true;` in `configuration.nix` (then rebuild) and run `./start-demo.sh` inside `nix-shell -p nodejs_22 pnpm`. **This NixOS path was not tested** (no NixOS machine was available when this package was made).
-
-## What works
-- Storefront: home with hero and collection, categories, product listing, **search** (Bangla or English), sorting, product pages, **add to cart**, cart quantities, delivery-zone selector, demo checkout, demo orders, delivery-area picker, information pages.
-- Admin and Manager panels (see V2.6 above).
-- No product photos are bundled (add your own to `demo/mock-api/media/`, see V2.5.1).
-
-## Intentionally simulated or not available
-- **Customer login does not work** and there is no SMS or real payment. The V2.5 demo checkout works without login and only saves a demo order in your browser.
-- **Admin edits are saved in a local file** (see V2.6), not a database. Delivery rules, coupons, payments, reports and staff management screens do not exist in this demo.
-- The cart lives in the mock server's memory and **resets when the demo is restarted**; demo orders and the zone choice stay in your browser until you clear them.
-- The numbers on the admin dashboard are computed from the invented sample orders.
-
-## Stop
-- Linux/macOS: press **Ctrl+C** in the terminal.
-- Windows: close the three "Dudhwala demo" windows, or run `stop-demo.bat`.
+## Design system
+One token set and one component stylesheet shared by both apps: `packages/ui/styles/dw.css` (colours, radii, shadows, motion, buttons, forms, cards, tables, badges, notices, dialogs, light/dark themes). Theme and language switches live in `packages/ui/src`. Theme choice is stored as `dw.theme`, language as `dw.lang` (browser localStorage); with no stored choice the system colour scheme is used.
 
 ## Troubleshooting
-- *"Node.js 22+ required"* – install a newer Node.js and open a new terminal.
-- *pnpm not found* – run `corepack enable` (may need an administrator terminal on Windows) or `npm install -g pnpm@9.15.9`.
-- *Port already in use* (3100, 3101 or 4010) – close the other program, or stop a previous demo.
-- *Page shows an error right after start* – wait ~10 seconds and refresh; the sites need a moment to start.
-- *Start over from scratch* – delete the `node_modules` folder and the `apps/web/.next` and `apps/admin/.next` folders, then start again.
-- Admin login says wrong password – use exactly `admin@demo.local` / `demo1234` on the admin page, and `manager@demo.local` / `manager1234` on the **manager** page (each account only works on its own page).
-- *Start over from the supplied catalogue* – Admin → Settings → Reset demo data, or delete `demo/mock-api/runtime/`.
+- *Node 22+ required* — install a newer Node. *pnpm not found* — `corepack enable` or `npm install -g pnpm@9.15.9`.
+- *Port in use* (3100, 3101, 4010) — stop the other program or a previous demo.
+- *Error right after start* — wait ~10 s and refresh.
+- *Start from scratch* — delete `node_modules`, `apps/*/.next` and `demo/mock-api/runtime`.
+- Wrong password — use each login on its own page (admin vs manager).
 
-## What is inside
-`apps/web` (storefront) and `apps/admin` (admin) are the project's real Next.js apps, unchanged; `packages/shared` is their shared code; `demo/mock-api` is the mock server (`server.mjs`, sample data in `data.mjs`, no dependencies). The sites are built so their `/v1/*` requests are forwarded to the mock API.
+## V2.7 change log
+- **Design system:** shared tokens + solid rich colour-grade look with crisp pixel-style edges and details; one stylesheet for both apps (the two diverged CSS files, ~1,000 lines of stacked overrides, were consolidated).
+- **Day/Night mode** for storefront and admin/manager: system preference on first visit, persisted, no flash, keyboard accessible, tuned night palette.
+- **Customer screens completed:** demo "My orders" + order page (private order token), login page that explains the demo, loading/empty/error states, retry buttons, error boundaries, duplicate-submit protection.
+- **Fixes:** hydration error in English mode (caused by a Suspense boundary), endless cart spinner when the API is down, header overflow on phones, zone-strip control sizing, unreadable hero text/contrast in night mode, link/contrast issues, missing form label (admin photo upload), unprefixed `h-px` class clash.
+- **Admin:** stale-data warning when a refresh fails; shared status badges/notices.
+- **Cleanup:** removed unused dependency (`qrcode`), dead helpers, unused CSS and a hot-linked demo image origin; duplicated language switch moved to `packages/ui`.
+- **Tests:** browser suites (storefront 83 checks, admin 70, platform 54 incl. axe in both themes, resilience 8) are now part of the repository (`e2e/demo`); API tests extended (order tokens).
+- Earlier versions: V2.5 real catalogue/zones/ordering, V2.5.1 bulk page, V2.6 rebuilt admin + manager login.

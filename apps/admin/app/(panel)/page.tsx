@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import type { DemoOrderStatus, FulfilmentMethod } from '@dudhwala/shared';
 import { METHOD_BN, ORDER_STATUS_BN, taka } from '@/lib/format';
 import { useLoad } from '@/lib/use-load';
-import { Empty, Loading, PageTitle, Stat, TableWrap } from '@/components/ui';
+import { Empty, Loading, PageTitle, StaleNotice, Stat, TableWrap } from '@/components/ui';
 import { OrdersTable, type OrderRow } from '@/components/orders-table';
 
 interface Summary {
@@ -25,7 +25,8 @@ export default function Dashboard() {
   return (
     <>
       <PageTitle title="ড্যাশবোর্ড" />
-      <h2 className="mb-2 font-bold text-brand-700">অর্ডার</h2>
+      <StaleNotice error={error} onRetry={() => void reload()} />
+      <h2 className="h-dots mb-2 font-bold text-brand-700">অর্ডার</h2>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="মোট অর্ডার" value={o.total} href="/orders" />
         <Stat label="আজকের অর্ডার" value={o.today} href="/orders" />
@@ -74,7 +75,7 @@ export default function Dashboard() {
         )}
       </p>
 
-      <h2 className="mb-2 mt-6 font-bold text-brand-700">পণ্য</h2>
+      <h2 className="h-dots mb-2 mt-6 font-bold text-brand-700">পণ্য</h2>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         <Stat label="মোট পণ্য" value={p.total} href="/products" />
         <Stat label="দোকানে চালু" value={p.active} href="/products?status=active" />
@@ -96,7 +97,7 @@ export default function Dashboard() {
             {p.byCategory.map((c) => (
               <tr key={c.slug}>
                 <td>
-                  <Link href={`/products?category=${c.slug}`} className="text-brand-600 underline">
+                  <Link href={`/products?category=${c.slug}`} className="text-link underline">
                     {c.nameBn}
                   </Link>
                 </td>
@@ -108,7 +109,7 @@ export default function Dashboard() {
         </table>
       </TableWrap>
 
-      <h2 className="mb-2 mt-6 font-bold text-brand-700">সাম্প্রতিক অর্ডার</h2>
+      <h2 className="h-dots mb-2 mt-6 font-bold text-brand-700">সাম্প্রতিক অর্ডার</h2>
       {o.latest.length === 0 ? (
         <Empty>এখনো কোনো অর্ডার আসেনি। দোকান থেকে অর্ডার দিলে এখানে দেখা যাবে।</Empty>
       ) : (

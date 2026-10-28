@@ -119,11 +119,17 @@ test('orders: server prices the lines, repeats zone + bulk rules, never leaks co
   assert.equal((await call('POST', '/orders', { body: { method: 'HOME_DELIVERY', zone: 'IN_CITY', lines: [{ variantId: sv, quantity: 25 }], address: addr } })).json.error.code, 'BULK_REQUIRED');
   const b = await call('POST', '/orders', { body: { method: 'BULK_ORDER', lines: [{ variantId: sv, quantity: 25 }], contact: addr, payment: 'DEMO_PAID_SIMULATED' } });
   assert.equal(b.status, 201); assert.equal(b.json.outlet.nameEn, 'Modina Market Branch'); assert.equal(b.json.totalPoisha, null, 'no price yet -> total unknown, never invented');
+  assert.equal(typeof r.json.token, 'string', 'the creator receives a private lookup token');
+  assert.equal((await call('GET', `/orders/${r.json.id}`)).status, 404, 'no token -> not found');
+  assert.equal((await fetch(`${BASE}/orders/${r.json.id}`, { headers: { 'x-order-token': 'wrong' } })).status, 404);
+  const mine = await (await fetch(`${BASE}/orders/${r.json.id}`, { headers: { 'x-order-token': r.json.token } })).json();
+  assert.equal(mine.address.line1, 'জিন্দাবাজার'); assert.ok(!('token' in mine));
   const pub = await call('GET', `/orders/${r.json.id}/status`);
   assert.deepEqual(pub.json, { id: r.json.id, status: 'DEMO_PLACED', method: 'HOME_DELIVERY' });
   assert.ok(!JSON.stringify(pub.json).includes('01712345678'));
   const mgr = await call('GET', `/admin/orders/${r.json.id}`, { cookie: manager.cookie });
   assert.equal(mgr.json.address.phone, '01712345678', 'managers can see order details');
+  assert.ok(!('token' in mgr.json), 'staff views never include the customer token');
 });
 
 test('order status: forward only, cancel needs a live order, finished orders are locked', async () => {

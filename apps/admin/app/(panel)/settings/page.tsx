@@ -58,7 +58,7 @@ export default function SettingsPage() {
         </div>
         <p className="mb-3 text-sm text-muted">এই সময়ের বাইরে দোকানে অর্ডার নেওয়া বন্ধ থাকে।</p>
         <h2 className="mb-2 mt-4 font-semibold">বাল্ক অর্ডারের ন্যূনতম সীমা</h2>
-        {data.bulk.isPlaceholder && <p className="mb-2 rounded-xl bg-[#fff4cc] p-3 text-sm">এখনকার মান শুধু অস্থায়ী (ডেমো)। আপনার আসল সীমা দিয়ে সংরক্ষণ করুন।</p>}
+        {data.bulk.isPlaceholder && <p className="mb-2 rounded-xl bg-warn-bg p-3 text-sm">এখনকার মান শুধু অস্থায়ী (ডেমো)। আপনার আসল সীমা দিয়ে সংরক্ষণ করুন।</p>}
         <div className="grid grid-cols-2 gap-3">
           <Field label="মোট পণ্যের সংখ্যা (টি)" id="s-qty">
             <input id="s-qty" inputMode="numeric" className="field font-latin" value={f.qty} onChange={(e) => setF({ ...f, qty: e.target.value })} required />

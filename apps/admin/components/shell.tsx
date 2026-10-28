@@ -5,7 +5,8 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { useSession } from '@/lib/session';
 import { ROLE_BN } from '@/lib/format';
-import { LangToggle } from './lang';
+import { LangToggle } from '@dudhwala/ui/lang';
+import { ThemeToggle } from '@dudhwala/ui/theme';
 
 interface NavItem {
   href: string;
@@ -30,7 +31,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="admin min-h-screen md:grid md:grid-cols-[220px_1fr]">
-      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:p-2">
+      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-surface focus:p-2">
         মূল অংশে যান
       </a>
       <aside className={`${open ? 'block' : 'hidden'} glass-side border-r border-line md:block`}>
@@ -45,14 +46,14 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <ul className="grid gap-1">
             {items.map((i) => (
               <li key={i.href}>
-                <Link href={i.href} onClick={() => setOpen(false)} aria-current={active(i.href) ? 'page' : undefined} className={`block rounded-xl px-3 py-2.5 ${active(i.href) ? 'bg-brand-600 font-semibold text-white' : 'text-ink hover:bg-brand-100'}`}>
+                <Link href={i.href} onClick={() => setOpen(false)} aria-current={active(i.href) ? 'page' : undefined} className={`block rounded-xl px-3 py-2.5 ${active(i.href) ? 'bg-brand-600 font-semibold text-on-brand' : 'text-ink hover:bg-brand-100'}`}>
                   {i.label}
                 </Link>
               </li>
             ))}
           </ul>
           {STOREFRONT && (
-            <a href={STOREFRONT} target="_blank" rel="noreferrer" className="mt-3 block rounded-xl px-3 py-2.5 text-sm text-brand-600 underline">
+            <a href={STOREFRONT} target="_blank" rel="noreferrer" className="mt-3 block rounded-xl px-3 py-2.5 text-sm text-link underline">
               দোকান দেখুন ↗
             </a>
           )}
@@ -66,6 +67,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </button>
           <div className="ml-auto flex items-center gap-3 text-sm">
             <LangToggle />
+            <ThemeToggle />
             <span className="hidden text-muted sm:inline">
               {s.me.user.fullName} · {ROLE_BN[s.me.role]}
             </span>
@@ -75,7 +77,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
         {s.isManager && (
-          <p role="note" className="bg-[#fff4cc] px-4 py-1.5 text-center text-sm font-semibold text-ink">
+          <p role="note" className="bg-warn-bg px-4 py-1.5 text-center text-sm font-semibold text-ink">
             ম্যানেজার (শুধু দেখা): আপনি অর্ডার ও পণ্যের তথ্য দেখতে পারবেন, কিছু পরিবর্তন করতে পারবেন না।
           </p>
         )}

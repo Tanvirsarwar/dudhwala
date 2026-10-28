@@ -76,7 +76,7 @@ function ReturnInner() {
 
   return (
     <div className="card mx-auto mt-8 max-w-md p-6 text-center" aria-live="polite">
-      {error && <p className="rounded-lg bg-red-50 p-3 text-danger">{error}</p>}
+      {error && <p className="rounded-lg bg-danger-bg p-3 text-danger">{error}</p>}
       {!error && !st && <p>পেমেন্ট যাচাই করা হচ্ছে…</p>}
       {st && paid && (
         <>

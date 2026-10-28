@@ -36,10 +36,14 @@ export function DemoCheckout() {
   const [error, setError] = useState<string | null>(null);
   const [placed, setPlaced] = useState<DemoOrder | null>(null);
 
-  useEffect(() => {
+  const loadCart = useCallback(() => {
+    setError(null);
     api<CartView>('/cart').then(setCart).catch(() => setError('কার্ট লোড করা যায়নি'));
-    outletService.list().then(setOutlets).catch(() => setOutlets([]));
   }, []);
+  useEffect(() => {
+    loadCart();
+    outletService.list().then(setOutlets).catch(() => setOutlets([]));
+  }, [loadCart]);
 
   const lines = useMemo(() => cart?.lines ?? [], [cart]);
   const bulk = useMemo(() => bulkStatus(lines.map((l) => ({ quantity: l.quantity, linePoisha: l.lineTotalPoisha })), cfg.bulk), [lines, cfg.bulk]);
@@ -114,12 +118,30 @@ export function DemoCheckout() {
         <div className="mt-3">
           <DemoOrderCard order={placed} />
         </div>
-        <Link href="/" className="btn btn-primary mt-4">
-          কেনাকাটা চালিয়ে যান
-        </Link>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link href="/account" className="btn btn-primary">
+            আমার অর্ডার
+          </Link>
+          <Link href="/" className="btn btn-ghost">
+            কেনাকাটা চালিয়ে যান
+          </Link>
+        </div>
       </div>
     );
-  if (!cart) return <p className="pt-10 text-center text-muted">{error ?? 'লোড হচ্ছে…'}</p>;
+  if (!cart)
+    return error ? (
+      <div className="notice notice-err mx-auto mt-10 max-w-md text-center" role="alert">
+        <p>{error}</p>
+        <button type="button" className="btn btn-ghost btn-compact mt-2" onClick={loadCart}>
+          আবার চেষ্টা করুন
+        </button>
+      </div>
+    ) : (
+      <div className="mx-auto mt-6 max-w-5xl" aria-busy="true" aria-label="লোড হচ্ছে…">
+        <div className="skeleton h-8 w-40 rounded-lg" />
+        <div className="skeleton mt-4 h-40 rounded-2xl" />
+      </div>
+    );
   if (lines.length === 0)
     return (
       <div className="card mx-auto mt-6 max-w-3xl p-8 text-center">

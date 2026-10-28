@@ -53,7 +53,7 @@ export default async function ProductPage({ params }: Props) {
         </Link>
       </nav>
       <div className="grid gap-6 md:grid-cols-2">
-        <ProductGallery images={p.images} name={p.nameBn} />
+        <ProductGallery images={p.images} name={p.nameBn} category={p.category.slug} />
         <div>
           <h1 className="text-2xl font-bold leading-snug md:text-3xl">{p.nameBn}</h1>
           {p.nameEn && p.nameEn !== p.nameBn && <p className="font-latin text-muted">{p.nameEn}</p>}

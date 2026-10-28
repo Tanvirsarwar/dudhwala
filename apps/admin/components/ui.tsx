@@ -5,22 +5,17 @@ import { useEffect, useRef } from 'react';
 import type { DemoOrderStatus } from '@dudhwala/shared';
 import { ORDER_STATUS_BN } from '@/lib/format';
 
-/** Status badges always carry text (never colour alone). */
-const TONE: Record<string, string> = {
-  good: 'bg-[#e6f4ec] text-success border-[#b7dfc6]',
-  warn: 'bg-[#fff4cc] text-warning border-[#f1d98a]',
-  bad: 'bg-red-50 text-danger border-red-200',
-  info: 'bg-accent-100 text-[#01628c] border-[#b5e6f9]',
-  neutral: 'bg-brand-100 text-brand-700 border-[#cfd1ee]',
-};
+/** Status badges always carry text (never colour alone). Colours come from the shared status tokens. */
+const TONE = { good: 'badge-ok', warn: 'badge-warn', bad: 'badge-danger', info: 'badge-info', neutral: 'badge-neutral' } as const;
+type Tone = keyof typeof TONE;
 
-export function Badge({ tone = 'neutral', children }: { tone?: keyof typeof TONE; children: React.ReactNode }) {
+export function Badge({ tone = 'neutral', children }: { tone?: Tone; children: React.ReactNode }) {
   return <span className={`badge ${TONE[tone]}`}>{children}</span>;
 }
 
 const FINAL = new Set(['DEMO_DELIVERED', 'DEMO_PICKED_UP', 'DEMO_COLLECTED']);
 export function OrderBadge({ status }: { status: DemoOrderStatus }) {
-  const tone: keyof typeof TONE = status === 'DEMO_CANCELLED' ? 'bad' : FINAL.has(status) ? 'good' : status.includes('READY') ? 'info' : status === 'DEMO_PREPARING' ? 'neutral' : 'warn';
+  const tone: Tone = status === 'DEMO_CANCELLED' ? 'bad' : FINAL.has(status) ? 'good' : status.includes('READY') ? 'info' : status === 'DEMO_PREPARING' ? 'neutral' : 'warn';
   return <Badge tone={tone}>{ORDER_STATUS_BN[status] ?? status}</Badge>;
 }
 
@@ -44,7 +39,7 @@ export function Stat({ label, value, href, tone }: { label: string; value: React
 export function PageTitle({ title, children }: { title: string; children?: React.ReactNode }) {
   return (
     <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <h1 className="text-xl font-bold text-brand-700">{title}</h1>
+      <h1 className="h-dots text-xl font-bold text-brand-700">{title}</h1>
       {children ? <div className="flex flex-wrap items-center gap-2">{children}</div> : null}
     </div>
   );
@@ -53,13 +48,13 @@ export function PageTitle({ title, children }: { title: string; children?: React
 export function Msg({ error, ok }: { error?: string | null; ok?: string | null }) {
   if (error)
     return (
-      <p role="alert" className="my-2 rounded-lg bg-red-50 p-3 text-sm text-danger">
+      <p role="alert" className="notice notice-err my-2">
         {error}
       </p>
     );
   if (ok)
     return (
-      <p role="status" className="my-2 rounded-lg bg-[#e6f4ec] p-3 text-sm text-success">
+      <p role="status" className="notice notice-ok my-2">
         {ok}
       </p>
     );
@@ -68,6 +63,21 @@ export function Msg({ error, ok }: { error?: string | null; ok?: string | null }
 
 export function Empty({ children }: { children: React.ReactNode }) {
   return <p className="card p-6 text-center text-sm text-muted">{children}</p>;
+}
+
+/** Shown above data that is still on screen but could not be refreshed, so old numbers are never mistaken for current ones. */
+export function StaleNotice({ error, onRetry }: { error: string | null; onRetry: () => void }) {
+  if (!error) return null;
+  return (
+    <div role="alert" className="notice notice-warn mb-3 flex flex-wrap items-center justify-between gap-2">
+      <span>
+        <b>আপডেট করা যায়নি।</b> <span>নিচের তথ্য পুরোনো হতে পারে।</span>
+      </span>
+      <button type="button" className="btn btn-ghost btn-sm" onClick={onRetry}>
+        আবার চেষ্টা করুন
+      </button>
+    </div>
+  );
 }
 
 export function Loading({ error }: { error?: string | null }) {

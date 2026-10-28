@@ -120,7 +120,7 @@ export default function ProductEditPage({ params }: { params: Promise<{ id: stri
           <div className="aspect-square overflow-hidden rounded-xl bg-brand-100">{p.image ? <img src={p.image} alt={p.nameBn} className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center text-sm text-muted">ছবি নেই</div>}</div>
           {!ro && (
             <div className="mt-3 grid gap-2">
-              <input ref={file} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" id="img-file" onChange={(e) => void upload(e)} />
+              <input ref={file} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" id="img-file" aria-label="ছবি বাছাই করুন" onChange={(e) => void upload(e)} />
               <button type="button" className="btn btn-ghost btn-sm" disabled={img.busy} aria-busy={img.busy} onClick={() => file.current?.click()}>
                 {p.image ? 'ছবি বদলান' : 'ছবি যোগ করুন'}
               </button>
@@ -227,7 +227,7 @@ export default function ProductEditPage({ params }: { params: Promise<{ id: stri
                 <option value="pending_confirmation">নিশ্চিত করা বাকি (বন্ধ)</option>
               </select>
             </Field>
-            <p className={`rounded-xl p-3 text-sm ${outer.eligible ? 'bg-[#e6f4ec] text-success' : 'bg-brand-100 text-brand-700'}`}>
+            <p className={`rounded-xl p-3 text-sm ${outer.eligible ? 'bg-ok-bg text-success' : 'bg-brand-100 text-brand-700'}`}>
               <b>ফলাফল:</b> <span>{outer.eligible ? 'আউটার সিটিতে ১-২ দিনে ডেলিভারি হবে।' : 'আউটার সিটিতে ডেলিভারি হবে না।'}</span> <span>ইন সিটিতে সব পণ্য ২৪ ঘণ্টার মধ্যে ডেলিভারি হয়।</span>
             </p>
           </fieldset>
@@ -245,7 +245,7 @@ export default function ProductEditPage({ params }: { params: Promise<{ id: stri
       </div>
 
       {!ro && (
-        <div className="bulk-bar" role="region" aria-label="সংরক্ষণ">
+        <div className="action-bar" role="region" aria-label="সংরক্ষণ">
           <span className="text-sm">{save.error ? <span className="text-danger">{save.error}</span> : saved && !dirty ? <span className="text-success">{saved}</span> : dirty ? 'সংরক্ষণ হয়নি এমন পরিবর্তন আছে' : 'কোনো পরিবর্তন নেই'}</span>
           <span className="flex gap-2">
             {dirty && (

@@ -24,6 +24,14 @@ export function DemoOrderCard({ order }: { order: DemoOrder }) {
             <dd className="inline">{ETA_TEXT[order.etaZone]}</dd>
           </div>
         )}
+        {order.contact && (
+          <div>
+            <dt className="inline font-semibold">যোগাযোগ: </dt>
+            <dd className="inline">
+              {order.contact.name} · <span className="font-latin">{order.contact.phone}</span>
+            </dd>
+          </div>
+        )}
         {order.method === 'HOME_DELIVERY' && order.address && (
           <div>
             <dt className="inline font-semibold">ঠিকানা: </dt>

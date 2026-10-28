@@ -13,7 +13,8 @@ import '@fontsource/hind-siliguri/700.css';
 import '@fontsource-variable/inter';
 import './globals.css';
 import { PreviewBanner } from '@/components/preview-banner';
-import { LANG_BOOT_SCRIPT, LangRuntime } from '@/components/lang';
+import { LANG_BOOT_SCRIPT, THEME_BOOT_SCRIPT } from '@dudhwala/ui/boot';
+import { LangRuntime } from '@dudhwala/ui/lang';
 
 export const metadata: Metadata = {
   title: { default: 'দুধওয়ালা অ্যাডমিন', template: '%s · দুধওয়ালা অ্যাডমিন' },
@@ -24,13 +25,13 @@ export const metadata: Metadata = {
 /** Everything is per-user and client-rendered; never prerender. */
 export const dynamic = 'force-dynamic';
 
-export const viewport: Viewport = { themeColor: '#2d308f', width: 'device-width', initialScale: 1 };
+export const viewport: Viewport = { themeColor: [{ media: '(prefers-color-scheme: light)', color: '#2a2fae' }, { media: '(prefers-color-scheme: dark)', color: '#0b0f3a' }], width: 'device-width', initialScale: 1 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="bn" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: LANG_BOOT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT + LANG_BOOT_SCRIPT }} />
       </head>
       <body className="min-h-screen font-sans">
         <LangRuntime />

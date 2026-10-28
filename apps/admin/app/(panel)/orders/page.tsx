@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { METHOD_BN, ORDER_STATUS_BN } from '@/lib/format';
 import { useLoad } from '@/lib/use-load';
-import { Empty, Loading, PageTitle } from '@/components/ui';
+import { Empty, Loading, PageTitle, StaleNotice } from '@/components/ui';
 import { OrdersTable, type OrderRow } from '@/components/orders-table';
 
 export default function OrdersPage() {
@@ -54,6 +54,7 @@ export default function OrdersPage() {
           </select>
         </div>
       </div>
+      <StaleNotice error={data ? error : null} onRetry={() => void reload()} />
       {!data ? <Loading error={error} /> : data.data.length === 0 ? <Empty>কোনো অর্ডার পাওয়া যায়নি।</Empty> : <OrdersTable rows={data.data} />}
     </>
   );

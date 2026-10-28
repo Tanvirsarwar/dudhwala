@@ -8,7 +8,9 @@ import { useAction } from '@/lib/use-load';
 import { Field, Msg } from '@/components/ui';
 import { AuthCard } from './auth-card';
 
-const DEMO = process.env.NEXT_PUBLIC_DEMO_BRANDING === '1';
+// Demo login hints come from the demo launcher's environment (start-demo.sh / .bat); production builds contain none.
+const HINT_ADMIN = process.env.NEXT_PUBLIC_DEMO_ADMIN_LOGIN;
+const HINT_MANAGER = process.env.NEXT_PUBLIC_DEMO_MANAGER_LOGIN;
 
 /** One login form for both staff pages: the admin page signs in admins, the manager page signs in managers. */
 export function LoginForm({ as }: { as: 'admin' | 'manager' }) {
@@ -42,18 +44,18 @@ export function LoginForm({ as }: { as: 'admin' | 'manager' }) {
           লগইন
         </button>
       </form>
-      {DEMO && (
-        <p className="mt-3 rounded-xl bg-[#fff4cc] p-3 text-xs text-ink">
-          <b>ডেমো লগইন:</b> <span className="font-latin">{manager ? 'manager@demo.local / manager1234' : 'admin@demo.local / demo1234'}</span>
+      {(manager ? HINT_MANAGER : HINT_ADMIN) && (
+        <p className="notice notice-warn mt-3 text-xs">
+          <b>ডেমো লগইন:</b> <span className="font-latin">{manager ? HINT_MANAGER : HINT_ADMIN}</span>
         </p>
       )}
       <p className="mt-4 text-sm">
         {manager ? (
-          <Link href="/login" className="text-brand-600 underline">
+          <Link href="/login" className="text-link underline">
             অ্যাডমিন লগইন
           </Link>
         ) : (
-          <Link href="/manager/login" className="text-brand-600 underline">
+          <Link href="/manager/login" className="text-link underline">
             ম্যানেজার লগইন
           </Link>
         )}

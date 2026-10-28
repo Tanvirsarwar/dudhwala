@@ -93,7 +93,7 @@ export function AddToCart({ slug, variants: initial, categorySlug, outerCityStat
       )}
       {!DEMO_ORDERING && !areaChecked && <p className="text-xs text-muted">ডেলিভারি এলাকা বেছে নিলে আপনার এলাকার স্টক দেখানো হবে।</p>}
       <div className="mt-4 flex items-center gap-3">
-        <div className="flex items-center rounded-xl border border-line bg-white" role="group" aria-label="সংখ্যা">
+        <div className="flex items-center rounded-xl border border-line bg-surface" role="group" aria-label="সংখ্যা">
           <button type="button" className="h-11 w-11 rounded-l-xl text-xl transition-colors hover:bg-brand-100 active:bg-brand-100 disabled:opacity-40" onClick={() => setQty((q) => Math.max(1, q - 1))} disabled={qty <= 1} aria-label="কমান">
             −
           </button>
@@ -109,7 +109,7 @@ export function AddToCart({ slug, variants: initial, categorySlug, outerCityStat
         </button>
       </div>
       {msg && (
-        <p role="status" className={`toast mt-3 rounded-lg p-3 text-sm ${msg.ok ? 'bg-accent-100 text-brand-700' : 'bg-red-50 text-danger'}`}>
+        <p role="status" className={`toast mt-3 rounded-lg p-3 text-sm ${msg.ok ? 'bg-accent-100 text-brand-700' : 'bg-danger-bg text-danger'}`}>
           {msg.text}
           {msg.ok && (
             <Link href="/cart" className="ml-2 font-semibold underline">

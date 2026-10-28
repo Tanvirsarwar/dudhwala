@@ -15,13 +15,13 @@ export function ProductCard({ p, index = 0 }: { p: ProductCardData; index?: numb
       <Tilt max={4} className="h-full">
       <div className="card card-lift flex h-full flex-col overflow-hidden">
       <Link href={`/p/${p.slug}`} className="group flex flex-1 flex-col">
-        <div className={`relative aspect-[5/4] overflow-hidden bg-white ${p.inStock ? '' : 'grayscale'}`}>
-          <ProductImage src={p.image?.url ?? null} alt={p.image?.altBn ?? p.nameBn} />
-          {!p.inStock && <span className="absolute left-2 top-2 rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold text-danger shadow">স্টকে নেই</span>}
+        <div className={`relative aspect-[5/4] overflow-hidden bg-surface ${p.inStock ? '' : 'grayscale'}`}>
+          <ProductImage src={p.image?.url ?? null} alt={p.image?.altBn ?? p.nameBn} category={p.categorySlug} />
+          {!p.inStock && <span className="absolute left-2 top-2 rounded-full bg-surface px-2.5 py-0.5 text-xs font-semibold text-danger shadow">স্টকে নেই</span>}
           {p.inStock && offer && <span className="absolute left-2 top-2 rounded-full bg-accent-500 px-2.5 py-0.5 text-xs font-bold text-brand-900 shadow">অফার</span>}
         </div>
         <div className="flex flex-1 flex-col gap-0.5 p-2.5 pb-1.5">
-          <h3 className="line-clamp-2 text-[0.9375rem] font-semibold leading-snug transition-colors group-hover:text-brand-600">{p.nameBn}</h3>
+          <h3 className="line-clamp-2 text-[0.9375rem] font-semibold leading-snug transition-colors group-hover:text-link">{p.nameBn}</h3>
           {p.nameEn && p.nameEn !== p.nameBn && <p className="font-latin text-xs text-muted">{p.nameEn}</p>}
           {p.fromPricePoisha === null ? (
             <p className="price-pending mt-auto pt-0.5">{taka(null)}</p>

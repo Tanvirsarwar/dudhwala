@@ -28,7 +28,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   return (
     <>
       {/* Hero: brand band. Copy is from the supplied invitation; no invented offers or awards. */}
-      <section className="hero-bg full-bleed relative overflow-hidden pb-9 pt-6 text-white md:pb-12 md:pt-9" aria-labelledby="hero-title">
+      <section className="hero-bg full-bleed relative overflow-hidden pb-9 pt-6 text-on-brand md:pb-12 md:pt-9" aria-labelledby="hero-title">
         <ParallaxScene className="page-w grid items-center gap-8 md:grid-cols-[1.3fr_1fr]">
           {/* Decorative depth layers: pure CSS shapes, moved by pointer on fine-pointer devices only. */}
           <span aria-hidden className="depth-layer pointer-events-none absolute -right-20 -top-10 h-56 w-56 rounded-full bg-accent-500/15 md:-right-16 md:top-4 md:h-72 md:w-72 md:bg-accent-500/20 [--depth:28]" />
@@ -40,15 +40,15 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
               <br />
               <span className="text-accent-500">আপনার দোরগোড়ায়</span>
             </h1>
-            <p className="reveal mt-4 max-w-xl text-lg text-brand-100" style={{ ['--i' as string]: 2 }}>
+            <p className="reveal mt-4 max-w-xl text-lg text-bar-ink" style={{ ['--i' as string]: 2 }}>
               গরুর খাঁটি কাঁচা দুধ, দই, মিষ্টি, ঘি এবং বেকারি পণ্য — অনলাইনে অর্ডার করুন, পছন্দের সময়ে ডেলিভারি নিন।
             </p>
             <div className="reveal mt-6 flex flex-wrap gap-3" style={{ ['--i' as string]: 3 }}>
-              <Link href="#products" className="btn bg-white text-brand-700 shadow-lg hover:bg-brand-100">
+              <Link href="#products" className="btn btn-light">
                 পণ্য দেখুন
               </Link>
               {hasPage('delivery-policy') && (
-                <Link href="/pages/delivery-policy" className="btn border border-white/40 text-white hover:bg-white/10">
+                <Link href="/pages/delivery-policy" className="btn border border-white/40 text-on-brand hover:bg-white/10">
                   ডেলিভারি তথ্য
                 </Link>
               )}
@@ -65,7 +65,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
           </div>
         </ParallaxScene>
       </section>
-      <div className="full-bleed -mt-px bg-brand-700">
+      <div className="full-bleed -mt-px bg-bar-2">
         <svg className="milk-wave" viewBox="0 0 1440 28" preserveAspectRatio="none" aria-hidden>
           <path fill="currentColor" d="M0 28V12c120 10 240 16 360 10S600 0 720 2s240 20 360 20 240-10 360-14v20Z" />
         </svg>

@@ -153,7 +153,7 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
                     অর্ডার বাতিল করুন
                   </button>
                 ) : (
-                  <div className="rounded-xl bg-red-50 p-3 text-sm">
+                  <div className="rounded-xl bg-danger-bg p-3 text-sm">
                     <p className="mb-2 font-semibold text-danger">অর্ডারটি বাতিল করবেন? এটি ফেরানো যাবে না।</p>
                     <div className="flex gap-2">
                       <button type="button" className="btn btn-danger btn-sm" disabled={act.busy} onClick={() => void move('DEMO_CANCELLED').then(() => setConfirmCancel(false))}>

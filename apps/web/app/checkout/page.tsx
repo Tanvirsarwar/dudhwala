@@ -287,7 +287,7 @@ function RealCheckout() {
           {!areaId && <p className="mt-2 text-muted">আগে এলাকা বেছে নিন।</p>}
           {areaId && !quote && <p className="mt-2 text-muted">খোঁজা হচ্ছে…</p>}
           {quote && quote.slots.length === 0 && (
-            <div className="mt-3 rounded-lg bg-red-50 p-3 text-danger" role="alert">
+            <div className="mt-3 rounded-lg bg-danger-bg p-3 text-danger" role="alert">
               {REASONS[quote.reason ?? 'NO_SLOTS']}
               {quote.minOrderPoisha !== null && quote.reason === 'MIN_ORDER_NOT_MET' && <span> ন্যূনতম: {taka(quote.minOrderPoisha)}</span>}
               {blocking.size > 0 && (
@@ -311,7 +311,7 @@ function RealCheckout() {
               <legend className="font-semibold">{dayLabel(slots[0]!.startsAt)}</legend>
               <div className="mt-2 flex flex-wrap gap-2">
                 {slots.map((s) => (
-                  <label key={s.slotKey} className={`cursor-pointer rounded-xl border px-3 py-2 ${slotKey === s.slotKey ? 'border-brand-600 bg-brand-100' : 'border-line bg-white'}`}>
+                  <label key={s.slotKey} className={`cursor-pointer rounded-xl border px-3 py-2 ${slotKey === s.slotKey ? 'border-brand-600 bg-brand-100' : 'border-line bg-surface'}`}>
                     <input type="radio" name="slot" className="sr-only" checked={slotKey === s.slotKey} onChange={() => setSlotKey(s.slotKey)} />
                     {timeLabel(s.startsAt)} – {timeLabel(s.endsAt)}
                     {s.remaining === 'FEW' && <span className="ml-1 text-xs text-warning">(অল্প খালি)</span>}
@@ -403,7 +403,7 @@ function RealCheckout() {
           </span>
         </label>
         {error && (
-          <p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-danger">
+          <p role="alert" className="mt-3 rounded-lg bg-danger-bg p-3 text-sm text-danger">
             {error}
           </p>
         )}

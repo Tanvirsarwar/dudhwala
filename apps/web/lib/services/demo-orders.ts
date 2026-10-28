@@ -1,5 +1,6 @@
 import { validateCheckout } from '@dudhwala/shared';
 import { api, ApiError } from '../api';
+import { rememberOrder } from './my-orders';
 import type { DemoOrder, DemoOrderStatus, OrderService, PlaceOrderInput, PlaceResult } from './types';
 
 /**
@@ -34,6 +35,7 @@ export const demoOrderService: OrderService = {
           payment: input.payment,
         },
       });
+      if (order.token) rememberOrder(order.id, order.token);
       return { ok: true, order };
     } catch (e) {
       return { ok: false, issues: [], message: e instanceof ApiError ? e.message : 'অর্ডার সংরক্ষণ করা যায়নি, আবার চেষ্টা করুন' };
@@ -44,6 +46,14 @@ export const demoOrderService: OrderService = {
       return (await api<{ status: DemoOrderStatus }>(`/orders/${encodeURIComponent(id)}/status`)).status;
     } catch {
       return null;
+    }
+  },
+  async get(id, token) {
+    try {
+      return await api<DemoOrder>(`/orders/${encodeURIComponent(id)}`, { headers: { 'x-order-token': token } });
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 404) return null;
+      throw e;
     }
   },
 };

@@ -13,7 +13,9 @@ export NEXT_PUBLIC_API_URL=/v1
 export API_PROXY_TARGET=http://127.0.0.1:4010
 export API_INTERNAL_URL=http://127.0.0.1:4010/v1
 export NEXT_TELEMETRY_DISABLED=1
-export NEXT_PUBLIC_DEMO_BRANDING=1   # editorial About page + developer credit (demo build only)
+export NEXT_PUBLIC_DEMO_BRANDING=1   # demo behaviours + About page + developer credit (demo build only; never set in production)
+export NEXT_PUBLIC_DEMO_ADMIN_LOGIN='admin@demo.local / demo1234'          # shown on the admin login page (demo only)
+export NEXT_PUBLIC_DEMO_MANAGER_LOGIN='manager@demo.local / manager1234'  # shown on the manager login page (demo only)
 export npm_config_package_manager_strict=false   # tolerate a different pnpm 9/10 (e.g. from Nix)
 
 if [ ! -d node_modules ]; then
@@ -27,8 +29,16 @@ if [ ! -f apps/web/.next/BUILD_ID ] || [ ! -f apps/admin/.next/BUILD_ID ]; then
   NEXT_PUBLIC_STOREFRONT_URL=http://127.0.0.1:3100 NEXT_PUBLIC_PREVIEW_LABEL='অ্যাডমিন ডেমো — পরিবর্তনগুলো এই কম্পিউটারে সংরক্ষিত হয়, আসল ডেটাবেস নয়।' pnpm --filter @dudhwala/admin build
 fi
 
+# Each service runs in its own process group (job control), so stopping kills pnpm AND the node process it started.
+set -m
 pids=()
-cleanup() { echo; echo "Stopping demo..."; kill "${pids[@]}" 2>/dev/null || true; wait 2>/dev/null || true; }
+cleanup() {
+  trap - EXIT INT TERM
+  echo; echo "Stopping demo..."
+  for p in "${pids[@]}"; do kill -TERM -- "-$p" 2>/dev/null || kill "$p" 2>/dev/null || true; done
+  wait 2>/dev/null || true
+  exit 0
+}
 trap cleanup EXIT INT TERM
 
 node demo/mock-api/server.mjs & pids+=($!)

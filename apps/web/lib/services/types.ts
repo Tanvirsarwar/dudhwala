@@ -24,6 +24,8 @@ export interface DemoOrderLine {
 }
 
 export interface DemoOrder {
+  /** private lookup token returned once at creation; only the browser that placed the order keeps it */
+  token?: string;
   /** always starts with "DEMO-": never mistaken for a real order number */
   id: string;
   demo: true;
@@ -63,6 +65,8 @@ export interface OrderService {
   place(input: PlaceOrderInput & { config?: import('@dudhwala/shared').OrderingConfig }): Promise<PlaceResult>;
   /** Current status of an order (customers have no login in the demo; the order id is the handle). */
   status(id: string): Promise<DemoOrderStatus | null>;
+  /** Full customer view of an order. `null` = not found (or wrong token). Throws on network failure. */
+  get(id: string, token: string): Promise<DemoOrder | null>;
 }
 export interface OutletService {
   list(): Promise<Outlet[]>;

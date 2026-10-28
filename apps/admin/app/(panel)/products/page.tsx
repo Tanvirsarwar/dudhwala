@@ -9,7 +9,7 @@ import { api } from '@/lib/api';
 import { poishaToInput, taka, toPoisha } from '@/lib/format';
 import { useSession } from '@/lib/session';
 import { useAction, useLoad } from '@/lib/use-load';
-import { Badge, Field, Loading, Modal, Msg, PageTitle, TableWrap } from '@/components/ui';
+import { Badge, Field, Loading, Modal, Msg, PageTitle, StaleNotice, TableWrap } from '@/components/ui';
 
 const FILTERS: [string, string][] = [
   ['', 'সব'],
@@ -97,7 +97,7 @@ function ProductsInner() {
         </div>
         <div role="group" aria-label="ফিল্টার" className="flex flex-wrap gap-1.5">
           {FILTERS.map(([k, label]) => (
-            <button key={k} type="button" className="cat-pill" aria-pressed={status === k} onClick={() => setStatus(k)}>
+            <button key={k} type="button" className="pill" aria-pressed={status === k} onClick={() => setStatus(k)}>
               {label}
             </button>
           ))}
@@ -105,6 +105,7 @@ function ProductsInner() {
       </div>
       {canEdit && <p className="mb-2 text-sm text-muted">দাম ঘরে সরাসরি লিখুন (টাকায়), তারপর নিচের "দাম সংরক্ষণ" চাপুন। একাধিক সাইজ থাকলে পণ্যের পাতায় যান।</p>}
       <Msg error={save.error} ok={save.ok} />
+      <StaleNotice error={list.data ? list.error : null} onRetry={() => void list.reload()} />
       {!list.data ? (
         <Loading error={list.error} />
       ) : rows.length === 0 ? (
@@ -135,7 +136,7 @@ function ProductsInner() {
                       {p.image ? <img src={p.image} alt="" width={44} height={44} className="h-11 w-11 rounded-lg object-cover" /> : <span className="grid h-11 w-11 place-items-center rounded-lg bg-brand-100 text-xs text-muted">নেই</span>}
                     </td>
                     <td>
-                      <Link href={`/products/${p.id}`} className="font-semibold text-brand-600 underline">
+                      <Link href={`/products/${p.id}`} className="font-semibold text-link underline">
                         {p.nameBn}
                       </Link>
                       <span className="block font-latin text-xs text-muted">{p.nameEn}</span>
@@ -182,7 +183,7 @@ function ProductsInner() {
         <span>মোট:</span> <b>{list.data?.total ?? 0}</b> <span>টি পণ্য</span>
       </p>
       {dirty.length > 0 && (
-        <div className="bulk-bar" role="region" aria-label="দাম সংরক্ষণ">
+        <div className="action-bar" role="region" aria-label="দাম সংরক্ষণ">
           <span className="text-sm">
             <b>{dirty.length}</b> <span>টি দাম বদলানো হয়েছে</span>
           </span>

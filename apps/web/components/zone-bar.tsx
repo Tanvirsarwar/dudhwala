@@ -55,7 +55,7 @@ export function ZoneBar() {
   if (!DEMO_ORDERING) return null;
   const blocked = zone === 'OUTER_CITY' ? (cart?.lines ?? []).filter((l) => !zoneEligibility({ categorySlug: l.categorySlug ?? '', outerCityStatus: l.outerCityStatus }, zone).eligible).length : 0;
   const seg = (z: DeliveryZone, label: string) => (
-    <button type="button" className={`lang-seg ${zone === z ? 'is-active' : ''}`} aria-pressed={zone === z} onClick={() => setZone(z)}>
+    <button type="button" className={`seg ${zone === z ? 'is-active' : ''}`} aria-pressed={zone === z} onClick={() => setZone(z)}>
       {label}
     </button>
   );
@@ -63,7 +63,7 @@ export function ZoneBar() {
     <div className="zone-bar">
       <div className="page-w flex flex-wrap items-center gap-x-3 gap-y-1.5 py-1.5 text-sm">
         <span className="font-semibold">ডেলিভারি জোন:</span>
-        <div role="group" aria-label="ডেলিভারি জোন" className="lang-toggle">
+        <div role="group" aria-label="ডেলিভারি জোন" className="seg-group on-bar">
           {seg('IN_CITY', 'ইন সিটি')}
           {seg('OUTER_CITY', 'আউটার সিটি')}
         </div>
@@ -75,7 +75,7 @@ export function ZoneBar() {
             <span>টি পণ্য আউটার সিটিতে ডেলিভারি হবে না — কার্ট দেখুন</span>
           </Link>
         )}
-        <Link href="/bulk" className="ml-auto font-semibold underline decoration-accent-500 underline-offset-4">
+        <Link href="/bulk" className="ml-auto inline-flex min-h-9 items-center font-semibold underline decoration-accent-500 underline-offset-4">
           বাল্ক অর্ডার
         </Link>
       </div>

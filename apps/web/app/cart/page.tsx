@@ -13,6 +13,7 @@ export default function CartPage() {
   const [cart, setCart] = useState<CartView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const load = useCallback(() => {
+    setError(null);
     api<CartView>('/cart').then(setCart).catch(() => setError('কার্ট লোড করা যায়নি'));
   }, []);
   useEffect(load, [load]);
@@ -30,7 +31,20 @@ export default function CartPage() {
     }
   };
 
-  if (!cart) return <p className="pt-10 text-center text-muted">লোড হচ্ছে…</p>;
+  if (!cart)
+    return error ? (
+      <div className="notice notice-err mx-auto mt-10 max-w-md text-center" role="alert">
+        <p>{error}</p>
+        <button type="button" className="btn btn-ghost btn-compact mt-2" onClick={load}>
+          আবার চেষ্টা করুন
+        </button>
+      </div>
+    ) : (
+      <div className="mx-auto mt-6 max-w-5xl" aria-busy="true" aria-label="লোড হচ্ছে…">
+        <div className="skeleton h-8 w-40 rounded-lg" />
+        <div className="skeleton mt-4 h-28 rounded-2xl" />
+      </div>
+    );
   // Zone revalidation (demo): lines that cannot go to the chosen zone are flagged, never silently removed, and block checkout.
   const ineligible = new Set(cart.lines.filter((l) => !eligible({ categorySlug: l.categorySlug ?? '', outerCityStatus: l.outerCityStatus }).eligible).map((l) => l.variantId));
   const blocked = cart.lines.some((l) => !l.available) || ineligible.size > 0;
@@ -83,7 +97,7 @@ export default function CartPage() {
             {cart.lines.map((l) => (
               <li key={l.variantId} className="card flex gap-3 p-3">
                 <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg">
-                  <ProductImage src={l.image} alt={l.nameBn} />
+                  <ProductImage src={l.image} alt={l.nameBn} category={l.categorySlug ?? ''} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <Link href={`/p/${l.productSlug}`} className="font-semibold hover:underline">
@@ -130,7 +144,7 @@ export default function CartPage() {
             </div>
             <p className="mt-1 text-sm text-muted">{DEMO_ORDERING ? 'ডেমো অর্ডার: ডেলিভারি চার্জ নেই, কোনো আসল পেমেন্ট নেই।' : 'ডেলিভারি চার্জ ও ছাড় চেকআউটে হিসাব হবে।'}</p>
             {error && (
-              <p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-danger">
+              <p role="alert" className="mt-3 rounded-lg bg-danger-bg p-3 text-sm text-danger">
                 {error}
               </p>
             )}

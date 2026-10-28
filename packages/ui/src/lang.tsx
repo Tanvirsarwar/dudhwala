@@ -2,14 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import { toEnglish } from '@dudhwala/shared';
+import { LANG_KEY as KEY } from './boot';
 
 /**
  * EN | বাংলা switch. Source text is Bangla; for English the browser swaps rendered text nodes and a few
  * attributes using the shared dictionary (packages/shared/src/i18n-*.ts). Unlisted text stays Bangla.
  * The choice is kept in localStorage, so it survives refresh and navigation.
+ *
+ * Constraint: this runtime rewrites text before React has hydrated streamed content. A route-level Suspense boundary
+ * (e.g. a root `loading.tsx`) hydrates later than the layout effect and then fails with hydration error #418 in English.
+ * Do not add `loading.tsx` above translated pages; use in-component skeletons instead (see e2e/demo/platform.cjs).
  */
 export type Lang = 'bn' | 'en';
-const KEY = 'dw.lang';
 const ATTRS = ['aria-label', 'placeholder', 'title', 'alt'] as const;
 
 export const readLang = (): Lang => {
@@ -96,10 +100,8 @@ export function LangRuntime() {
   return null;
 }
 
-/** Runs before first paint (inline in <head>) so English visitors never see a flash of Bangla. */
-export const LANG_BOOT_SCRIPT = `try{if(localStorage.getItem('${KEY}')==='en'){var h=document.documentElement;h.lang='en';h.setAttribute('data-lang-pending','');setTimeout(function(){h.removeAttribute('data-lang-pending')},2500)}}catch(e){}`;
 
-export function LangToggle({ className = '' }: { className?: string }) {
+export function LangToggle({ className = '', onBar = false }: { className?: string; onBar?: boolean }) {
   const [lang, setLang] = useState<Lang>('bn');
   useEffect(() => {
     setLang(readLang());
@@ -117,12 +119,12 @@ export function LangToggle({ className = '' }: { className?: string }) {
     window.dispatchEvent(new Event('dw:lang'));
   };
   const btn = (l: Lang, label: string) => (
-    <button type="button" onClick={() => choose(l)} aria-pressed={lang === l} lang={l} className={`lang-seg ${lang === l ? 'is-active' : ''}`}>
+    <button type="button" onClick={() => choose(l)} aria-pressed={lang === l} lang={l} className={`seg ${lang === l ? 'is-active' : ''}`}>
       {label}
     </button>
   );
   return (
-    <div role="group" aria-label="Language / ভাষা" className={`lang-toggle ${className}`}>
+    <div role="group" aria-label="Language / ভাষা" className={`seg-group ${onBar ? 'on-bar' : ''} ${className}`}>
       {btn('en', 'EN')}
       {btn('bn', 'বাংলা')}
     </div>

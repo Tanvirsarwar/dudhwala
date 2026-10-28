@@ -27,10 +27,10 @@ async function csrf(force = false): Promise<string> {
   return csrfToken;
 }
 
-type Init = { method?: string; body?: unknown; form?: FormData };
+type Init = { method?: string; body?: unknown };
 
 async function send(path: string, init: Init, retried: boolean): Promise<Response> {
-  const method = init.method ?? (init.body !== undefined || init.form ? 'POST' : 'GET');
+  const method = init.method ?? (init.body !== undefined ? 'POST' : 'GET');
   const headers: Record<string, string> = {};
   if (init.body !== undefined) headers['content-type'] = 'application/json';
   if (method !== 'GET') headers['x-csrf-token'] = await csrf();
@@ -38,7 +38,7 @@ async function send(path: string, init: Init, retried: boolean): Promise<Respons
     method,
     credentials: 'include',
     headers,
-    body: init.form ?? (init.body === undefined ? undefined : JSON.stringify(init.body)),
+    body: init.body === undefined ? undefined : JSON.stringify(init.body),
   });
   if (res.ok) return res;
   const data = (await res.clone().json().catch(() => ({}))) as { error?: { code: string; message: string; details?: unknown } };
@@ -55,18 +55,6 @@ export async function api<T = unknown>(path: string, init: Init = {}): Promise<T
   const res = await send(path, init, false);
   if (res.status === 204) return undefined as T;
   return (await res.json().catch(() => undefined)) as T;
-}
-
-/** Downloads a CSV (or any file) through fetch so the session cookie is used and errors are shown. */
-export async function download(path: string, fallbackName: string): Promise<void> {
-  const res = await send(path, {}, false);
-  const name = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '')?.[1] ?? fallbackName;
-  const url = URL.createObjectURL(await res.blob());
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export const errorText = (e: unknown) => (e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Something went wrong');

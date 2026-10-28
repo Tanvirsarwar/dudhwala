@@ -14,6 +14,8 @@ set API_PROXY_TARGET=http://127.0.0.1:4010
 set API_INTERNAL_URL=http://127.0.0.1:4010/v1
 set NEXT_TELEMETRY_DISABLED=1
 set NEXT_PUBLIC_DEMO_BRANDING=1
+set NEXT_PUBLIC_DEMO_ADMIN_LOGIN=admin@demo.local / demo1234
+set NEXT_PUBLIC_DEMO_MANAGER_LOGIN=manager@demo.local / manager1234
 set npm_config_package_manager_strict=false
 
 if not exist node_modules (

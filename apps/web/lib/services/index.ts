@@ -2,3 +2,4 @@
 export { demoOrderService as orderService } from './demo-orders';
 export { outletService } from './outlets';
 export * from './types';
+export * from './my-orders';
