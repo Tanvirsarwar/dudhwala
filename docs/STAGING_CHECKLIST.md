@@ -1,3 +1,5 @@
+> **Superseded in part (Phase 2).** This document describes the original delivery-slot / area / COD / rider design, which the Phase 2 backend replaced. Current documents: [PHASE2_BACKEND](PHASE2_BACKEND.md), [ADMIN_AND_API_CONTRACT](ADMIN_AND_API_CONTRACT.md), [DEPLOY_PHASE2](DEPLOY_PHASE2.md). Where they disagree, Phase 2 wins.
+
 # Staging release checklist
 
 For the first staging deployment on Vercel (storefront and admin), Supabase PostgreSQL and a separately hosted NestJS API. Background and the reasons behind each item are in [DEPLOY_VERCEL_SUPABASE](DEPLOY_VERCEL_SUPABASE.md). Nothing here has been executed against Vercel, Supabase, a CDN, SSLCOMMERZ or an SMS provider.

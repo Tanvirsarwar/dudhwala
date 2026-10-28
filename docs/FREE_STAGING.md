@@ -1,3 +1,5 @@
+> **Superseded in part (Phase 2).** This document describes the original delivery-slot / area / COD / rider design, which the Phase 2 backend replaced. Current documents: [PHASE2_BACKEND](PHASE2_BACKEND.md), [ADMIN_AND_API_CONTRACT](ADMIN_AND_API_CONTRACT.md), [DEPLOY_PHASE2](DEPLOY_PHASE2.md). Where they disagree, Phase 2 wins.
+
 # Free staging preview (Vercel + Render + Supabase, demo data only)
 
 Goal: a public **demo** of the real Dudhwala storefront and admin on free tiers, with synthetic data, no custom domain, no real payments and no real SMS.

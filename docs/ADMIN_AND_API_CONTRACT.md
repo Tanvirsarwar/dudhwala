@@ -1,46 +1,96 @@
-# Admin panel and API contract (V2.7 demo)
+# API contract (Phase 2 backend v1.0)
 
-This is what the rebuilt admin (`apps/admin`) and the storefront expect from the API. The demo implements it in `demo/mock-api/server.mjs` (one file, JSON file storage). The real backend (NestJS + PostgreSQL) should implement the same behaviour; items marked **MUST** are things the demo only does in the browser or skips.
+Base path `/v1`. JSON. Money is integer poisha (`null` = price not set yet). Times are ISO-8601 UTC; the business clock is Asia/Dhaka (UTC+6, no DST). The local demo's mock API (`demo/mock-api`) follows the same shapes for catalogue, cart, config, admin products/categories; it differs only where marked **demo**.
+
+## Conventions
+- **Errors:** `{ "error": { "code", "message", "details?", "requestId" } }`. Codes: `VALIDATION_FAILED 400`, `UNAUTHENTICATED 401`, `MFA_REQUIRED 401`, `OTP_INVALID/OTP_EXPIRED 401`, `FORBIDDEN 403`, `READ_ONLY 403`, `NOT_FOUND 404`, `OUT_OF_STOCK/PRODUCT_UNAVAILABLE/INVALID_TRANSITION/CONFLICT/IDEMPOTENCY_CONFLICT 409`, `PRICE_NOT_SET/NOT_DELIVERABLE/ZONE_REQUIRED/ORDERING_CLOSED/PICKUP_INVALID/BULK_REQUIRED/NOT_BULK 422`, `ACCOUNT_LOCKED 423`, `RATE_LIMITED 429`, `BULK_NOT_CONFIGURED/PAYMENTS_DISABLED/SERVICE_UNAVAILABLE 503`. Oversized body → 413, malformed JSON → 400. Stack traces never reach clients.
+- **Cookies:** customer `dw_sid` (HttpOnly, SameSite=Lax), staff `dw_admin_sid` (HttpOnly, SameSite=Strict), cart `dw_cart`; `Secure` in staging/production. Customer calls send `x-dw-audience: customer` so a staff cookie in the same browser is never used for shopping.
+- **CSRF:** every non-GET needs `x-csrf-token` (from `GET /auth/csrf`, double-submit cookie `dw_csrf`) and an allowed `Origin`. Webhooks are exempt (signature instead).
+- **Idempotency:** `POST /orders` requires `Idempotency-Key` (8–64 of `A-Za-z0-9_-`).
 
 ## Roles
 | Role | Login page | Can do |
 |---|---|---|
-| ADMIN | `/login` | everything below |
-| MANAGER | `/manager/login` | all `GET /admin/*`; every write returns `403 READ_ONLY` |
+| ADMIN | `/login` | everything below; **two-factor (TOTP) mandatory** |
+| MANAGER | `/manager/login` | all `GET /admin/*`; every write → `403 READ_ONLY`. 2FA used if enrolled. |
+| CUSTOMER | storefront, mobile OTP | own cart and own orders only |
 
-Each account signs in only on its own page (the other page answers with the same "wrong email or password" message). Session cookie: HttpOnly, SameSite=Strict. All writes need the `x-csrf-token` header. **MUST (real backend):** hashed passwords, rate limiting, MFA for ADMIN, audit log of every admin write, real session expiry. The demo has two hard-coded accounts.
+`POST /auth/staff/login {login, password, as?: "manager"}` → `{role, mfaRequired, mfaEnrolled}`. Each role works only on its own page; any mismatch answers like a wrong password. 5 failures in 15 min lock the account (`423`); 30 attempts/hour/IP. Sessions: staff 12 h absolute / 30 min idle; customer 30 d / 7 d idle. Passwords: Argon2id.
+
+## Auth
+| Call | Access | Notes |
+|---|---|---|
+| `GET /auth/csrf` | public | `{csrfToken}` |
+| `POST /auth/otp/request {phone}` | public | 1/min and 5/hour per phone, 20/hour per IP. Response never reveals whether the number is registered. |
+| `POST /auth/otp/verify {challengeId, code}` | public | 5 attempts, 5-minute life; merges the anonymous cart |
+| `POST /auth/staff/login`, `POST /auth/logout` | public | |
+| `POST /auth/staff/mfa/enroll` → `{secret, otpauthUri}`; `/mfa/confirm {code}` → `{recoveryCodes[10]}` (shown once); `POST /auth/staff/mfa {code}` (TOTP or recovery code, 204) | staff (before MFA) | TOTP codes cannot be replayed |
+| `POST /auth/staff/password {currentPassword,newPassword≥12}` | staff | ends other sessions |
+| `GET /me` | any session | `{user, role, canEdit, mfaVerified}` |
 
 ## Public (storefront)
 | Call | Purpose |
 |---|---|
-| `GET /catalog/categories`, `/catalog/products`, `/catalog/products/:slug` | only `active` products in `active` categories; `outerCityStatus`, prices (`null` = not set), stock (`null` = not counted) |
-| `GET /config` | `{hours:{openMinute,closeMinute}, bulk:{minTotalQuantity,minTotalPoisha,isPlaceholder}}` |
-| `GET/PUT /cart...` | cart (demo: in memory) |
-| `POST /orders` | create an order. Body: `method`, `zone`, `lines:[{variantId,quantity}]`, `address` (home) or `contact` (pickup/bulk), `outletId`+`pickupAt` (pickup), `payment` (bulk). The server prices the lines itself |
-| `GET /orders/:id` + header `x-order-token` | the customer's own view of an order (items, address/contact, status). The token is returned once by `POST /orders`; wrong token and unknown id both answer 404. Demo only: the real API uses the signed-in customer |
-| `GET /orders/:id/status` | `{id,status,method}` only (no personal data) |
+| `GET /catalog/categories` | active categories |
+| `GET /catalog/products?category&q&sort=newest\|price_asc\|price_desc&inStock&page&limit≤48` | cards `{id,slug,nameBn,nameEn,categorySlug,image,outerCityStatus,fromPricePoisha,inStock,variants[{id,labelBn,pricePoisha,compareAtPoisha,availability}]}`; only `active` products in `active` categories; **stock counts are never exposed**, only `IN_STOCK`/`OUT_OF_STOCK` |
+| `GET /catalog/products/:slug` | detail with `content`, `images`, `variants[].maxQty` |
+| `GET /config` | `{hours:{openMinute,closeMinute}, bulk:{minTotalQuantity,minTotalPoisha,isPlaceholder}, payments:{enabled,sandbox}}` |
+| `GET /outlets` | active outlets with weekly `hours` |
+| `GET /content/home`, `GET /content/pages/:slug` | owner-written pages (empty until supplied) |
+| `GET /cart`, `PUT /cart/items/:variantId {quantity 0..999}` | server cart, re-priced on every read; unpriced/hidden/out-of-stock refused |
 
-`POST /orders` returns the order including a private `token` (never shown in staff views). In the demo checks: product exists and is active, quantity within stock and max, Outer City eligibility for home delivery, bulk threshold (a bulk cart cannot use home delivery/pickup; a non-bulk cart cannot use BULK_ORDER), bulk prepayment flag. **MUST (real backend):** also enforce ordering hours, pickup lead time and outlet hours, payment confirmation from the provider, stock reservation, idempotency, and require login or an unguessable order token (the demo's order id `DEMO-1001` is guessable, which is why the public status call exposes no personal data).
+## Orders (customer, signed in)
+`POST /orders` body (strict; unknown fields such as prices are rejected — **prices always come from the database**):
+```json
+{ "method": "HOME_DELIVERY|EXPRESS_PICKUP|BULK_ORDER",
+  "zone": "IN_CITY|OUTER_CITY",                          // home delivery
+  "lines": [{ "variantId": "uuid", "quantity": 1 }],
+  "address": { "name", "phone", "line1", "landmark?" },  // home delivery
+  "contact": { "name", "phone" },                         // pickup, bulk
+  "outletId": "uuid", "pickupAt": "ISO-8601" }            // pickup
+```
+Server rules, in order (first violated rule is returned): ordering open (hours from settings) → product active and priced → quantity ≤ per-order cap → bulk classification (quantity **or** amount; bulk cart must be `BULK_ORDER`, non-bulk cannot) → home delivery: zone chosen, address present, every product eligible for the zone (Outer City: bakery, or `outerCityStatus=approved`; `pending_*`/`disabled` never) → pickup: ≥ 60 min ahead, ≤ 7 days, outlet open that weekday/time (outlet with no hours entered falls back to ordering hours) → stock reserved atomically at the fulfilling outlet (home: dispatch outlet; pickup: chosen outlet; bulk: Modina Market Branch) → bulk additionally needs the collection outlet configured and online payment enabled. One database transaction; any failure reserves nothing.
+
+Result `201` (replay with the same key and body: `200`, `replayed:true`; same key with a different body: `409 IDEMPOTENCY_CONFLICT`). Initial status: `PLACED` / `PICKUP_REQUESTED` / `PENDING_PAYMENT`.
+`GET /orders`, `GET /orders/:id`, `GET /orders/:id/status` — **owner only**; another customer's id answers `404`, same as an unknown id.
+
+Order view: `{id, orderNumber, createdAt, method, zone, status, paymentStatus, paymentExpiresAt, lines[{variantId,productSlug,nameBn,nameEn,labelBn,quantity,unitPricePoisha,linePoisha}], subtotalPoisha, deliveryFeePoisha(0), totalPoisha, address|null, contact|null, pickupAt, outlet, history[{status,at}]}`.
+
+### Status flows (forward only, one step at a time; `CANCELLED` from any live status)
+- Home: `PLACED → PREPARING → OUT_FOR_DELIVERY → DELIVERED`
+- Pickup: `PICKUP_REQUESTED → PREPARING → READY_FOR_PICKUP → PICKED_UP` (the customer sees pickup as confirmed only at `READY_FOR_PICKUP`)
+- Bulk: `PENDING_PAYMENT → PREPAID → PREPARING → READY_FOR_COLLECTION → COLLECTED`. `PREPAID` is reached **only** by a verified payment event; staff cannot set it.
+Cancelling releases the stock reservation; finishing commits it (on-hand drops). Finished and cancelled orders are locked. Defined in `packages/shared/src/ordering.ts` (`ORDER_FLOW`).
+
+## Payments (bulk orders only)
+| Call | Access | Notes |
+|---|---|---|
+| `POST /orders/:id/payment` | owner | starts/reuses a payment attempt → `{paymentId, merchantTranId, provider, sandbox, redirectUrl}`; `503 PAYMENTS_DISABLED` while no provider is active |
+| `POST /webhooks/payments` | provider (signature) | header `x-dw-signature` = hex HMAC-SHA256 of the raw body with `PAYMENTS_WEBHOOK_SECRET`. Order of checks: signature → dedupe by `eventId` → amount **and** currency must equal the order's → first verified success wins (`PAID`, order `PREPAID`). Replays are acknowledged and ignored; money received for an already cancelled/expired order is recorded in the audit log as `payment.refund_required`. |
+| `POST /payments/sandbox/:merchantTranId/complete {outcome}` | owner | **sandbox provider only** (404 otherwise; refused in production): signs an event and sends it through the same webhook code path. No real money. |
+An unpaid bulk order is cancelled and its stock released after `payments.holdMinutes` (30). Browser redirects never mark an order paid.
+No real gateway adapter exists yet: with `PAYMENTS_PROVIDER=disabled` (the default and the only production value today) bulk orders cannot be placed.
 
 ## Staff (`/admin/*`)
 | Call | ADMIN | MANAGER |
 |---|---|---|
-| `GET /admin/summary` (counts: products, orders by status/method, latest orders) | yes | yes |
+| `GET /admin/summary` (product counts, order counts by status/method, today, open, revenue, latest) | yes | yes |
 | `GET /admin/products?q&category&status=active\|hidden\|noprice\|noimage`, `GET /admin/products/:id` | yes | yes |
-| `POST /admin/products` (names + category), `PATCH /admin/products/:id` (names, category, `active`, `nameVerified`, `outerCityStatus`, `content{...}`, `variants[]` replace-all) | yes | 403 |
-| `POST /admin/products/:id/image` `{dataBase64}`, `DELETE .../image` | yes | 403 |
-| `GET /admin/categories`, `POST`, `PATCH /admin/categories/:id` | yes | read |
-| `GET /admin/orders?status&method&q`, `GET /admin/orders/:id` | yes | yes |
-| `PATCH /admin/orders/:id` `{status}` | yes | 403 |
-| `GET/PUT /admin/config` | yes | read |
-| `POST /admin/reset` (demo only; drop in the real backend) | yes | 403 |
+| `POST /admin/products {nameBn,nameEn,categorySlug}` (created **hidden**) | yes | 403 |
+| `PATCH /admin/products/:id` — names, `categorySlug`, `active`, `nameVerified`, `outerCityStatus` (`approved\|disabled\|pending_verification\|pending_confirmation\|null`), `content{…}`, `variants[]` (replace-all: `{id?,labelBn,pricePoisha,compareAtPoisha,stock,maxQty}`) | yes | 403 |
+| `POST /admin/products/:id/image {dataBase64}`, `DELETE …/image` | yes | 403 |
+| `POST /admin/inventory {outletId,variantId,quantity}` (counted on-hand at any outlet) | yes | 403 |
+| `GET/POST /admin/categories`, `PATCH /admin/categories/:id` | yes | read only |
+| `GET /admin/orders?status&method&q&page&limit`, `GET /admin/orders/:id` (adds `next[]`, `cancelReason`) | yes | yes |
+| `PATCH /admin/orders/:id {status, reason?}` | yes | 403 |
+| `GET /admin/config`, `PUT /admin/config {hours:{open,close}, bulk:{minTotalQuantity,minTotalTaka}}` (saving clears the "placeholder" flag) | yes | read only |
+| `GET /admin/outlets`, `PATCH /admin/outlets/:id`, `PUT /admin/outlets/:id/hours`, `PUT /admin/fulfilment-outlets {dispatchOutletId,collectionOutletId}` | yes | read only |
+| `GET /admin/audit?entityType&entityId&limit` | yes | yes |
 
-Money is integer poisha everywhere. Variant: `{id,labelBn,pricePoisha|null,compareAtPoisha|null,stock|null,maxQty}`. Validation: whole numbers only, old price must be higher than price, 1-20 variants, text lengths capped.
+Variant `stock`: units available at the dispatch outlet; `null` = **stock not counted** (explicit choice; the variant is then never out of stock). A variant that is counted but has no stock row is **out of stock**. A variant with orders or stock history cannot be removed. Image upload: bytes decoded with `sharp` (JPEG/PNG/WebP only, SVG refused), ≤ 5 MB, re-encoded to WebP ≤ 1600 px, metadata stripped, random key, stored in S3-compatible storage (local disk in development only).
 
-Image upload: type is decided from the file's own bytes (JPEG, PNG, WebP only), 5 MB cap, stored as `<slug>.<ext>` and served with `X-Content-Type-Options: nosniff`. **MUST (real backend):** object storage (S3-compatible), re-encode/resize, virus scan if accepting from many staff, never serve user files from the app origin with a guessable path if images are private.
+## Health
+`GET /health/live` (process up), `GET /health/ready` (database reachable and migrated). No versions, hosts or secrets.
 
-## Order status (demo)
-Home delivery: PLACED -> PREPARING -> OUT_FOR_DELIVERY -> DELIVERED. Pickup: PICKUP_REQUESTED -> PREPARING -> READY_FOR_PICKUP -> PICKED_UP. Bulk: PREPAID_SIMULATED -> PREPARING -> READY_FOR_COLLECTION -> COLLECTED. Any live order can be CANCELLED; finished/cancelled orders are locked; statuses only move forward. The customer sees pickup/collection as confirmed only at READY. The shared definitions are in `packages/shared/src/ordering.ts` (`ORDER_STATUS_FLOW`, labels).
-
-## Where the admin code is
-`apps/admin/app/(panel)/*` (dashboard, products, categories, orders, settings), `apps/admin/app/login` + `app/manager/login`, `lib/session.tsx` (role, `canEdit`), `components/shell.tsx` (navigation per role). The previous staff screens (delivery slots, coupons, payments, stock counts, transfers, rider app...) belong to the real backend design and were removed from this demo app; they remain in git history on `main`.
+## Not in this phase
+Coupons, delivery fee, saved addresses, customer self-cancel, refunds API, SMS order notifications, account-deletion requests, a real payment gateway adapter. (Removed with the old design: areas, delivery slots, COD, riders.)

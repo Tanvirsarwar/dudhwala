@@ -1,3 +1,5 @@
+> **Implemented in Phase 2.** The server-side enforcement described below now exists in `apps/api`; see [PHASE2_BACKEND](PHASE2_BACKEND.md) and [ADMIN_AND_API_CONTRACT](ADMIN_AND_API_CONTRACT.md). Kept for the V2.5 background.
+
 # Phase 2 integration points (V2.5.1 demo ordering)
 
 V2.5 runs the whole ordering experience in the browser against a mock API. Nothing below is real enforcement.

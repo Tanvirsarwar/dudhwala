@@ -1,5 +1,5 @@
 -- Run against a RESTORED copy of the database (never production) after a restore test
--- (DEPLOYMENT_RUNBOOK §8):  psql "$RESTORED_DATABASE_URL" -v ON_ERROR_STOP=1 -f infra/ops/verify-restore.sql
+-- (docs/DEPLOY_PHASE2.md, backup and restore):  psql "$RESTORED_DATABASE_URL" -v ON_ERROR_STOP=1 -f infra/ops/verify-restore.sql
 -- Every query must return zero rows / true. Record the output in the runbook log.
 
 \echo '1. Migrations applied (expect the latest migration name)'
@@ -23,7 +23,7 @@ SELECT max(created_at) AS newest_order FROM "order";
 SELECT max(updated_at) AS newest_payment_change FROM payment;
 
 \echo '4. Integrity: order totals add up (expect 0)'
-SELECT count(*) AS bad_totals FROM "order" WHERE total_poisha <> subtotal_poisha - discount_poisha + delivery_fee_poisha;
+SELECT count(*) AS bad_totals FROM "order" WHERE total_poisha <> subtotal_poisha + delivery_fee_poisha;
 
 \echo '5. Integrity: item lines add up to subtotal (expect 0)'
 SELECT count(*) AS bad_subtotals FROM "order" o
@@ -37,11 +37,17 @@ SELECT count(*) AS ledger_mismatch FROM inventory inv
 JOIN LATERAL (SELECT on_hand_after FROM stock_movement m WHERE m.inventory_id = inv.id ORDER BY created_at DESC, id DESC LIMIT 1) last ON true
 WHERE last.on_hand_after <> inv.quantity_on_hand;
 
-\echo '8. Integrity: slot bookings within capacity (expect 0)'
-SELECT count(*) AS overbooked FROM delivery_slot WHERE booked_count > capacity OR booked_count < 0;
+\echo '8. Integrity: bulk orders past PENDING_PAYMENT have a verified payment (expect 0)'
+SELECT count(*) AS bulk_without_payment FROM "order" o
+WHERE o.method = 'BULK_ORDER' AND o.status NOT IN ('PENDING_PAYMENT','CANCELLED')
+  AND NOT EXISTS (SELECT 1 FROM payment p WHERE p.order_id = o.id AND p.status = 'PAID' AND p.verified_at IS NOT NULL);
 
-\echo '9. Paid online payments are verified (expect 0)'
-SELECT count(*) AS unverified_paid FROM payment WHERE method = 'ONLINE' AND status IN ('PAID','PARTIALLY_REFUNDED','REFUNDED') AND verified_at IS NULL;
+\echo '9. Integrity: every paid payment is verified and equals the order total (expect 0)'
+SELECT count(*) AS bad_paid FROM payment p JOIN "order" o ON o.id = p.order_id
+WHERE p.status = 'PAID' AND (p.verified_at IS NULL OR p.paid_amount_poisha <> p.amount_poisha OR p.amount_poisha <> o.total_poisha);
 
-\echo '10. Append-only triggers present (expect 3)'
-SELECT count(*) FROM pg_trigger WHERE tgname IN ('stock_movement_append_only','audit_log_append_only','order_status_event_append_only');
+\echo '10. Append-only triggers present (expect 4)'
+SELECT count(*) FROM pg_trigger WHERE tgname IN ('stock_movement_append_only','audit_log_append_only','order_status_event_append_only','payment_event_append_only');
+
+\echo '11. Settings present (dispatch and collection outlet ids)'
+SELECT key FROM setting WHERE key IN ('fulfilment.dispatchOutletId','bulk.collectionOutletId') ORDER BY key;

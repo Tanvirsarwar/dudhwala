@@ -1,3 +1,5 @@
+> **Superseded in part (Phase 2).** This document describes the original delivery-slot / area / COD / rider design, which the Phase 2 backend replaced. Current documents: [PHASE2_BACKEND](PHASE2_BACKEND.md), [ADMIN_AND_API_CONTRACT](ADMIN_AND_API_CONTRACT.md), [DEPLOY_PHASE2](DEPLOY_PHASE2.md). Where they disagree, Phase 2 wins.
+
 # API Specification
 
 Status: v1.0 — 2026-10-21. This file describes conventions, contracts and error codes. **The authoritative list of implemented routes and their access rules is [API_ROUTES.md](API_ROUTES.md)**, generated from the controller sources (`apps/api/scripts/routes.mjs`). No OpenAPI/Swagger document is generated (decision: keep the surface small; the generated route table plus integration tests are the contract).
