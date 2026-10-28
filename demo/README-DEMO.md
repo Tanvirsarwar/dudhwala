@@ -1,4 +1,4 @@
-# Dudhwala – local client demo (V2.5.1: real catalogue, zones, bulk orders)
+# Dudhwala – local client demo (V2.6: rebuilt admin + manager login)
 
 A **temporary, offline-capable demo** of the Dudhwala storefront and admin on your own PC.
 It uses the real Premium UI code with a small **mock API**.
@@ -28,12 +28,20 @@ First run installs dependencies and builds the two sites (a few minutes). Later 
 | Admin | http://127.0.0.1:3101 – login `admin@demo.local` / password `demo1234` |
 | Mock API check | http://127.0.0.1:4010/v1/health/ready |
 
+## V2.6: rebuilt admin panel, manager login, live orders
+- **Admin** (http://127.0.0.1:3101, `admin@demo.local` / `demo1234`): dashboard (orders and product counts), **Products** (search, filters, quick price entry for many products at once, full product page: names, category, show/hide in shop, sizes with prices, offer price, stock, descriptions, **photo upload/replace/remove**, Outer City delivery switch), **Categories** (rename, reorder, show/hide, add), **Orders** (list, filters, detail, move to the next status, cancel), **Settings** (ordering hours, bulk order minimum, reset demo data).
+- **Manager** (http://127.0.0.1:3101/manager/login, `manager@demo.local` / `manager1234`): a separate login page. Managers see the dashboard, orders (with customer details) and products with counts, but **cannot change anything** (fields are disabled and the API refuses every write with 403).
+- Changes reach the storefront at once (prices, names, photos, hidden products, Outer City flags, ordering hours, bulk minimum).
+- **Orders placed in the shop now reach the admin.** The customer sees the status the admin sets; a pickup is shown as confirmed to the customer only after the admin marks it ready.
+- Everything is saved in `demo/mock-api/runtime/store.json` (and uploaded photos in `demo/mock-api/media/`), so it survives a restart. Settings → "Reset demo data" (type RESET) returns to the product list from the supplied files.
+- These demo accounts and the local file store are **not** real authentication or a database. The API contract for the real backend is in `docs/ADMIN_AND_API_CONTRACT.md`.
+
 ## V2.5.1: polish
 - **No delivery-area picker.** The customer simply writes their full address at checkout: anywhere in Sylhet Sadar for **In City**, anywhere outside for **Outer City**. The zone selector stays.
 - **Outer Sylhet Doi:** Bati Doi, Premium Doi, Premium Cup Doi and Cup Doi are now deliverable to Outer City (25 products there in total).
 - **No "Demo orders" section.** The order confirmation card is shown after checkout (with a "Demo: move to next step" button to simulate staff).
 - **New Bulk Order page** (`/bulk`, link in the header strip and a card on the home page): pick many products with quantities, the page shows how many more are needed, then continues to checkout as a Bulk Order (collection only from Modina Market Branch, Demo/Simulated Payment). The 20-item minimum is still a placeholder.
-- **SVG artwork removed.** Products show real photos only when image files are present in `demo/mock-api/media/` (`<product-id>.jpg|png|webp`, e.g. `ds-01.jpg`, or one shared `kind-cup.jpg`); otherwise the plain "photo coming soon" tile is shown. **No photos are bundled in this ZIP**: the build environment could not download any (see the report).
+- **SVG artwork removed.** Products show real photos only when image files are present in `demo/mock-api/media/` (`<product-slug>.jpg|png|webp`, e.g. `ds-01.jpg`) or, easier, upload them in the admin product page; otherwise the plain "photo coming soon" tile is shown. **No photos are bundled in this ZIP**: the build environment could not download any (see the report).
 
 ## V2.5: real catalogue, delivery zones and demo ordering
 - **Real catalogue:** 59 products in 3 categories (Dairy Sweets 23, Doi / Dairy 11, Bakery 25) replace the old invented sample products. Details, unclear names and open questions: `docs/CATALOGUE_V2_5_1.md`. No price, size or stock was invented.
@@ -67,12 +75,12 @@ NixOS cannot run the prebuilt native binaries in `node_modules` directly. `start
 
 ## What works
 - Storefront: home with hero and collection, categories, product listing, **search** (Bangla or English), sorting, product pages, **add to cart**, cart quantities, delivery-zone selector, demo checkout, demo orders, delivery-area picker, information pages.
-- Admin (view only): dashboard summary, order list with status filter and search, product list and product pages, inventory per branch, branch list.
+- Admin and Manager panels (see V2.6 above).
 - No product photos are bundled (add your own to `demo/mock-api/media/`, see V2.5.1).
 
 ## Intentionally simulated or not available
 - **Customer login does not work** and there is no SMS or real payment. The V2.5 demo checkout works without login and only saves a demo order in your browser.
-- **Admin changes are not saved** (editing, publishing, uploads, price import show a "demo mode" message). Order detail pages, reports, delivery and coupon screens are empty or unavailable.
+- **Admin edits are saved in a local file** (see V2.6), not a database. Delivery rules, coupons, payments, reports and staff management screens do not exist in this demo.
 - The cart lives in the mock server's memory and **resets when the demo is restarted**; demo orders and the zone choice stay in your browser until you clear them.
 - The numbers on the admin dashboard are computed from the invented sample orders.
 
@@ -86,7 +94,8 @@ NixOS cannot run the prebuilt native binaries in `node_modules` directly. `start
 - *Port already in use* (3100, 3101 or 4010) – close the other program, or stop a previous demo.
 - *Page shows an error right after start* – wait ~10 seconds and refresh; the sites need a moment to start.
 - *Start over from scratch* – delete the `node_modules` folder and the `apps/web/.next` and `apps/admin/.next` folders, then start again.
-- Admin login says wrong password – use exactly `admin@demo.local` and `demo1234`.
+- Admin login says wrong password – use exactly `admin@demo.local` / `demo1234` on the admin page, and `manager@demo.local` / `manager1234` on the **manager** page (each account only works on its own page).
+- *Start over from the supplied catalogue* – Admin → Settings → Reset demo data, or delete `demo/mock-api/runtime/`.
 
 ## What is inside
 `apps/web` (storefront) and `apps/admin` (admin) are the project's real Next.js apps, unchanged; `packages/shared` is their shared code; `demo/mock-api` is the mock server (`server.mjs`, sample data in `data.mjs`, no dependencies). The sites are built so their `/v1/*` requests are forwarded to the mock API.

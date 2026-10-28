@@ -3,11 +3,12 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  availableFulfilments, bulkStatus, BULK_CONFIG, earliestPickup, orderingStatus, pickupSlots, validateCheckout, zonedParts,
+  availableFulfilments, bulkStatus, BULK_CONFIG, earliestPickup, orderingStatus, pickupSlots, PICKUP_RULES, validateCheckout, zonedParts,
   type DemoPaymentState, type FulfilmentMethod,
 } from '@dudhwala/shared';
-import { api, ApiError, cartChanged, type CartView } from '@/lib/api';
-import { bnDigits, dayLabel, taka, timeLabel } from '@/lib/format';
+import { api, cartChanged, type CartView } from '@/lib/api';
+import { bnDigits, dayLabel, minuteLabel, taka, timeLabel } from '@/lib/format';
+import { useConfig } from '@/lib/demo/config';
 import { ISSUE_MESSAGES, METHOD_LABEL } from '@/lib/demo/messages';
 import { useZone } from '@/lib/demo/zone';
 import { orderService, outletService, type DemoOrder, type Outlet } from '@/lib/services';
@@ -23,6 +24,7 @@ const BLANK = { name: '', phone: '', line1: '', landmark: '' };
 export function DemoCheckout() {
   const { zone } = useZone();
   const now = useNow();
+  const cfg = useConfig();
   const [cart, setCart] = useState<CartView | null>(null);
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [choice, setChoice] = useState<FulfilmentMethod>('HOME_DELIVERY');
@@ -40,12 +42,12 @@ export function DemoCheckout() {
   }, []);
 
   const lines = useMemo(() => cart?.lines ?? [], [cart]);
-  const bulk = useMemo(() => bulkStatus(lines.map((l) => ({ quantity: l.quantity, linePoisha: l.lineTotalPoisha }))), [lines]);
+  const bulk = useMemo(() => bulkStatus(lines.map((l) => ({ quantity: l.quantity, linePoisha: l.lineTotalPoisha })), cfg.bulk), [lines, cfg.bulk]);
   const methods = availableFulfilments(bulk.isBulk);
   const method: FulfilmentMethod = methods.includes(choice) ? choice : (methods[0] ?? 'HOME_DELIVERY');
   const clock = now ?? new Date(0);
   const minute = Math.floor(clock.getTime() / 60_000);
-  const slots = useMemo(() => (now ? pickupSlots(new Date(minute * 60_000), 12) : []), [now, minute]);
+  const slots = useMemo(() => (now ? pickupSlots(new Date(minute * 60_000), 12, { ...PICKUP_RULES, hours: cfg.hoursFull }) : []), [now, minute, cfg.hoursFull]);
   const pickupAt = slots.find((s) => s.toISOString() === pickupIso) ?? slots[0] ?? null;
   const outlet = outlets.find((o) => o.id === outletId) ?? null;
   const payment: DemoPaymentState = method === 'BULK_ORDER' ? (paid ? 'DEMO_PAID_SIMULATED' : 'DEMO_UNPAID') : 'NOT_REQUIRED_DEMO';
@@ -61,28 +63,47 @@ export function DemoCheckout() {
         outletId: outlet?.id ?? null,
         pickupAt,
         payment,
+        config: { hours: cfg.hours, bulk: cfg.bulk },
       }),
-    [clock, method, zone, lines, form, outlet, pickupAt, payment],
+    [clock, method, zone, lines, form, outlet, pickupAt, payment, cfg],
   );
-  const status = orderingStatus(clock);
+  const status = orderingStatus(clock, cfg.hoursFull);
+  const [saveError, setSaveError] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  const place = useCallback(() => {
+  const place = useCallback(async () => {
     setTried(true);
-    if (!now || !cart || issues.length > 0) return;
-    const res = orderService.place({
+    setSaveError('');
+    if (!now || !cart || issues.length > 0 || saving) return;
+    setSaving(true);
+    const res = await orderService.place({
       now: new Date(),
       method,
       zone: method === 'HOME_DELIVERY' ? zone : null,
       lines: lines.map((l) => ({ key: l.variantId, productSlug: l.productSlug, nameBn: l.nameBn, nameEn: l.nameEn, quantity: l.quantity, unitPricePoisha: l.unitPricePoisha, linePoisha: l.lineTotalPoisha, categorySlug: l.categorySlug ?? '', outerCityStatus: l.outerCityStatus })),
-      ...(method === 'HOME_DELIVERY' ? { address: form } : {}),
+      address: form,
       outlet,
       pickupAt,
       payment,
+      config: { hours: cfg.hours, bulk: cfg.bulk },
     });
-    if (!res.ok) return; // issues are recomputed live and shown
+    setSaving(false);
+    if (!res.ok) {
+      if (res.message) setSaveError(res.message); // otherwise the issues list below explains what to fix
+      return;
+    }
     setPlaced(res.order);
-    void Promise.all(lines.map((l) => api(`/cart/items/${l.variantId}`, { method: 'PUT', body: { quantity: 0 } }).catch((e: unknown) => (e instanceof ApiError ? null : null)))).then(cartChanged);
-  }, [now, cart, issues, method, zone, lines, form, outlet, pickupAt, payment]);
+    void Promise.all(lines.map((l) => api(`/cart/items/${l.variantId}`, { method: 'PUT', body: { quantity: 0 } }).catch(() => null))).then(cartChanged);
+  }, [now, cart, issues, saving, method, zone, lines, form, outlet, pickupAt, payment, cfg]);
+
+  // the confirmation card follows the status the admin sets
+  useEffect(() => {
+    if (!placed) return;
+    const t = setInterval(() => {
+      void orderService.status(placed.id).then((s) => s && setPlaced((o) => (o && o.status !== s ? { ...o, status: s } : o)));
+    }, 5000);
+    return () => clearInterval(t);
+  }, [placed]);
 
   if (placed)
     return (
@@ -91,7 +112,7 @@ export function DemoCheckout() {
           <b>অর্ডার সংরক্ষিত হয়েছে।</b> <span>এটি আসল অর্ডার নয় এবং কোনো আসল পেমেন্ট হয়নি।</span>
         </p>
         <div className="mt-3">
-          <DemoOrderCard order={placed} onAdvance={(id) => { const o = orderService.advance(id); if (o) setPlaced({ ...o }); }} />
+          <DemoOrderCard order={placed} />
         </div>
         <Link href="/" className="btn btn-primary mt-4">
           কেনাকাটা চালিয়ে যান
@@ -130,7 +151,9 @@ export function DemoCheckout() {
       {now && !status.open && (
         <div className="notice notice-err mt-3" role="alert">
           <p className="font-semibold">{ISSUE_MESSAGES.ordering_closed}</p>
-          <p className="text-sm">অর্ডার নেওয়া হয় প্রতিদিন সকাল ১০:০০ থেকে সন্ধ্যা ১০:০০ পর্যন্ত (ঢাকার সময়)।</p>
+          <p className="text-sm">
+            <span>অর্ডার নেওয়া হয় প্রতিদিন</span> <span>{minuteLabel(cfg.hours.openMinute)}</span> <span>থেকে</span> <span>{minuteLabel(cfg.hours.closeMinute)}</span> <span>পর্যন্ত (ঢাকার সময়)।</span>
+          </p>
           <p className="text-sm">
             <span>আবার খুলবে:</span> {status.reopensAt && zonedParts(status.reopensAt).d !== zonedParts(clock).d && <span>আগামীকাল</span>} <span>{status.reopensAt ? timeLabel(status.reopensAt) : ''}</span>
           </p>
@@ -169,6 +192,14 @@ export function DemoCheckout() {
             })}
           </fieldset>
 
+          <section className="card grid gap-3 p-4" aria-labelledby="dc-contact">
+            <h2 id="dc-contact" className="text-lg font-bold">
+              আপনার তথ্য
+            </h2>
+            {field('name', 'নাম', 'name')}
+            {field('phone', 'মোবাইল নম্বর', 'tel', 'tel')}
+          </section>
+
           {method === 'HOME_DELIVERY' && (
             <section className="card grid gap-3 p-4" aria-labelledby="dc-home">
               <h2 id="dc-home" className="text-lg font-bold">
@@ -177,8 +208,6 @@ export function DemoCheckout() {
               <p className="text-sm">
                 <b>জোন:</b> <span>{zone === 'IN_CITY' ? 'ইন সিটি' : 'আউটার সিটি'}</span> · <span>{ETA_TEXT[zone]}</span>
               </p>
-              {field('name', 'নাম', 'name')}
-              {field('phone', 'মোবাইল নম্বর', 'tel', 'tel')}
               {field('line1', 'ঠিকানা', 'street-address')}
               <p className="text-sm text-muted">{zone === 'IN_CITY' ? 'সিলেট সদরের যেকোনো জায়গায় ডেলিভারি হয়। শুধু আপনার পূর্ণ ঠিকানা লিখুন।' : 'সিলেটের বাইরের যেকোনো জায়গায় ডেলিভারি হয়। উপজেলা/জেলাসহ পূর্ণ ঠিকানা লিখুন।'}</p>
               {field('landmark', 'চেনার মতো স্থান (ঐচ্ছিক)', 'off')}
@@ -265,7 +294,12 @@ export function DemoCheckout() {
           </p>
           {bulk.isBulk && (
             <p className="mt-2 text-xs text-muted">
-              <span>বাল্ক অর্ডারের সীমা (ডেমো, চূড়ান্ত নয়):</span> <b>{bnDigits(BULK_CONFIG.minTotalQuantity)}</b> <span>টি বা তার বেশি।</span>
+              <span>{cfg.isPlaceholder ? 'বাল্ক অর্ডারের সীমা (ডেমো, চূড়ান্ত নয়):' : 'বাল্ক অর্ডারের সীমা:'}</span> <b>{bnDigits(cfg.bulk.minTotalQuantity)}</b> <span>টি বা তার বেশি।</span>
+            </p>
+          )}
+          {saveError && (
+            <p className="notice notice-err mt-3" role="alert">
+              {saveError}
             </p>
           )}
           {tried && (lineIssues.length > 0 || otherIssues.length > 0) && (
@@ -282,7 +316,7 @@ export function DemoCheckout() {
               </ul>
             </div>
           )}
-          <button type="button" className="btn btn-primary mt-4 w-full" onClick={place} aria-disabled={!status.open || undefined} disabled={now !== null && !status.open}>
+          <button type="button" className="btn btn-primary mt-4 w-full" onClick={() => void place()} aria-disabled={!status.open || undefined} aria-busy={saving} disabled={(now !== null && !status.open) || saving}>
             অর্ডার দিন
           </button>
           <p className="mt-2 text-xs text-muted">এই যাচাই শুধু ডেমোর জন্য, নিরাপত্তা নিশ্চয়তা নয়।</p>

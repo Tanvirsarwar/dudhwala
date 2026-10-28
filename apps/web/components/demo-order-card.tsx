@@ -2,13 +2,11 @@
 
 import { dayLabel, taka, timeLabel, bnDigits } from '@/lib/format';
 import { METHOD_LABEL, PAYMENT_LABEL, STATUS_LABEL } from '@/lib/demo/messages';
-import { STATUS_FLOW, type DemoOrder } from '@/lib/services';
+import type { DemoOrder } from '@/lib/services';
 import { ETA_TEXT } from './zone-bar';
 
 /** One demo order. Everything here is labelled demo; pickup and collection are never described as delivery. */
-export function DemoOrderCard({ order, onAdvance }: { order: DemoOrder; onAdvance?: (id: string) => void }) {
-  const flow = STATUS_FLOW[order.method];
-  const last = order.status === flow[flow.length - 1];
+export function DemoOrderCard({ order }: { order: DemoOrder }) {
   return (
     <article className="card p-4" aria-label={order.id}>
       <header className="flex flex-wrap items-center gap-2">
@@ -71,16 +69,6 @@ export function DemoOrderCard({ order, onAdvance }: { order: DemoOrder; onAdvanc
         <span>মোট</span>
         <span className={order.totalPoisha === null ? 'price-pending' : ''}>{taka(order.totalPoisha)}</span>
       </p>
-      {onAdvance && !last && (
-        <div className="mt-3">
-          <button type="button" className="btn btn-ghost btn-compact" onClick={() => onAdvance(order.id)}>
-            ডেমো: পরের ধাপে নিন
-          </button>
-          <p className="mt-1 text-xs text-muted">
-            {order.method === 'HOME_DELIVERY' ? 'এটি স্টাফের কাজের সিমুলেশন মাত্র।' : 'এটি আউটলেট স্টাফের কাজের সিমুলেশন মাত্র। "প্রস্তুত" না হওয়া পর্যন্ত পিকআপ নিশ্চিত নয়।'}
-          </p>
-        </div>
-      )}
     </article>
   );
 }

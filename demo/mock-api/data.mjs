@@ -5,27 +5,34 @@ const U = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 
 const CATALOGUE = JSON.parse(readFileSync(new URL('./catalogue.json', import.meta.url), 'utf8'));
 
-export const categories = CATALOGUE.categories.map((c, i) => ({ id: U(1 + i), ...c, parentId: null, active: true, sortOrder: i }));
+/** Fresh seed state (called at first start and on "reset demo data"). Names only: no prices, sizes or stock are invented. */
+export function seedState() {
+  const categories = CATALOGUE.categories.map((c, i) => ({ id: U(1 + i), slug: c.slug, nameBn: c.nameBn, nameEn: c.nameEn, active: true, sortOrder: i }));
+  /**
+   * Real catalogue (names only). Prices, pack sizes and stock are NOT in the supplied source, so they are null:
+   * the UI shows "price to be confirmed" and never invents a value. `maxQty` is a technical cart cap, not stock.
+   */
+  const products = CATALOGUE.products.map((p, i) => ({
+    id: U(100 + i),
+    slug: p.id,
+    categorySlug: p.category,
+    nameBn: p.nameBn,
+    nameEn: p.nameEn,
+    nameVerified: p.nameVerified,
+    outerCityStatus: p.outerCity ?? null,
+    active: true,
+    createdOrder: i,
+    content: { descriptionBn: null, ingredientsBn: null, allergensBn: null, storageBn: null, shelfLifeBn: null },
+    variants: [{ id: U(1000 + i), labelBn: '', pricePoisha: null, compareAtPoisha: null, stock: null, maxQty: 999 }],
+  }));
+  return { categories, products, orders: [], orderSeq: 1000, config: structuredClone(DEFAULT_CONFIG) };
+}
 
-const catBySlug = Object.fromEntries(categories.map((c) => [c.slug, c]));
-/**
- * Real catalogue (names only). Prices, pack sizes and stock are NOT in the supplied source, so they are null:
- * the UI shows "price to be confirmed" and never invents a value. `maxQty` is a DEMO cart cap, not stock.
- */
-export const products = CATALOGUE.products.map((p, i) => ({
-  id: U(100 + i),
-  slug: p.id,
-  kind: p.kind,
-  categorySlug: p.category,
-  nameBn: p.nameBn,
-  nameEn: p.nameEn,
-  nameVerified: p.nameVerified,
-  outerCityStatus: p.outerCity ?? undefined,
-  createdOrder: i,
-  descriptionBn: null,
-  variants: [{ id: U(1000 + i), sku: `DW-${p.id.toUpperCase()}`, labelBn: '', labelEn: null, packSize: '1', packUnit: 'PCS', pricePoisha: null, compareAtPoisha: null, status: 'ACTIVE', sortOrder: 0, stock: null, maxQty: 999 }],
-  category: catBySlug[p.category],
-}));
+/** Editable from the admin Settings page. Bulk thresholds are placeholders until the shop approves real values. */
+export const DEFAULT_CONFIG = {
+  hours: { openMinute: 10 * 60, closeMinute: 22 * 60 },
+  bulk: { minTotalQuantity: 20, minTotalPoisha: 2_000_000, isPlaceholder: true },
+};
 
 export const areas = ['জিন্দাবাজার', 'আম্বরখানা', 'উপশহর', 'সুবিদবাজার', 'শাহী ঈদগাহ', 'মীরবক্সটুলা'].map((n, i) => ({ id: U(500 + i), slug: `area-${i + 1}`, nameBn: n, nameEn: null }));
 
@@ -42,27 +49,3 @@ export const outlets = [
   { id: U(701), code: 'DEMO-UPS', nameBn: 'উপশহর শাখা (ডেমো)', nameEn: 'Upashahar (demo)', addressLine: 'ডেমো ঠিকানা, উপশহর', phone: null, email: null, status: 'ACTIVE', acceptsOnlineOrders: true, autoConfirmOrders: false },
 ];
 
-const STATUSES = ['PLACED', 'CONFIRMED', 'PREPARING', 'READY_FOR_DISPATCH', 'OUT_FOR_DELIVERY', 'DELIVERED', 'DELIVERED', 'CANCELLED'];
-const NAMES = ['রহিম উদ্দিন', 'ফাতেমা বেগম', 'কামরুল হাসান', 'সুমাইয়া আক্তার', 'জাহিদ আলী', 'নাজমা খাতুন'];
-export const orders = Array.from({ length: 16 }, (_, i) => {
-  const o = outlets[i % 2];
-  const status = STATUSES[i % STATUSES.length];
-  const d = new Date(Date.UTC(2026, 0, 15, 4 + (i % 8), 0, 0));
-  return {
-    id: U(900 + i),
-    orderNumber: `DEMO-${String(1001 + i)}`,
-    status,
-    paymentStatus: status === 'DELIVERED' ? 'PAID' : 'UNPAID',
-    paymentMethod: 'COD',
-    totalPoisha: (180 + ((i * 97) % 700)) * 100,
-    slotStartsAt: d.toISOString(),
-    slotEndsAt: new Date(d.getTime() + 2 * 3600e3).toISOString(),
-    createdAt: new Date(d.getTime() - 20 * 3600e3).toISOString(),
-    shipName: NAMES[i % NAMES.length],
-    shipAreaNameBn: areas[i % areas.length].nameBn,
-    outlet: { id: o.id, code: o.code },
-    delivery: status === 'OUT_FOR_DELIVERY' ? { status: 'OUT_FOR_DELIVERY', riderUserId: null } : null,
-    _count: { items: 1 + (i % 4) },
-    late: i === 2,
-  };
-});

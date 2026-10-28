@@ -28,6 +28,14 @@ export function timeLabel(iso: string | Date): string {
   return `${period} ${bnDigits(h12)}:${bnDigits(String(p.min).padStart(2, '0'))}`;
 }
 
+/** Bangla clock label for minutes after midnight (e.g. 600 -> "সকাল ১০:০০"); same wording as timeLabel. */
+export function minuteLabel(minutes: number): string {
+  const h = Math.floor(minutes / 60) % 24;
+  const period = h < 12 ? 'সকাল' : h < 16 ? 'দুপুর' : h < 18 ? 'বিকাল' : 'সন্ধ্যা';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${period} ${bnDigits(h12)}:${bnDigits(String(minutes % 60).padStart(2, '0'))}`;
+}
+
 export const slotLabel = (start: string, end: string) => `${dayLabel(start)} · ${timeLabel(start)} – ${timeLabel(end)}`;
 
 export const dhakaDayKey = (iso: string) => {

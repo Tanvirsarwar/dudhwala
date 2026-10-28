@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { BULK_CONFIG } from '@dudhwala/shared';
+import { bulkStatus } from '@dudhwala/shared';
+import { useConfig } from '@/lib/demo/config';
 import { api, cartChanged, type CartView, type Category, type ProductCardData } from '@/lib/api';
-import { bnDigits } from '@/lib/format';
+import { bnDigits, taka } from '@/lib/format';
 import { makeCatalog, rank } from '@/lib/catalog-search';
 
 const MAX = 999;
@@ -16,6 +17,7 @@ const MAX = 999;
  */
 export function BulkBuilder({ products, categories }: { products: ProductCardData[]; categories: Category[] }) {
   const router = useRouter();
+  const cfg = useConfig();
   const [qty, setQty] = useState<Record<string, number>>({});
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
@@ -30,8 +32,14 @@ export function BulkBuilder({ products, categories }: { products: ProductCardDat
   }, []);
 
   const total = Object.values(qty).reduce((s, n) => s + n, 0);
-  const min = BULK_CONFIG.minTotalQuantity;
-  const ready = total >= min;
+  const min = cfg.bulk.minTotalQuantity;
+  const byId = useMemo(() => new Map(products.map((p) => [p.variants[0]?.id ?? '', p])), [products]);
+  // bulk by quantity OR by amount (the amount can only be checked once every chosen product has a price)
+  const status = bulkStatus(
+    Object.entries(qty).filter(([, n]) => n > 0).map(([id, n]) => { const price = byId.get(id)?.variants[0]?.pricePoisha ?? null; return { quantity: n, linePoisha: price === null ? null : price * n }; }),
+    cfg.bulk,
+  );
+  const ready = status.isBulk;
   const vid = (p: ProductCardData) => p.variants[0]?.id ?? '';
   const set = (p: ProductCardData, n: number) => setQty((m) => ({ ...m, [vid(p)]: Math.max(0, Math.min(MAX, Math.floor(Number.isFinite(n) ? n : 0))) }));
 
@@ -60,7 +68,7 @@ export function BulkBuilder({ products, categories }: { products: ProductCardDat
         <span>পণ্য বেছে সংখ্যা দিন। সংগ্রহ শুধু মদিনা মার্কেট শাখা থেকে; হোম ডেলিভারি নেই। আগে পেমেন্ট লাগে (ডেমো/সিমুলেটেড পেমেন্ট, কোনো আসল টাকা কাটা হয় না)।</span>
       </p>
       <p className="mt-2 text-sm text-muted">
-        <span>ন্যূনতম (ডেমো, চূড়ান্ত নয়):</span> <b>{bnDigits(min)}</b> <span>টি পণ্য।</span>
+        <span>{cfg.isPlaceholder ? 'ন্যূনতম (ডেমো, চূড়ান্ত নয়):' : 'ন্যূনতম:'}</span> <b>{bnDigits(min)}</b> <span>টি পণ্য।</span> <span>অথবা মোট দাম</span> <b>{taka(cfg.bulk.minTotalPoisha)}</b> <span>বা তার বেশি।</span>
       </p>
       <label htmlFor="bulk-q" className="label mt-3 block">
         খুঁজুন

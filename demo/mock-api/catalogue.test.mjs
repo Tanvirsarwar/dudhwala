@@ -1,10 +1,11 @@
-// Catalogue + eligibility checks for the V2.5 demo data. Run: node --test demo/mock-api/   (needs `pnpm --filter @dudhwala/shared build`)
+// Seed catalogue + eligibility checks for the demo data. Run: node --test demo/mock-api/   (needs `pnpm --filter @dudhwala/shared build`)
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { categories, products } from './data.mjs';
+import { seedState } from './data.mjs';
 import { zoneEligibility, EN_DICT } from '../../packages/shared/dist/index.js';
 
+const { categories, products } = seedState();
 const cat = JSON.parse(readFileSync(new URL('./catalogue.json', import.meta.url), 'utf8'));
 const OLD_SAMPLE = ['খাঁটি তরল দুধ', 'ফুল ক্রিম দুধ', 'চকলেট ফ্লেভার্ড মিল্ক', 'মিষ্টি দই', 'বোরহানি', 'খাঁটি ঘি', 'সল্টেড বাটার', 'রসগোল্লা', 'চমচম', 'সন্দেশ', 'তাজা পনির', 'মোজারেলা চিজ', 'মিল্ক ব্রেড', 'ক্রিম বান', 'চানাচুর', 'খেজুর গুড়', 'বাসমতি চাল', 'সরিষার তেল', 'মসুর ডাল'];
 const elig = (zone) => products.filter((p) => zoneEligibility({ categorySlug: p.categorySlug, outerCityStatus: p.outerCityStatus }, zone).eligible);
@@ -26,7 +27,7 @@ test('catalogue: no temporary/sample products and no invented data', () => {
     assert.equal(p.variants.length, 1, p.slug);
     assert.equal(p.variants[0].pricePoisha, null, `${p.slug}: price must stay empty until supplied`);
     assert.equal(p.variants[0].stock, null, `${p.slug}: stock must stay empty until supplied`);
-    assert.equal(p.descriptionBn, null);
+    assert.equal(p.content.descriptionBn, null);
   }
 });
 

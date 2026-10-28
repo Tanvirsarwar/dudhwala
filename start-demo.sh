@@ -24,7 +24,7 @@ if [ ! -f apps/web/.next/BUILD_ID ] || [ ! -f apps/admin/.next/BUILD_ID ]; then
   echo "== Building storefront and admin (first run only, a few minutes) =="
   pnpm --filter @dudhwala/shared build
   NEXT_PUBLIC_PREVIEW_LABEL='ডেমো প্রিভিউ — পণ্যের নাম আসল তালিকা থেকে; দাম ও স্টক এখনো দেওয়া হয়নি। কোনো আসল অর্ডার বা টাকা নেওয়া হয় না।' pnpm --filter @dudhwala/web build
-  NEXT_PUBLIC_PREVIEW_LABEL='অ্যাডমিন ডেমো — লগইন: admin@demo.local / demo1234 (শুধু দেখার জন্য)' pnpm --filter @dudhwala/admin build
+  NEXT_PUBLIC_STOREFRONT_URL=http://127.0.0.1:3100 NEXT_PUBLIC_PREVIEW_LABEL='অ্যাডমিন ডেমো — পরিবর্তনগুলো এই কম্পিউটারে সংরক্ষিত হয়, আসল ডেটাবেস নয়।' pnpm --filter @dudhwala/admin build
 fi
 
 pids=()
@@ -42,7 +42,8 @@ cat <<MSG
 
  Dudhwala DEMO is running (real product names; no prices; demo orders only):
    Storefront : http://127.0.0.1:3100
-   Admin      : http://127.0.0.1:3101   login: admin@demo.local / demo1234
+   Admin      : http://127.0.0.1:3101        admin@demo.local / demo1234
+   Manager    : http://127.0.0.1:3101/manager/login   manager@demo.local / manager1234 (view only)
    Mock API   : http://127.0.0.1:4010/v1/health/ready
  Press Ctrl+C to stop.
 MSG

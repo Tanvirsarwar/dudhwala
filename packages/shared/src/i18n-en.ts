@@ -16,6 +16,14 @@ const PATTERNS: [RegExp, string][] = [
   [/^(.+) কার্টে যোগ হয়েছে$/, '$1 added to cart'],
   [/^(.+) — ছবি শীঘ্রই আসছে$/, '$1 — photo coming soon'],
   [/^(.+) সংখ্যা$/, '$1 quantity'],
+  [new RegExp(`^সাইজ ${N} লেবেল$`), 'Size $1 label'],
+  [new RegExp(`^সাইজ ${N} দাম$`), 'Size $1 price'],
+  [new RegExp(`^সাইজ ${N} পুরোনো দাম$`), 'Size $1 old price'],
+  [new RegExp(`^সাইজ ${N} স্টক$`), 'Size $1 stock'],
+  [new RegExp(`^সাইজ ${N} সর্বোচ্চ$`), 'Size $1 max'],
+  [new RegExp(`^সাইজ ${N} সরান$`), 'Remove size $1'],
+  [/^(.+) দাম$/, '$1 price'],
+  [new RegExp(`^${N} টি সাইজ$`), '$1 sizes'],
   [new RegExp(`^সর্বোচ্চ ${N}টি নেওয়া যাবে$`), 'Maximum $1 allowed'],
 ];
 

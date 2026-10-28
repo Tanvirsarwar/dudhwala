@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  availableFulfilments, bulkStatus, BULK_CONFIG, earliestPickup, orderingStatus, pickupSlots, validateCheckout, validatePickup, zonedParts, zoneEligibility,
+  availableFulfilments, bulkStatus, BULK_CONFIG, earliestPickup, hhmmToMinutes, minutesToHHMM, orderingStatus, pickupSlots, validateCheckout, validatePickup, zonedParts, zoneEligibility,
   type CheckoutInput, type CheckoutLine,
 } from './ordering.js';
 
@@ -20,7 +20,8 @@ describe('zoneEligibility', () => {
     expect(zoneEligibility(sweetPlain, 'OUTER_CITY')).toEqual({ eligible: false, reason: 'item_not_approved' });
     expect(zoneEligibility({ categorySlug: 'doi-dairy' }, 'OUTER_CITY')).toEqual({ eligible: false, reason: 'item_not_approved' });
     expect(zoneEligibility({ categorySlug: 'doi-dairy', outerCityStatus: 'approved' }, 'OUTER_CITY').eligible).toBe(true); // the four Doi items confirmed for Outer Sylhet
-    expect(zoneEligibility({ categorySlug: 'grocery', outerCityStatus: 'approved' }, 'OUTER_CITY').eligible).toBe(false); // a flag alone never enables a category that is not listed
+    expect(zoneEligibility({ categorySlug: 'any-new-category', outerCityStatus: 'approved' }, 'OUTER_CITY').eligible).toBe(true); // the owner's explicit flag enables any category
+    expect(zoneEligibility({ categorySlug: 'any-new-category' }, 'OUTER_CITY').eligible).toBe(false); // unflagged items outside Bakery stay out
   });
   it('uncertain flags are never enabled, even inside an eligible category or when ticked', () => {
     expect(zoneEligibility({ categorySlug: 'bakery', outerCityStatus: 'pending_verification' }, 'OUTER_CITY').eligible).toBe(false);
@@ -109,7 +110,7 @@ describe('validateCheckout', () => {
     expect(codes(home({ address: { name: ' ', phone: '123', line1: '' } }))).toEqual(['address_name_required', 'address_phone_invalid', 'address_line_required']);
   });
   it('pickup needs an outlet and a slot at least one hour away', () => {
-    const p = (over: Partial<CheckoutInput>) => ({ now: open, method: 'EXPRESS_PICKUP' as const, zone: null, lines: [line('a')], outletId: 'o1', pickupAt: at('2026-03-10T06:30:00Z'), ...over });
+    const p = (over: Partial<CheckoutInput>) => ({ now: open, method: 'EXPRESS_PICKUP' as const, zone: null, lines: [line('a')], address: { name: 'রহিম', phone: '01712345678', line1: '' }, outletId: 'o1', pickupAt: at('2026-03-10T06:30:00Z'), ...over });
     expect(codes(p({}))).toEqual([]);
     expect(codes(p({ outletId: null }))).toEqual(['outlet_required']);
     expect(codes(p({ pickupAt: at('2026-03-10T05:30:00Z') }))).toEqual(['pickup_too_soon']);
@@ -120,8 +121,28 @@ describe('validateCheckout', () => {
     const big = [line('a', bakery, BULK_CONFIG.minTotalQuantity)];
     expect(codes(home({ lines: big }))).toContain('bulk_requires_collection');
     expect(codes({ now: open, method: 'EXPRESS_PICKUP', zone: null, lines: big, outletId: 'o', pickupAt: at('2026-03-10T07:00:00Z') })).toContain('bulk_requires_collection');
-    expect(codes({ now: open, method: 'BULK_ORDER', zone: null, lines: big })).toEqual(['bulk_prepayment_required']);
-    expect(codes({ now: open, method: 'BULK_ORDER', zone: null, lines: big, payment: 'DEMO_PAID_SIMULATED' })).toEqual([]);
-    expect(codes({ now: open, method: 'BULK_ORDER', zone: null, lines: [line('a')], payment: 'DEMO_PAID_SIMULATED' })).toContain('not_bulk');
+    expect(codes({ now: open, method: 'BULK_ORDER', zone: null, lines: big, payment: 'DEMO_PAID_SIMULATED' })).toEqual(['address_name_required', 'address_phone_invalid']); // contact is needed for collection
+    const contact = { name: 'রহিম', phone: '01712345678', line1: '' };
+    expect(codes({ now: open, method: 'BULK_ORDER', zone: null, lines: big, address: contact })).toEqual(['bulk_prepayment_required']);
+    expect(codes({ now: open, method: 'BULK_ORDER', zone: null, lines: big, address: contact, payment: 'DEMO_PAID_SIMULATED' })).toEqual([]);
+    expect(codes({ now: open, method: 'BULK_ORDER', zone: null, lines: [line('a')], address: contact, payment: 'DEMO_PAID_SIMULATED' })).toContain('not_bulk');
+  });
+});
+
+describe('configurable settings', () => {
+  it('custom hours and bulk threshold are honoured by validateCheckout', () => {
+    const cfg = { hours: { openMinute: 8 * 60, closeMinute: 20 * 60 }, bulk: { minTotalQuantity: 3, minTotalPoisha: 1_000_000 } };
+    const line = (q: number): CheckoutLine => ({ key: 'a', product: { categorySlug: 'bakery' }, quantity: q, linePoisha: null });
+    const base = { method: 'HOME_DELIVERY' as const, zone: 'IN_CITY' as const, address: { name: 'রহিম', phone: '01712345678', line1: 'x' } };
+    const at0830 = at('2026-03-10T02:30:00Z'); // 08:30 Dhaka: closed by default hours, open with custom
+    expect(validateCheckout({ ...base, now: at0830, lines: [line(1)] }).map((x) => x.code)).toContain('ordering_closed');
+    expect(validateCheckout({ ...base, now: at0830, lines: [line(1)], config: cfg })).toEqual([]);
+    expect(validateCheckout({ ...base, now: at0830, lines: [line(3)], config: cfg }).map((x) => x.code)).toContain('bulk_requires_collection');
+  });
+  it('HH:MM helpers', () => {
+    expect(minutesToHHMM(600)).toBe('10:00');
+    expect(hhmmToMinutes('22:30')).toBe(1350);
+    expect(hhmmToMinutes('25:00')).toBeNull();
+    expect(hhmmToMinutes('abc')).toBeNull();
   });
 });

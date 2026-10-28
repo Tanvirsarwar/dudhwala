@@ -23,9 +23,12 @@ export class ApiError extends Error {
 }
 
 /** Server-side fetch of public data. Returns null on 404 so pages can call notFound(). */
+// The local demo has an admin that edits data live, so its pages must never serve a cached copy of the catalogue.
+const NO_CACHE = process.env.NEXT_PUBLIC_DEMO_BRANDING === '1';
+
 export async function serverGet<T>(path: string, revalidate = 30): Promise<T | null> {
   if (SERVER_API.startsWith('/')) throw new Error('API_INTERNAL_URL (or API_PROXY_TARGET) must be set: server-side requests need an absolute API URL');
-  const res = await fetch(`${SERVER_API}${path}`, { next: { revalidate }, headers: { 'x-dw-audience': 'customer' } });
+  const res = await fetch(`${SERVER_API}${path}`, { ...(NO_CACHE ? { cache: 'no-store' as const } : { next: { revalidate } }), headers: { 'x-dw-audience': 'customer' } });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`API ${res.status} for ${path}`);
   return (await res.json()) as T;

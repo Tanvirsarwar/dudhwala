@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { orderingStatus, zoneEligibility, zonedParts, type DeliveryZone } from '@dudhwala/shared';
 import { bnDigits, timeLabel } from '@/lib/format';
 import { DEMO_ORDERING, useZone } from '@/lib/demo/zone';
+import { useConfig } from '@/lib/demo/config';
 import { useCart } from './header-client';
 
 export const ETA_TEXT: Record<DeliveryZone, string> = {
@@ -24,8 +25,9 @@ export function useNow(): Date | null {
 }
 
 export function OrderingChip({ now }: { now: Date | null }) {
+  const { hoursFull } = useConfig();
   if (!now) return null;
-  const s = orderingStatus(now);
+  const s = orderingStatus(now, hoursFull);
   if (s.open && s.closesAt) {
     return (
       <span className="zone-chip zone-chip-open" role="status">

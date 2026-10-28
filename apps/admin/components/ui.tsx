@@ -1,9 +1,11 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useRef } from 'react';
-import { COD_STATUS, ORDER_STATUS, PAYMENT_STATUS } from '@/lib/format';
+import type { DemoOrderStatus } from '@dudhwala/shared';
+import { ORDER_STATUS_BN } from '@/lib/format';
 
-/** Status badges always carry text (never colour alone — UI_UX_SPEC §8). */
+/** Status badges always carry text (never colour alone). */
 const TONE: Record<string, string> = {
   good: 'bg-[#e6f4ec] text-success border-[#b7dfc6]',
   warn: 'bg-[#fff4cc] text-warning border-[#f1d98a]',
@@ -16,22 +18,28 @@ export function Badge({ tone = 'neutral', children }: { tone?: keyof typeof TONE
   return <span className={`badge ${TONE[tone]}`}>{children}</span>;
 }
 
-const ORDER_TONE: Record<string, keyof typeof TONE> = {
-  PENDING_PAYMENT: 'warn', PLACED: 'info', CONFIRMED: 'neutral', PREPARING: 'neutral', READY_FOR_DISPATCH: 'neutral',
-  OUT_FOR_DELIVERY: 'info', DELIVERED: 'good', DELIVERY_FAILED: 'bad', CANCELLED: 'bad', REJECTED: 'bad', EXPIRED: 'bad',
-};
-export const OrderBadge = ({ status }: { status: string }) => <Badge tone={ORDER_TONE[status] ?? 'neutral'}>{ORDER_STATUS[status] ?? status}</Badge>;
+const FINAL = new Set(['DEMO_DELIVERED', 'DEMO_PICKED_UP', 'DEMO_COLLECTED']);
+export function OrderBadge({ status }: { status: DemoOrderStatus }) {
+  const tone: keyof typeof TONE = status === 'DEMO_CANCELLED' ? 'bad' : FINAL.has(status) ? 'good' : status.includes('READY') ? 'info' : status === 'DEMO_PREPARING' ? 'neutral' : 'warn';
+  return <Badge tone={tone}>{ORDER_STATUS_BN[status] ?? status}</Badge>;
+}
 
-const PAY_TONE: Record<string, keyof typeof TONE> = { PAID: 'good', UNPAID: 'warn', PENDING: 'warn', FAILED: 'bad', CANCELLED: 'bad', PARTIALLY_REFUNDED: 'info', REFUNDED: 'info' };
-export const PaymentBadge = ({ status, method }: { status: string; method?: string }) => (
-  <Badge tone={PAY_TONE[status] ?? 'neutral'}>
-    {method ? `${method === 'COD' ? 'COD' : 'অনলাইন'} · ` : ''}
-    {PAYMENT_STATUS[status] ?? status}
-  </Badge>
-);
-
-const COD_TONE: Record<string, keyof typeof TONE> = { PENDING: 'warn', COLLECTED: 'info', HANDED_OVER: 'good', DISCREPANCY: 'bad', NOT_COLLECTED: 'neutral' };
-export const CodBadge = ({ status }: { status: string }) => <Badge tone={COD_TONE[status] ?? 'neutral'}>{COD_STATUS[status] ?? status}</Badge>;
+/** Big number tile for the dashboard; becomes a link when `href` is given. */
+export function Stat({ label, value, href, tone }: { label: string; value: React.ReactNode; href?: string; tone?: 'warn' | 'bad' }) {
+  const inner = (
+    <>
+      <span className="block text-sm text-muted">{label}</span>
+      <span className={`block text-2xl font-bold ${tone === 'warn' ? 'text-warning' : tone === 'bad' ? 'text-danger' : 'text-brand-700'}`}>{value}</span>
+    </>
+  );
+  return href ? (
+    <Link href={href} className="card block p-4 transition-transform hover:-translate-y-0.5">
+      {inner}
+    </Link>
+  ) : (
+    <div className="card p-4">{inner}</div>
+  );
+}
 
 export function PageTitle({ title, children }: { title: string; children?: React.ReactNode }) {
   return (
@@ -119,9 +127,4 @@ export function TableWrap({ children, label }: { children: React.ReactNode; labe
       {children}
     </div>
   );
-}
-
-/** Asks the Super Admin to pick an outlet when a screen is per-outlet. */
-export function NeedOutlet() {
-  return <Empty>এই পাতাটি একটি নির্দিষ্ট আউটলেটের জন্য। উপরের তালিকা থেকে আউটলেট বেছে নিন।</Empty>;
 }

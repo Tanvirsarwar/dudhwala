@@ -9,24 +9,9 @@ export interface Outlet {
   addressLine: string | null;
 }
 
-export type DemoOrderStatus =
-  | 'DEMO_PLACED'
-  | 'DEMO_PREPARING'
-  | 'DEMO_OUT_FOR_DELIVERY'
-  | 'DEMO_DELIVERED'
-  | 'DEMO_PICKUP_REQUESTED'
-  | 'DEMO_READY_FOR_PICKUP'
-  | 'DEMO_PICKED_UP'
-  | 'DEMO_PREPAID_SIMULATED'
-  | 'DEMO_READY_FOR_COLLECTION'
-  | 'DEMO_COLLECTED';
-
-/** Status sequence per fulfilment method. Pickup/collection is confirmed only at the READY step. */
-export const STATUS_FLOW: Record<FulfilmentMethod, DemoOrderStatus[]> = {
-  HOME_DELIVERY: ['DEMO_PLACED', 'DEMO_PREPARING', 'DEMO_OUT_FOR_DELIVERY', 'DEMO_DELIVERED'],
-  EXPRESS_PICKUP: ['DEMO_PICKUP_REQUESTED', 'DEMO_PREPARING', 'DEMO_READY_FOR_PICKUP', 'DEMO_PICKED_UP'],
-  BULK_ORDER: ['DEMO_PREPAID_SIMULATED', 'DEMO_PREPARING', 'DEMO_READY_FOR_COLLECTION', 'DEMO_COLLECTED'],
-};
+export type { DemoOrderStatus } from '@dudhwala/shared';
+import type { DemoOrderStatus } from '@dudhwala/shared';
+export { ORDER_STATUS_FLOW as STATUS_FLOW } from '@dudhwala/shared';
 
 export interface DemoOrderLine {
   key: string;
@@ -51,6 +36,8 @@ export interface DemoOrder {
   totalPoisha: number | null;
   payment: DemoPaymentState;
   address?: { name: string; phone: string; line1: string; landmark: string };
+  /** pickup and bulk orders: who collects */
+  contact?: { name: string; phone: string };
   outlet?: { id: string | null; nameBn: string; nameEn: string | null };
   pickupAt?: string;
   /** earliest-delivery promise text key, see lib/demo/eta */
@@ -62,21 +49,20 @@ export interface PlaceOrderInput {
   method: FulfilmentMethod;
   zone: DeliveryZone | null;
   lines: (DemoOrderLine & { categorySlug: string; outerCityStatus?: import('@dudhwala/shared').OuterCityStatus | null })[];
-  address?: { name: string; phone: string; line1: string; landmark: string };
+  /** name + phone for every method; line1/landmark only matter for home delivery */
+  address: { name: string; phone: string; line1: string; landmark: string };
   outlet?: Outlet | null;
   pickupAt?: Date | null;
   payment: DemoPaymentState;
 }
 
-export type PlaceResult = { ok: true; order: DemoOrder } | { ok: false; issues: Issue[] };
+export type PlaceResult = { ok: true; order: DemoOrder } | { ok: false; issues: Issue[]; message?: string };
 
-/** Boundary between UI and order storage. Phase 1: browser localStorage. Phase 2: HTTP calls to the real API. */
+/** Boundary between UI and order storage. Phase 1 demo: the mock API (saves to its runtime file). Phase 2: the real API. */
 export interface OrderService {
-  place(input: PlaceOrderInput): PlaceResult;
-  list(): DemoOrder[];
-  /** Simulates outlet staff moving an order to its next status (demo only). */
-  advance(id: string): DemoOrder | null;
-  clear(): void;
+  place(input: PlaceOrderInput & { config?: import('@dudhwala/shared').OrderingConfig }): Promise<PlaceResult>;
+  /** Current status of an order (customers have no login in the demo; the order id is the handle). */
+  status(id: string): Promise<DemoOrderStatus | null>;
 }
 export interface OutletService {
   list(): Promise<Outlet[]>;

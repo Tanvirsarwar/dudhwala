@@ -13,19 +13,19 @@ export type DemoPaymentState = 'NOT_REQUIRED_DEMO' | 'DEMO_UNPAID' | 'DEMO_PAID_
 
 /* ───────────── eligibility ───────────── */
 
-/** Category rules for Outer City (source: dudhwala-product-delivery-eligibility.md). Edit here, not in the UI. */
+/**
+ * Outer City rules. Whole Bakery category is eligible; every other item is eligible only when the owner flags it
+ * "approved" (admin product page). Items flagged pending/disabled are never eligible, whatever their category.
+ */
 export const ELIGIBILITY_RULES = {
-  /** every product in these categories is eligible unless it is flagged otherwise */
   outerCityWholeCategories: ['bakery'],
-  /** only products flagged outerCityStatus = "approved" are eligible */
-  outerCityApprovedOnlyCategories: ['dairy-sweets', 'doi-dairy'],
 } as const;
 
 export interface EligibilityProduct {
   categorySlug: string;
   outerCityStatus?: OuterCityStatus | null | undefined;
 }
-export type EligibilityReason = 'in_city_all' | 'category_rule' | 'approved_item' | 'pending_verification' | 'pending_confirmation' | 'disabled' | 'item_not_approved' | 'category_not_approved';
+export type EligibilityReason = 'in_city_all' | 'category_rule' | 'approved_item' | 'pending_verification' | 'pending_confirmation' | 'disabled' | 'item_not_approved';
 export interface Eligibility {
   eligible: boolean;
   reason: EligibilityReason;
@@ -34,11 +34,11 @@ export interface Eligibility {
 export function zoneEligibility(p: EligibilityProduct, zone: DeliveryZone): Eligibility {
   if (zone === 'IN_CITY') return { eligible: true, reason: 'in_city_all' };
   const s = p.outerCityStatus;
-  // explicit "not yet confirmed" flags always win: uncertain entries are never enabled by accident
+  // explicit "not yet confirmed / switched off" flags always win: uncertain entries are never enabled by accident
   if (s === 'pending_verification' || s === 'pending_confirmation' || s === 'disabled') return { eligible: false, reason: s };
+  if (s === 'approved') return { eligible: true, reason: 'approved_item' };
   if ((ELIGIBILITY_RULES.outerCityWholeCategories as readonly string[]).includes(p.categorySlug)) return { eligible: true, reason: 'category_rule' };
-  if ((ELIGIBILITY_RULES.outerCityApprovedOnlyCategories as readonly string[]).includes(p.categorySlug)) return s === 'approved' ? { eligible: true, reason: 'approved_item' } : { eligible: false, reason: 'item_not_approved' };
-  return { eligible: false, reason: 'category_not_approved' };
+  return { eligible: false, reason: 'item_not_approved' };
 }
 
 /** Delivery promise shown to customers. Never "instant". */
@@ -49,8 +49,17 @@ export const DELIVERY_ESTIMATE: Record<DeliveryZone, { minHours: number; maxHour
 
 /* ───────────── time (Asia/Dhaka, explicit) ───────────── */
 
-export const ORDERING_HOURS = { timeZone: 'Asia/Dhaka', openMinute: 10 * 60, closeMinute: 22 * 60 } as const;
 export type Hours = { timeZone: string; openMinute: number; closeMinute: number };
+export const ORDERING_HOURS: Hours = { timeZone: 'Asia/Dhaka', openMinute: 10 * 60, closeMinute: 22 * 60 };
+
+/** Minutes after midnight <-> "HH:MM". */
+export const minutesToHHMM = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+export function hhmmToMinutes(v: string): number | null {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(v.trim());
+  if (!m) return null;
+  const [h, min] = [Number(m[1]), Number(m[2])];
+  return h <= 24 && min < 60 && h * 60 + min <= 24 * 60 ? h * 60 + min : null;
+}
 
 interface Parts {
   y: number;
@@ -94,7 +103,8 @@ export function orderingStatus(now: Date, hours: Hours = ORDERING_HOURS): Orderi
 
 /** Minimum gap between placing an order and the earliest pickup. Pickup hours reuse the ordering hours until the
  *  outlets' real opening hours are confirmed (placeholder, documented). */
-export const PICKUP_RULES = { minLeadMinutes: 60, slotStepMinutes: 30, hours: ORDERING_HOURS as Hours };
+export const PICKUP_RULES = { minLeadMinutes: 60, slotStepMinutes: 30, hours: ORDERING_HOURS };
+export type PickupRules = typeof PICKUP_RULES;
 
 export const earliestPickup = (now: Date, leadMinutes: number = PICKUP_RULES.minLeadMinutes) => new Date(now.getTime() + leadMinutes * 60_000);
 
@@ -103,7 +113,7 @@ function inHours(at: Date, hours: Hours): boolean {
   return m >= hours.openMinute && m <= hours.closeMinute;
 }
 /** Selectable pickup times: every `slotStepMinutes`, not before the earliest pickup, inside pickup hours. */
-export function pickupSlots(now: Date, count = 12, rules = PICKUP_RULES): Date[] {
+export function pickupSlots(now: Date, count = 12, rules: PickupRules = PICKUP_RULES): Date[] {
   const stepMs = rules.slotStepMinutes * 60_000;
   let t = Math.ceil(earliestPickup(now, rules.minLeadMinutes).getTime() / stepMs) * stepMs;
   const out: Date[] = [];
@@ -111,7 +121,7 @@ export function pickupSlots(now: Date, count = 12, rules = PICKUP_RULES): Date[]
   return out;
 }
 export type PickupCheck = { ok: true } | { ok: false; reason: 'invalid' | 'too_soon' | 'outside_hours' };
-export function validatePickup(now: Date, at: Date | null, rules = PICKUP_RULES): PickupCheck {
+export function validatePickup(now: Date, at: Date | null, rules: PickupRules = PICKUP_RULES): PickupCheck {
   if (!at || Number.isNaN(at.getTime())) return { ok: false, reason: 'invalid' };
   if (at.getTime() < earliestPickup(now, rules.minLeadMinutes).getTime()) return { ok: false, reason: 'too_soon' };
   if (!inHours(at, rules.hours)) return { ok: false, reason: 'outside_hours' };
@@ -128,6 +138,13 @@ export const BULK_CONFIG = {
   collectionBranch: { nameEn: 'Modina Market Branch', nameBn: 'মদিনা মার্কেট শাখা', outletId: null as string | null /* not in the project's outlet data: map in Phase 2 */ },
 };
 export type BulkConfig = typeof BULK_CONFIG;
+/** Settings the admin can change (served by the API as /config). */
+export interface OrderingConfig {
+  hours: Pick<Hours, 'openMinute' | 'closeMinute'>;
+  bulk: Pick<BulkConfig, 'minTotalQuantity' | 'minTotalPoisha'>;
+}
+export const DEFAULT_ORDERING_CONFIG: OrderingConfig = { hours: { openMinute: ORDERING_HOURS.openMinute, closeMinute: ORDERING_HOURS.closeMinute }, bulk: { minTotalQuantity: BULK_CONFIG.minTotalQuantity, minTotalPoisha: BULK_CONFIG.minTotalPoisha } };
+export const hoursOf = (c: OrderingConfig): Hours => ({ timeZone: ORDERING_HOURS.timeZone, ...c.hours });
 export interface PricedLine {
   quantity: number;
   /** line total in poisha, or null when the price is not known yet */
@@ -189,27 +206,64 @@ export interface CheckoutInput {
   outletId?: string | null;
   pickupAt?: Date | null;
   payment?: DemoPaymentState;
+  /** admin-edited settings; defaults apply when omitted */
+  config?: OrderingConfig;
 }
 /** Everything that must be fixed before a (demo) order can be placed. Empty array = valid. */
 export function validateCheckout(i: CheckoutInput): Issue[] {
   const out: Issue[] = [];
-  if (!orderingStatus(i.now).open) out.push({ code: 'ordering_closed' });
+  const cfg = i.config ?? DEFAULT_ORDERING_CONFIG;
+  const hours = hoursOf(cfg);
+  if (!orderingStatus(i.now, hours).open) out.push({ code: 'ordering_closed' });
   if (i.lines.length === 0) out.push({ code: 'cart_empty' });
-  const bulk = bulkStatus(i.lines.map((l) => ({ quantity: l.quantity, linePoisha: l.linePoisha })));
+  const bulk = bulkStatus(i.lines.map((l) => ({ quantity: l.quantity, linePoisha: l.linePoisha })), cfg.bulk);
   if (bulk.isBulk && i.method !== 'BULK_ORDER') out.push({ code: 'bulk_requires_collection' });
   if (!bulk.isBulk && i.method === 'BULK_ORDER') out.push({ code: 'not_bulk' });
   if (i.method === 'HOME_DELIVERY') {
     if (!i.zone) out.push({ code: 'zone_required' });
     else for (const l of i.lines) if (!zoneEligibility(l.product, i.zone).eligible) out.push({ code: 'item_not_deliverable', line: l.key });
-    if (!i.address?.name.trim()) out.push({ code: 'address_name_required' });
-    if (!i.address || tryNormalizeBdMobile(i.address.phone) === null) out.push({ code: 'address_phone_invalid' });
-    if (!i.address?.line1.trim()) out.push({ code: 'address_line_required' });
   }
+  // every method needs a contact name and mobile number; only home delivery needs a street address
+  if (!i.address?.name.trim()) out.push({ code: 'address_name_required' });
+  if (!i.address || tryNormalizeBdMobile(i.address.phone) === null) out.push({ code: 'address_phone_invalid' });
+  if (i.method === 'HOME_DELIVERY' && !i.address?.line1.trim()) out.push({ code: 'address_line_required' });
   if (i.method === 'EXPRESS_PICKUP') {
     if (!i.outletId) out.push({ code: 'outlet_required' });
-    const c = validatePickup(i.now, i.pickupAt ?? null);
+    const c = validatePickup(i.now, i.pickupAt ?? null, { ...PICKUP_RULES, hours });
     if (!c.ok) out.push({ code: c.reason === 'invalid' ? 'pickup_invalid' : c.reason === 'too_soon' ? 'pickup_too_soon' : 'pickup_outside_hours' });
   }
   if (i.method === 'BULK_ORDER' && i.payment !== 'DEMO_PAID_SIMULATED') out.push({ code: 'bulk_prepayment_required' });
   return out;
 }
+
+/* ───────────── demo order statuses (shared by storefront, admin and the demo API) ───────────── */
+
+export type DemoOrderStatus =
+  | 'DEMO_PLACED' | 'DEMO_PREPARING' | 'DEMO_OUT_FOR_DELIVERY' | 'DEMO_DELIVERED'
+  | 'DEMO_PICKUP_REQUESTED' | 'DEMO_READY_FOR_PICKUP' | 'DEMO_PICKED_UP'
+  | 'DEMO_PREPAID_SIMULATED' | 'DEMO_READY_FOR_COLLECTION' | 'DEMO_COLLECTED'
+  | 'DEMO_CANCELLED';
+
+/** Status sequence per fulfilment method. Pickup/collection is confirmed only at the READY step. */
+export const ORDER_STATUS_FLOW: Record<FulfilmentMethod, DemoOrderStatus[]> = {
+  HOME_DELIVERY: ['DEMO_PLACED', 'DEMO_PREPARING', 'DEMO_OUT_FOR_DELIVERY', 'DEMO_DELIVERED'],
+  EXPRESS_PICKUP: ['DEMO_PICKUP_REQUESTED', 'DEMO_PREPARING', 'DEMO_READY_FOR_PICKUP', 'DEMO_PICKED_UP'],
+  BULK_ORDER: ['DEMO_PREPAID_SIMULATED', 'DEMO_PREPARING', 'DEMO_READY_FOR_COLLECTION', 'DEMO_COLLECTED'],
+};
+
+export const METHOD_BN: Record<FulfilmentMethod, string> = { HOME_DELIVERY: 'হোম ডেলিভারি', EXPRESS_PICKUP: 'এক্সপ্রেস পিকআপ', BULK_ORDER: 'বাল্ক অর্ডার' };
+
+/** Customer-facing wording: pickup counts as confirmed only once the outlet has marked it ready. */
+export const ORDER_STATUS_BN: Record<DemoOrderStatus, string> = {
+  DEMO_PLACED: 'অর্ডার নেওয়া হয়েছে',
+  DEMO_PREPARING: 'প্রস্তুত করা হচ্ছে',
+  DEMO_OUT_FOR_DELIVERY: 'ডেলিভারির পথে',
+  DEMO_DELIVERED: 'ডেলিভারি সম্পন্ন',
+  DEMO_PICKUP_REQUESTED: 'পিকআপের অনুরোধ নেওয়া হয়েছে — এখনো নিশ্চিত নয়',
+  DEMO_READY_FOR_PICKUP: 'পিকআপ নিশ্চিত — অর্ডার প্রস্তুত',
+  DEMO_PICKED_UP: 'পিকআপ সম্পন্ন',
+  DEMO_PREPAID_SIMULATED: 'সিমুলেটেড প্রিপেমেন্ট হয়েছে — প্রস্তুতির অপেক্ষায়',
+  DEMO_READY_FOR_COLLECTION: 'সংগ্রহের জন্য প্রস্তুত',
+  DEMO_COLLECTED: 'সংগ্রহ সম্পন্ন',
+  DEMO_CANCELLED: 'বাতিল করা হয়েছে',
+};

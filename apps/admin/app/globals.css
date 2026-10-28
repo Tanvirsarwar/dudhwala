@@ -423,3 +423,11 @@ body::before {
 @layer components {
   .tbl td, .tbl th { padding: 0.4rem 0.65rem; }
 }
+
+/* V2.6 admin: category pills + sticky action bar (same look as the storefront) */
+.cat-pill { min-height: 36px; padding: 0 0.85rem; border-radius: 999px; font-size: 0.875rem; font-weight: 600; white-space: nowrap; color: var(--color-brand-600); background: rgba(255, 255, 255, 0.72); border: 1px solid rgba(255, 255, 255, 0.9); }
+.cat-pill:hover { background: #fff; }
+.cat-pill[aria-pressed='true'] { color: #fff; background: linear-gradient(135deg, var(--color-brand-600), #1f7fd0); border-color: transparent; }
+.bulk-bar { position: sticky; bottom: 0.75rem; z-index: 20; margin-top: 1rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.7rem 1rem; border-radius: 1rem; background: rgba(255, 255, 255, 0.96); box-shadow: 0 12px 30px -12px rgba(35, 49, 94, 0.55); }
+fieldset:disabled .field, .field:disabled { opacity: 0.75; cursor: not-allowed; background: #f1f2f8; }
+fieldset { min-width: 0; }

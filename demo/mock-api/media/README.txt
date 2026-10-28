@@ -1,1 +1,1 @@
-Put product photos here (see demo/README-DEMO.md, V2.5.1). Files: <product-id>.jpg|png|webp or kind-<kind>.jpg
+Product photos live here. Upload them from the admin product page, or copy <product-slug>.jpg|png|webp (e.g. ds-01.jpg) into this folder.

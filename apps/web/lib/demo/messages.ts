@@ -26,31 +26,11 @@ export const REASON_MESSAGES: Record<EligibilityReason, string> = {
   pending_confirmation: 'আউটার সিটির জন্য এখনো নিশ্চিত হয়নি।',
   disabled: 'আউটার সিটিতে এই পণ্য বন্ধ আছে।',
   item_not_approved: 'আউটার সিটিতে এই পণ্য ডেলিভারি হয় না।',
-  category_not_approved: 'আউটার সিটিতে এই পণ্য ডেলিভারি হয় না।',
 };
 
-import type { DemoPaymentState, FulfilmentMethod } from '@dudhwala/shared';
-import type { DemoOrderStatus } from '../services/types';
+import type { DemoPaymentState } from '@dudhwala/shared';
 
-export const METHOD_LABEL: Record<FulfilmentMethod, string> = {
-  HOME_DELIVERY: 'হোম ডেলিভারি',
-  EXPRESS_PICKUP: 'এক্সপ্রেস পিকআপ',
-  BULK_ORDER: 'বাল্ক অর্ডার',
-};
-
-/** Demo statuses. Pickup is described as confirmed only once the outlet has marked it ready. */
-export const STATUS_LABEL: Record<DemoOrderStatus, string> = {
-  DEMO_PLACED: 'অর্ডার নেওয়া হয়েছে',
-  DEMO_PREPARING: 'প্রস্তুত করা হচ্ছে',
-  DEMO_OUT_FOR_DELIVERY: 'ডেলিভারির পথে',
-  DEMO_DELIVERED: 'ডেলিভারি সম্পন্ন',
-  DEMO_PICKUP_REQUESTED: 'পিকআপের অনুরোধ নেওয়া হয়েছে — এখনো নিশ্চিত নয়',
-  DEMO_READY_FOR_PICKUP: 'পিকআপ নিশ্চিত — অর্ডার প্রস্তুত',
-  DEMO_PICKED_UP: 'পিকআপ সম্পন্ন',
-  DEMO_PREPAID_SIMULATED: 'সিমুলেটেড প্রিপেমেন্ট হয়েছে — প্রস্তুতির অপেক্ষায়',
-  DEMO_READY_FOR_COLLECTION: 'সংগ্রহের জন্য প্রস্তুত',
-  DEMO_COLLECTED: 'সংগ্রহ সম্পন্ন',
-};
+export { METHOD_BN as METHOD_LABEL, ORDER_STATUS_BN as STATUS_LABEL } from '@dudhwala/shared';
 
 export const PAYMENT_LABEL: Record<DemoPaymentState, string> = {
   NOT_REQUIRED_DEMO: 'ডেমো — ক্যাশ অন ডেলিভারি (কোনো আসল পেমেন্ট নেই)',

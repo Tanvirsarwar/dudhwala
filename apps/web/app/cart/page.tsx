@@ -5,7 +5,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError, cartChanged, type CartView } from '@/lib/api';
 import { bnDigits, taka } from '@/lib/format';
 import { ProductImage } from '@/components/product-image';
-import { bulkStatus, BULK_CONFIG } from '@dudhwala/shared';
+import { bulkStatus } from '@dudhwala/shared';
+import { useConfig } from '@/lib/demo/config';
 import { DEMO_ORDERING, useEligibility, useZone } from '@/lib/demo/zone';
 
 export default function CartPage() {
@@ -16,6 +17,7 @@ export default function CartPage() {
   }, []);
   useEffect(load, [load]);
   const eligible = useEligibility();
+  const cfg = useConfig();
   const { setZone } = useZone();
 
   const setQty = async (variantId: string, quantity: number) => {
@@ -32,7 +34,7 @@ export default function CartPage() {
   // Zone revalidation (demo): lines that cannot go to the chosen zone are flagged, never silently removed, and block checkout.
   const ineligible = new Set(cart.lines.filter((l) => !eligible({ categorySlug: l.categorySlug ?? '', outerCityStatus: l.outerCityStatus }).eligible).map((l) => l.variantId));
   const blocked = cart.lines.some((l) => !l.available) || ineligible.size > 0;
-  const bulk = DEMO_ORDERING ? bulkStatus(cart.lines.map((l) => ({ quantity: l.quantity, linePoisha: l.lineTotalPoisha }))) : null;
+  const bulk = DEMO_ORDERING ? bulkStatus(cart.lines.map((l) => ({ quantity: l.quantity, linePoisha: l.lineTotalPoisha })), cfg.bulk) : null;
 
   return (
     <div className="mx-auto max-w-5xl pt-6">
@@ -138,7 +140,7 @@ export default function CartPage() {
             {blocked && <p className="mt-2 text-sm text-danger">{ineligible.size > 0 ? 'চিহ্নিত পণ্যগুলো ঠিক করে নিন।' : 'অপ্রাপ্য পণ্যগুলো ঠিক করে নিন।'}</p>}
             {DEMO_ORDERING && bulk && (
               <p className="mt-3 text-xs text-muted">
-                <span>বাল্ক অর্ডারের সীমা (ডেমো, চূড়ান্ত নয়):</span> <b>{bnDigits(BULK_CONFIG.minTotalQuantity)}</b> <span>টি বা তার বেশি।</span>
+                <span>{cfg.isPlaceholder ? 'বাল্ক অর্ডারের সীমা (ডেমো, চূড়ান্ত নয়):' : 'বাল্ক অর্ডারের সীমা:'}</span> <b>{bnDigits(cfg.bulk.minTotalQuantity)}</b> <span>টি বা তার বেশি।</span>
               </p>
             )}
           </aside>
