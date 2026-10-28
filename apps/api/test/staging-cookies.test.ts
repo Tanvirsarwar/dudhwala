@@ -1,10 +1,10 @@
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { makeOutlet, makeStaff, PASSWORD, startHarness, type Harness } from './support/harness.js';
+import { makeStaff, PASSWORD, startHarness, type Harness } from './support/harness.js';
 
 /**
  * Boots the API with staging-shaped settings (https origins on one registrable domain, S3 media,
- * simulator allowed) and checks the cookie, CORS and CSRF behaviour the deployment guide relies on.
+ * payment sandbox) and checks the cookie, CORS and CSRF behaviour the deployment guide relies on.
  */
 const SHOP = 'https://shop.example.test';
 const ADMIN = 'https://admin.example.test';
@@ -19,8 +19,7 @@ const STAGING_ENV = {
   STORAGE_ACCESS_KEY_ID: 'id',
   STORAGE_SECRET_ACCESS_KEY: 'secret',
   MEDIA_PUBLIC_URL: 'https://media.example.test',
-  PAYMENTS_PROVIDER: 'fake',
-  ALLOW_PAYMENT_SIMULATOR: 'true',
+  PAYMENTS_PROVIDER: 'sandbox',
   PAYMENTS_WEBHOOK_SECRET: 'x'.repeat(40),
   SMS_PROVIDER: 'http',
   SMS_HTTP_URL: 'https://sms.example.test/send',
@@ -73,10 +72,9 @@ describe('staging cookies, CORS and CSRF (single registrable domain)', () => {
   });
 
   it('staff session cookie is HttpOnly, Secure, SameSite=Strict, host-only', async () => {
-    const outlet = await makeOutlet(h.prisma);
-    const staff = await makeStaff(h.prisma, 'OUTLET_STAFF', outlet.id);
+    const staff = await makeStaff(h.prisma, 'MANAGER', { withMfa: false });
     const agent = await secureBrowser(ADMIN);
-    const res = await agent.post('/v1/auth/staff/login', { login: staff.email, password: PASSWORD });
+    const res = await agent.post('/v1/auth/staff/login', { login: staff.email, password: PASSWORD, as: 'manager' });
     expect(res.status).toBe(200);
     const c = cookies(res, 'dw_admin_sid');
     expect(c).toMatch(/HttpOnly/);

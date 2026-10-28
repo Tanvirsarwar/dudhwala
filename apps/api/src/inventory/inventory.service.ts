@@ -1,116 +1,124 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { MANUAL_MOVEMENT_TYPES, movementDelta, type MovementType } from '@dudhwala/shared';
-import { AppError, notFound } from '../common/errors.js';
+import { Clock } from '../common/clock.js';
 import { newId } from '../common/crypto.js';
+import { AppError } from '../common/errors.js';
 import { PrismaService, type Tx } from '../prisma/prisma.service.js';
+import type { MovementType } from '../generated/prisma/client.js';
 
-export interface Actor {
-  userId?: string | null;
-  system?: string | null;
-}
-
-export interface MovementInput {
-  outletId: string;
+export interface StockLine {
   variantId: string;
-  type: MovementType;
   qty: number;
-  reason?: string | null;
-  orderId?: string | null;
-  transferId?: string | null;
-  /** Internal re-reservation of goods already set aside for an order (returned after failed delivery). */
-  ignoreBuffer?: boolean;
 }
-
-interface InventoryRow {
-  id: string;
-  quantity_on_hand: number;
-  reserved_quantity: number;
-}
+export type StockActor = { userId: string } | { system: string };
 
 /**
- * Outlet-scoped stock changes (TRD §5.2). Every change is a single conditional
- * UPDATE so concurrent requests cannot oversell; the DB CHECK constraints are
- * the final guard. Each change writes a stock_movement row in the same transaction.
+ * Stock for variants that are counted (`trackStock`). Every change is one guarded
+ * SQL statement, so two concurrent orders can never reserve the same unit, plus an
+ * append-only ledger row. The ledger is also how reservations are released or
+ * committed later: the amount an order still holds is the sum of its movements.
  */
 @Injectable()
 export class InventoryService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(Clock) private readonly clock: Clock,
+  ) {}
 
-  /** Applies one movement inside `tx`. Throws OUT_OF_STOCK / CONFLICT when the guarded update matches no row. */
-  async apply(tx: Tx, m: MovementInput, actor: Actor): Promise<{ onHand: number; reserved: number }> {
-    if (MANUAL_MOVEMENT_TYPES.has(m.type) && !m.reason?.trim()) throw new AppError('VALIDATION_FAILED', 'A reason is required');
-    if (!actor.userId && !actor.system) throw new Error('Movement needs an actor');
-    const d = movementDelta(m.type, m.qty);
-
-    let rows: InventoryRow[];
-    if (m.type === 'RESERVE') {
-      rows = await tx.$queryRaw<InventoryRow[]>`
-        UPDATE inventory SET reserved_quantity = reserved_quantity + ${m.qty}, version = version + 1, updated_at = now()
-        WHERE outlet_id = ${m.outletId}::uuid AND product_variant_id = ${m.variantId}::uuid AND (is_listed OR ${m.ignoreBuffer === true})
-          AND quantity_on_hand - reserved_quantity - (CASE WHEN ${m.ignoreBuffer === true} THEN 0 ELSE online_buffer_qty END) >= ${m.qty}
-        RETURNING id, quantity_on_hand, reserved_quantity`;
-      if (rows.length === 0) throw new AppError('OUT_OF_STOCK', 'Not enough stock', [{ variantId: m.variantId, requested: m.qty }]);
-    } else {
-      if (d.onHand > 0) await this.ensureRow(tx, m.outletId, m.variantId);
-      rows = await tx.$queryRaw<InventoryRow[]>`
-        UPDATE inventory
-        SET quantity_on_hand = quantity_on_hand + ${d.onHand}, reserved_quantity = reserved_quantity + ${d.reserved},
-            version = version + 1, updated_at = now()
-        WHERE outlet_id = ${m.outletId}::uuid AND product_variant_id = ${m.variantId}::uuid
-          AND quantity_on_hand + ${d.onHand} >= 0
-          AND reserved_quantity + ${d.reserved} >= 0
-          AND reserved_quantity + ${d.reserved} <= quantity_on_hand + ${d.onHand}
-        RETURNING id, quantity_on_hand, reserved_quantity`;
-      if (rows.length === 0) {
-        const exists = await tx.inventory.findUnique({ where: { outletId_productVariantId: { outletId: m.outletId, productVariantId: m.variantId } } });
-        if (!exists) throw notFound('Inventory item');
-        throw new AppError('CONFLICT', 'Change would make stock negative or below reserved quantity', {
-          onHand: exists.quantityOnHand,
-          reserved: exists.reservedQuantity,
-        });
-      }
-    }
-
-    const row = rows[0] as InventoryRow;
+  private async log(
+    tx: Tx,
+    inv: { id: string; outletId: string; variantId: string; onHand: number; reserved: number },
+    type: MovementType,
+    delta: { onHand: number; reserved: number },
+    actor: StockActor,
+    extra: { orderId?: string | null; reason?: string | null } = {},
+  ): Promise<void> {
     await tx.stockMovement.create({
       data: {
         id: newId(),
-        inventoryId: row.id,
-        outletId: m.outletId,
-        productVariantId: m.variantId,
-        type: m.type,
-        qtyDeltaOnHand: d.onHand,
-        qtyDeltaReserved: d.reserved,
-        onHandAfter: row.quantity_on_hand,
-        reservedAfter: row.reserved_quantity,
-        reason: m.reason?.trim() || null,
-        orderId: m.orderId ?? null,
-        transferId: m.transferId ?? null,
-        actorUserId: actor.userId ?? null,
-        actorSystem: actor.system ?? null,
+        inventoryId: inv.id,
+        outletId: inv.outletId,
+        productVariantId: inv.variantId,
+        type,
+        qtyDeltaOnHand: delta.onHand,
+        qtyDeltaReserved: delta.reserved,
+        onHandAfter: inv.onHand,
+        reservedAfter: inv.reserved,
+        reason: extra.reason ?? null,
+        orderId: extra.orderId ?? null,
+        actorUserId: 'userId' in actor ? actor.userId : null,
+        actorSystem: 'system' in actor ? actor.system : null,
+        createdAt: this.clock.now(),
       },
     });
-    return { onHand: row.quantity_on_hand, reserved: row.reserved_quantity };
   }
 
-  /** Creates the outlet×variant row on first receipt (unlisted until a manager lists it). */
-  private async ensureRow(tx: Tx, outletId: string, variantId: string): Promise<void> {
-    await tx.$executeRaw`
-      INSERT INTO inventory (id, outlet_id, product_variant_id, updated_at)
-      VALUES (${newId()}::uuid, ${outletId}::uuid, ${variantId}::uuid, now())
-      ON CONFLICT (outlet_id, product_variant_id) DO NOTHING`;
+  /** Admin sets the counted quantity at an outlet. Cannot go below what open orders hold. */
+  async setStock(tx: Tx, outletId: string, variantId: string, quantity: number, actor: StockActor, reason: string): Promise<void> {
+    if (!Number.isInteger(quantity) || quantity < 0 || quantity > 1_000_000) throw new AppError('VALIDATION_FAILED', 'Stock must be a whole number from 0 to 1,000,000');
+    const cur = (
+      await tx.$queryRaw<{ id: string; on_hand: number; reserved: number }[]>`
+        SELECT id, quantity_on_hand AS on_hand, reserved_quantity AS reserved FROM inventory
+        WHERE outlet_id = ${outletId}::uuid AND product_variant_id = ${variantId}::uuid FOR UPDATE`
+    )[0];
+    if (cur && cur.reserved > quantity) throw new AppError('CONFLICT', 'Open orders already hold more than this quantity');
+    const id = cur?.id ?? newId();
+    if (cur) await tx.inventory.update({ where: { id }, data: { quantityOnHand: quantity } });
+    else await tx.inventory.create({ data: { id, outletId, productVariantId: variantId, quantityOnHand: quantity, reservedQuantity: 0 } });
+    await this.log(tx, { id, outletId, variantId, onHand: quantity, reserved: cur?.reserved ?? 0 }, 'SET', { onHand: quantity - (cur?.on_hand ?? 0), reserved: 0 }, actor, { reason });
   }
 
-  /**
-   * Reserves every line for an order, in a deterministic order (by variant id)
-   * so concurrent orders cannot deadlock. All-or-nothing within `tx`.
-   */
-  async reserveLines(tx: Tx, outletId: string, lines: readonly { variantId: string; qty: number }[], orderId: string | null): Promise<void> {
-    const sorted = [...lines].sort((a, b) => a.variantId.localeCompare(b.variantId));
-    for (const l of sorted) await this.apply(tx, { outletId, variantId: l.variantId, type: 'RESERVE', qty: l.qty, orderId }, { system: 'checkout' });
+  /** Reserves every line at the outlet or throws OUT_OF_STOCK naming the first short variant. Caller passes tracked variants only. */
+  async reserve(tx: Tx, outletId: string, lines: StockLine[], orderId: string, actor: StockActor): Promise<void> {
+    for (const l of [...lines].sort((a, b) => a.variantId.localeCompare(b.variantId))) {
+      const rows = await tx.$queryRaw<{ id: string; on_hand: number; reserved: number }[]>`
+        UPDATE inventory SET reserved_quantity = reserved_quantity + ${l.qty}, updated_at = ${this.clock.now()}
+        WHERE outlet_id = ${outletId}::uuid AND product_variant_id = ${l.variantId}::uuid
+          AND quantity_on_hand - reserved_quantity >= ${l.qty}
+        RETURNING id, quantity_on_hand AS on_hand, reserved_quantity AS reserved`;
+      const r = rows[0];
+      if (!r) throw new AppError('OUT_OF_STOCK', 'কিছু পণ্য পর্যাপ্ত নেই', { variantId: l.variantId });
+      await this.log(tx, { id: r.id, outletId, variantId: l.variantId, onHand: r.on_hand, reserved: r.reserved }, 'RESERVE', { onHand: 0, reserved: l.qty }, actor, { orderId });
+    }
   }
 
-  run<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
-    return this.prisma.$transaction(fn);
+  private async held(tx: Tx, orderId: string) {
+    return tx.$queryRaw<{ inventory_id: string; outlet_id: string; variant_id: string; held: number }[]>`
+      SELECT inventory_id, outlet_id, product_variant_id AS variant_id, SUM(qty_delta_reserved)::int AS held
+      FROM stock_movement WHERE order_id = ${orderId}::uuid
+      GROUP BY inventory_id, outlet_id, product_variant_id HAVING SUM(qty_delta_reserved) > 0`;
+  }
+
+  /** Gives back everything the order still holds (cancel / payment timeout). Safe to call twice. */
+  async release(tx: Tx, orderId: string, actor: StockActor, reason: string): Promise<void> {
+    for (const h of await this.held(tx, orderId)) {
+      const rows = await tx.$queryRaw<{ on_hand: number; reserved: number }[]>`
+        UPDATE inventory SET reserved_quantity = reserved_quantity - ${h.held}, updated_at = ${this.clock.now()}
+        WHERE id = ${h.inventory_id}::uuid RETURNING quantity_on_hand AS on_hand, reserved_quantity AS reserved`;
+      const r = rows[0];
+      if (r) await this.log(tx, { id: h.inventory_id, outletId: h.outlet_id, variantId: h.variant_id, onHand: r.on_hand, reserved: r.reserved }, 'RELEASE', { onHand: 0, reserved: -h.held }, actor, { orderId, reason });
+    }
+  }
+
+  /** Order fulfilled: the reserved units leave the shelf. */
+  async commit(tx: Tx, orderId: string, actor: StockActor): Promise<void> {
+    for (const h of await this.held(tx, orderId)) {
+      const rows = await tx.$queryRaw<{ on_hand: number; reserved: number }[]>`
+        UPDATE inventory SET quantity_on_hand = quantity_on_hand - ${h.held}, reserved_quantity = reserved_quantity - ${h.held}, updated_at = ${this.clock.now()}
+        WHERE id = ${h.inventory_id}::uuid RETURNING quantity_on_hand AS on_hand, reserved_quantity AS reserved`;
+      const r = rows[0];
+      if (r) await this.log(tx, { id: h.inventory_id, outletId: h.outlet_id, variantId: h.variant_id, onHand: r.on_hand, reserved: r.reserved }, 'COMMIT_SALE', { onHand: -h.held, reserved: -h.held }, actor, { orderId });
+    }
+  }
+
+  /** Units that can still be ordered at each outlet for the given variants (counted variants only). */
+  async availableAt(tx: Tx, variantIds: string[]): Promise<Map<string, Map<string, number>>> {
+    const rows = await tx.inventory.findMany({ where: { productVariantId: { in: variantIds }, outlet: { status: 'ACTIVE' } } });
+    const out = new Map<string, Map<string, number>>();
+    for (const r of rows) {
+      const m = out.get(r.productVariantId) ?? new Map<string, number>();
+      m.set(r.outletId, r.quantityOnHand - r.reservedQuantity);
+      out.set(r.productVariantId, m);
+    }
+    return out;
   }
 }

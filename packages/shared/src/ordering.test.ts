@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  availableFulfilments, bulkStatus, BULK_CONFIG, earliestPickup, hhmmToMinutes, minutesToHHMM, orderingStatus, pickupSlots, validateCheckout, validatePickup, zonedParts, zoneEligibility,
+  availableFulfilments, nextOrderStatuses, orderFinalStatus, orderInitialStatus, bulkStatus, BULK_CONFIG, earliestPickup, hhmmToMinutes, minutesToHHMM, orderingStatus, pickupSlots, validateCheckout, validatePickup, zonedParts, zoneEligibility,
   type CheckoutInput, type CheckoutLine,
 } from './ordering.js';
 
@@ -144,5 +144,24 @@ describe('configurable settings', () => {
     expect(hhmmToMinutes('22:30')).toBe(1350);
     expect(hhmmToMinutes('25:00')).toBeNull();
     expect(hhmmToMinutes('abc')).toBeNull();
+  });
+});
+
+describe('production order flow', () => {
+  it('moves one step forward or cancels', () => {
+    expect(nextOrderStatuses('HOME_DELIVERY', 'PLACED')).toEqual(['PREPARING', 'CANCELLED']);
+    expect(nextOrderStatuses('EXPRESS_PICKUP', 'READY_FOR_PICKUP')).toEqual(['PICKED_UP', 'CANCELLED']);
+  });
+  it('locks finished and cancelled orders', () => {
+    expect(nextOrderStatuses('HOME_DELIVERY', 'DELIVERED')).toEqual([]);
+    expect(nextOrderStatuses('BULK_ORDER', 'CANCELLED')).toEqual([]);
+  });
+  it('never lets staff mark a bulk order paid', () => {
+    expect(nextOrderStatuses('BULK_ORDER', 'PENDING_PAYMENT')).toEqual(['CANCELLED']);
+    expect(nextOrderStatuses('BULK_ORDER', 'PREPAID')).toEqual(['PREPARING', 'CANCELLED']);
+  });
+  it('starts each method at its first status', () => {
+    expect(orderInitialStatus('BULK_ORDER')).toBe('PENDING_PAYMENT');
+    expect(orderFinalStatus('BULK_ORDER')).toBe('COLLECTED');
   });
 });

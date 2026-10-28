@@ -1,6 +1,6 @@
 import { HttpStatus } from '@nestjs/common';
 
-/** Error codes from API_SPECIFICATION §1.1. */
+/** Machine-readable error codes returned in `{ error: { code } }`. */
 export type ErrorCode =
   | 'VALIDATION_FAILED'
   | 'UNAUTHENTICATED'
@@ -8,22 +8,25 @@ export type ErrorCode =
   | 'OTP_INVALID'
   | 'OTP_EXPIRED'
   | 'FORBIDDEN'
+  | 'READ_ONLY'
   | 'NOT_FOUND'
   | 'OUT_OF_STOCK'
+  | 'PRODUCT_UNAVAILABLE'
+  | 'PRICE_NOT_SET'
+  | 'NOT_DELIVERABLE'
+  | 'ZONE_REQUIRED'
+  | 'ORDERING_CLOSED'
+  | 'PICKUP_INVALID'
+  | 'BULK_REQUIRED'
+  | 'NOT_BULK'
+  | 'BULK_NOT_CONFIGURED'
   | 'INVALID_TRANSITION'
-  | 'VERSION_CONFLICT'
   | 'CONFLICT'
   | 'RATE_LIMITED'
   | 'ACCOUNT_LOCKED'
-  | 'SLOT_FULL'
-  | 'PRICE_CHANGED'
-  | 'NO_SINGLE_OUTLET'
-  | 'COUPON_INVALID'
   | 'IDEMPOTENCY_CONFLICT'
-  | 'AREA_NOT_SERVICEABLE'
-  | 'MIN_ORDER_NOT_MET'
-  | 'COD_NOT_ELIGIBLE'
-  | 'PAYMENT_PROVIDER_UNAVAILABLE'
+  | 'PAYMENTS_DISABLED'
+  | 'PAYMENT_NOT_VERIFIED'
   | 'SERVICE_UNAVAILABLE';
 
 const STATUS: Record<ErrorCode, HttpStatus> = {
@@ -33,22 +36,25 @@ const STATUS: Record<ErrorCode, HttpStatus> = {
   OTP_INVALID: HttpStatus.UNAUTHORIZED,
   OTP_EXPIRED: HttpStatus.UNAUTHORIZED,
   FORBIDDEN: HttpStatus.FORBIDDEN,
+  READ_ONLY: HttpStatus.FORBIDDEN,
   NOT_FOUND: HttpStatus.NOT_FOUND,
   OUT_OF_STOCK: HttpStatus.CONFLICT,
+  PRODUCT_UNAVAILABLE: HttpStatus.CONFLICT,
+  PRICE_NOT_SET: HttpStatus.UNPROCESSABLE_ENTITY,
+  NOT_DELIVERABLE: HttpStatus.UNPROCESSABLE_ENTITY,
+  ZONE_REQUIRED: HttpStatus.UNPROCESSABLE_ENTITY,
+  ORDERING_CLOSED: HttpStatus.UNPROCESSABLE_ENTITY,
+  PICKUP_INVALID: HttpStatus.UNPROCESSABLE_ENTITY,
+  BULK_REQUIRED: HttpStatus.UNPROCESSABLE_ENTITY,
+  NOT_BULK: HttpStatus.UNPROCESSABLE_ENTITY,
+  BULK_NOT_CONFIGURED: HttpStatus.SERVICE_UNAVAILABLE,
   INVALID_TRANSITION: HttpStatus.CONFLICT,
-  VERSION_CONFLICT: HttpStatus.CONFLICT,
   CONFLICT: HttpStatus.CONFLICT,
   RATE_LIMITED: HttpStatus.TOO_MANY_REQUESTS,
   ACCOUNT_LOCKED: HttpStatus.LOCKED,
-  SLOT_FULL: HttpStatus.CONFLICT,
-  PRICE_CHANGED: HttpStatus.CONFLICT,
-  NO_SINGLE_OUTLET: HttpStatus.CONFLICT,
-  COUPON_INVALID: HttpStatus.CONFLICT,
   IDEMPOTENCY_CONFLICT: HttpStatus.CONFLICT,
-  AREA_NOT_SERVICEABLE: HttpStatus.UNPROCESSABLE_ENTITY,
-  MIN_ORDER_NOT_MET: HttpStatus.UNPROCESSABLE_ENTITY,
-  COD_NOT_ELIGIBLE: HttpStatus.UNPROCESSABLE_ENTITY,
-  PAYMENT_PROVIDER_UNAVAILABLE: HttpStatus.BAD_GATEWAY,
+  PAYMENTS_DISABLED: HttpStatus.SERVICE_UNAVAILABLE,
+  PAYMENT_NOT_VERIFIED: HttpStatus.CONFLICT,
   SERVICE_UNAVAILABLE: HttpStatus.SERVICE_UNAVAILABLE,
 };
 
@@ -66,5 +72,5 @@ export class AppError extends Error {
   }
 }
 
-/** Out-of-scope ids are reported as NOT_FOUND so existence never leaks (TRD §5.7). */
+/** Out-of-scope ids are reported as NOT_FOUND so existence never leaks. */
 export const notFound = (what = 'Resource') => new AppError('NOT_FOUND', `${what} not found`);

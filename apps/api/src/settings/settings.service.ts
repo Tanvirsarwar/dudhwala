@@ -1,61 +1,53 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { Request } from 'express';
-import { AppError } from '../common/errors.js';
-import { newId } from '../common/crypto.js';
+import { z } from 'zod';
+import { BULK_CONFIG, DEFAULT_ORDERING_CONFIG, type OrderingConfig } from '@dudhwala/shared';
 import { PrismaService, type Tx } from '../prisma/prisma.service.js';
-import { AuditService } from '../audit/audit.service.js';
-import type { StaffPrincipal } from '../access/principal.js';
 import type { Prisma } from '../generated/prisma/client.js';
-import { isSettingKey, SETTINGS, type SettingKey, type SettingValue } from './settings.registry.js';
+
+/**
+ * Typed settings. A missing row yields the default below. Defaults that are not
+ * business-approved values say so (`approved: false`) and are shown as
+ * placeholders in the admin until the owner saves real ones.
+ */
+export const SETTINGS = {
+  'ordering.hours': {
+    schema: z.object({ openMinute: z.number().int().min(0).max(1439), closeMinute: z.number().int().min(1).max(1440) }).refine((h) => h.openMinute < h.closeMinute, 'open must be before close'),
+    default: { ...DEFAULT_ORDERING_CONFIG.hours },
+  },
+  'bulk.rule': {
+    schema: z.object({ minTotalQuantity: z.number().int().min(1).max(100_000), minTotalPoisha: z.number().int().min(100).max(10_000_000_000), approved: z.boolean() }),
+    default: { minTotalQuantity: BULK_CONFIG.minTotalQuantity, minTotalPoisha: BULK_CONFIG.minTotalPoisha, approved: false },
+  },
+  /** Outlet where bulk orders are collected (Modina Market Branch). Resolved by outlet code during setup; null until then. */
+  'bulk.collectionOutletId': { schema: z.string().uuid().nullable(), default: null as string | null },
+  /** Outlet whose stock supplies home delivery. null until the owner names one. */
+  'fulfilment.dispatchOutletId': { schema: z.string().uuid().nullable(), default: null as string | null },
+  /** Minutes a bulk order waits for its payment before stock is released. */
+  'payments.holdMinutes': { schema: z.number().int().min(5).max(240), default: 30 },
+} as const;
+
+export type SettingKey = keyof typeof SETTINGS;
+export type SettingValue<K extends SettingKey> = z.infer<(typeof SETTINGS)[K]['schema']>;
 
 @Injectable()
 export class SettingsService {
-  constructor(
-    @Inject(PrismaService) private readonly prisma: PrismaService,
-    @Inject(AuditService) private readonly audit: AuditService,
-  ) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  /** Effective value: outlet override (OUTLET keys) → stored global → registry default. */
-  async get<K extends SettingKey>(key: K, outletId?: string | null, tx: Tx = this.prisma): Promise<SettingValue<K>> {
-    const def = SETTINGS[key];
-    const rows = await tx.setting.findMany({
-      where: { key, OR: [{ outletId: null }, ...(outletId && def.scope === 'OUTLET' ? [{ outletId }] : [])] },
-    });
-    const row = rows.find((r) => r.outletId === outletId) ?? rows.find((r) => r.outletId === null);
-    if (!row) return def.default as SettingValue<K>;
-    const parsed = def.schema.safeParse(row.value);
-    // A stored value that no longer validates falls back to the safe default.
-    return (parsed.success ? parsed.data : def.default) as SettingValue<K>;
+  async get<K extends SettingKey>(key: K, tx: Tx = this.prisma): Promise<SettingValue<K>> {
+    const row = await tx.setting.findUnique({ where: { key } });
+    if (!row) return SETTINGS[key].default as SettingValue<K>;
+    const parsed = SETTINGS[key].schema.safeParse(row.value);
+    return (parsed.success ? parsed.data : SETTINGS[key].default) as SettingValue<K>;
   }
 
-  async list(outletId: string | null): Promise<{ key: string; scope: string; value: unknown; isDefault: boolean; doc: string }[]> {
-    const out = [];
-    for (const key of Object.keys(SETTINGS) as SettingKey[]) {
-      const def = SETTINGS[key];
-      if (outletId && def.scope !== 'OUTLET') continue;
-      const stored = await this.prisma.setting.findFirst({ where: { key, outletId: outletId ?? null } });
-      out.push({ key, scope: def.scope, value: stored?.value ?? def.default, isDefault: !stored, doc: def.doc });
-    }
-    return out;
+  async set<K extends SettingKey>(key: K, value: SettingValue<K>, actorId: string | null, tx: Tx = this.prisma): Promise<void> {
+    const v = SETTINGS[key].schema.parse(value) as Prisma.InputJsonValue;
+    await tx.setting.upsert({ where: { key }, create: { key, value: v, updatedById: actorId }, update: { value: v, updatedById: actorId } });
   }
 
-  async set(key: string, value: unknown, outletId: string | null, p: StaffPrincipal, req: Request): Promise<void> {
-    if (!isSettingKey(key)) throw new AppError('VALIDATION_FAILED', `Unknown setting ${key}`);
-    const def = SETTINGS[key];
-    if (outletId && def.scope !== 'OUTLET') throw new AppError('VALIDATION_FAILED', `${key} can only be set globally`);
-    const parsed = def.schema.safeParse(value);
-    if (!parsed.success) throw new AppError('VALIDATION_FAILED', `Invalid value for ${key}`, parsed.error.issues.map((i) => i.message));
-    const json = parsed.data as Prisma.InputJsonValue;
-    await this.prisma.$transaction(async (tx) => {
-      const before = await tx.setting.findFirst({ where: { key, outletId } });
-      if (before) await tx.setting.update({ where: { id: before.id }, data: { value: json, updatedById: p.userId } });
-      else await tx.setting.create({ data: { id: newId(), key, scope: outletId ? 'OUTLET' : 'GLOBAL', outletId, value: json, updatedById: p.userId } });
-      await this.audit.record(
-        { action: 'settings.update', entityType: 'setting', entityId: key, outletId, before: (before?.value ?? null) as Prisma.InputJsonValue | null, after: json },
-        { principal: p },
-        req,
-        tx,
-      );
-    });
+  /** Hours + bulk thresholds in the shape packages/shared expects. */
+  async ordering(tx: Tx = this.prisma): Promise<{ config: OrderingConfig; bulkApproved: boolean }> {
+    const [hours, bulk] = await Promise.all([this.get('ordering.hours', tx), this.get('bulk.rule', tx)]);
+    return { config: { hours, bulk: { minTotalQuantity: bulk.minTotalQuantity, minTotalPoisha: bulk.minTotalPoisha } }, bulkApproved: bulk.approved };
   }
 }

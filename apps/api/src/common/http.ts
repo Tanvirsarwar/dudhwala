@@ -2,7 +2,6 @@ import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logge
 import type { NextFunction, Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import { z, type ZodTypeAny } from 'zod';
-import { InvalidTransitionError } from '@dudhwala/shared';
 import { AppError } from './errors.js';
 import '../access/request-augment.js';
 
@@ -28,10 +27,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (exception instanceof AppError) {
       if (exception.retryAfterSec) res.setHeader('retry-after', String(exception.retryAfterSec));
       res.status(exception.status).json({ error: { code: exception.code, message: exception.message, details: exception.details, requestId } });
-      return;
-    }
-    if (exception instanceof InvalidTransitionError) {
-      res.status(HttpStatus.CONFLICT).json({ error: { code: 'INVALID_TRANSITION', message: 'এই অবস্থায় এই পরিবর্তন করা যাবে না', details: { from: exception.from, to: exception.to }, requestId } });
       return;
     }
     if (exception instanceof HttpException) {

@@ -38,12 +38,10 @@ export class AccessGuard implements CanActivate {
 
     if (principal.kind !== 'STAFF') throw new AppError('FORBIDDEN', 'Staff account required');
     const mfaOk = principal.mfaVerified || !requiresMfa(principal);
-    if (rule.type === 'staff-any') {
-      if (!mfaOk && !rule.allowWithoutMfa) throw new AppError('MFA_REQUIRED', 'Two-factor verification required');
-      return true;
+    if (!mfaOk && !(rule.type === 'staff-read' && rule.allowWithoutMfa)) throw new AppError('MFA_REQUIRED', 'Two-factor verification required');
+    if (rule.type === 'staff-write' && principal.role !== 'ADMIN') {
+      throw new AppError('READ_ONLY', 'ম্যানেজার অ্যাকাউন্টে পরিবর্তন করা যায় না (শুধু দেখা)।');
     }
-    if (!mfaOk) throw new AppError('MFA_REQUIRED', 'Two-factor verification required');
-    if (!principal.staff.permissions.has(rule.permission)) throw new AppError('FORBIDDEN', 'Permission denied');
     return true;
   }
 }

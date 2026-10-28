@@ -1,14 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 import argon2 from 'argon2';
 import type { Request, Response } from 'express';
-import { MFA_REQUIRED_ROLES, type StaffRole } from '@dudhwala/shared';
 import { Clock } from '../common/clock.js';
 import { DataCipher, hmacHex, newId, randomToken, safeEqualHex } from '../common/crypto.js';
 import { AppError } from '../common/errors.js';
 import { ENV, type Env } from '../config/env.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
-import type { StaffPrincipal } from '../access/principal.js';
+import type { StaffPrincipal, StaffRole } from '../access/principal.js';
 import { SessionService } from './session.service.js';
 import { LIMITS, RateLimitService } from '../rate-limit/rate-limit.service.js';
 import { generateTotpSecret, otpauthUri, verifyTotp } from './totp.js';
@@ -40,17 +39,8 @@ export class StaffAuthService {
     return argon2.hash(password, ARGON2_OPTIONS);
   }
 
-  private async roleOf(userId: string): Promise<StaffRole | null> {
-    const u = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: { roles: { include: { role: true } }, outletAssignment: { include: { role: true } } },
-    });
-    if (!u) return null;
-    if (u.roles.some((r) => r.role.code === 'SUPER_ADMIN')) return 'SUPER_ADMIN';
-    return u.outletAssignment?.active ? (u.outletAssignment.role.code as StaffRole) : null;
-  }
-
-  async login(login: string, password: string, req: Request, res: Response): Promise<{ mfaRequired: boolean; mfaEnrolled: boolean }> {
+  /** `page` is the login page used: each role signs in only on its own page; any mismatch answers like a wrong password. */
+  async login(login: string, password: string, page: StaffRole, req: Request, res: Response): Promise<{ role: StaffRole; mfaRequired: boolean; mfaEnrolled: boolean }> {
     await this.limits.hit(LIMITS.staffLoginPerIp, req.ip);
     const now = this.clock.now();
     const user = await this.prisma.user.findFirst({ where: { kind: 'STAFF', OR: [{ email: login }, { phone: login }] } });
@@ -67,19 +57,19 @@ export class StaffAuthService {
     }
 
     const ok = await argon2.verify(user.passwordHash, password);
-    const role = ok ? await this.roleOf(user.id) : null;
-    if (!ok || user.status !== 'ACTIVE' || !role) {
+    const role = user.staffRole;
+    if (!ok || user.status !== 'ACTIVE' || !role || role !== page) {
       await this.audit.record({ action: 'auth.staff_login_failed', entityType: 'user', entityId: user.id }, { userId: user.id, actorRole: 'STAFF' }, req);
       throw new AppError('UNAUTHENTICATED', 'Invalid login or password');
     }
 
-    const mfaRequired = MFA_REQUIRED_ROLES.has(role) || user.mfaEnabled;
+    const mfaRequired = role === 'ADMIN' || user.mfaEnabled;
     await this.prisma.$transaction(async (tx) => {
       await tx.user.update({ where: { id: user.id }, data: { lastLoginAt: now } });
-      await this.sessions.create(user.id, 'STAFF', req, res, { role, mfaVerified: !mfaRequired }, tx);
+      await this.sessions.create(user.id, 'STAFF', req, res, { mfaVerified: !mfaRequired }, tx);
       await this.audit.record({ action: 'auth.staff_login', entityType: 'user', entityId: user.id }, { userId: user.id, actorRole: role }, req, tx);
     });
-    return { mfaRequired, mfaEnrolled: user.mfaEnabled };
+    return { role, mfaRequired, mfaEnrolled: user.mfaEnabled };
   }
 
   /** Self-service password change: current password required; every other session ends. */
@@ -98,7 +88,7 @@ export class StaffAuthService {
   /** Starts TOTP enrolment; returns the secret once for the authenticator app. */
   async beginEnrollment(p: StaffPrincipal, req: Request): Promise<{ otpauthUri: string; secret: string }> {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: p.userId } });
-    if (user.mfaEnabled) throw new AppError('CONFLICT', 'Two-factor is already enabled; ask a Super Admin to reset it');
+    if (user.mfaEnabled) throw new AppError('CONFLICT', 'Two-factor is already enabled; ask an administrator to reset it (CLI: cli:reset-mfa)');
     const secret = generateTotpSecret();
     await this.prisma.user.update({ where: { id: user.id }, data: { mfaTotpSecretEnc: this.cipher.encrypt(secret) } });
     await this.audit.record({ action: 'auth.mfa_enroll_started', entityType: 'user', entityId: user.id }, { principal: p }, req);

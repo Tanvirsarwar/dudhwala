@@ -34,9 +34,8 @@ export class CsrfGuard implements CanActivate {
 
   canActivate(ctx: ExecutionContext): boolean {
     const req = ctx.switchToHttp().getRequest<Request>();
-    // Webhooks are authenticated by signature + server-side verification; the payment
-    // simulator's own hosted page posts back to itself (it stands in for a gateway domain).
-    if (SAFE.has(req.method) || req.path.startsWith('/v1/webhooks/') || req.path.startsWith('/v1/payments/simulator/')) return true;
+    // Webhooks are authenticated by signature, not by browser cookies.
+    if (SAFE.has(req.method) || req.path.startsWith('/v1/webhooks/')) return true;
     const origin = req.header('origin');
     if (origin && !this.origins.includes(origin)) throw new AppError('FORBIDDEN', 'Origin not allowed');
     const cookie = (req.cookies as Record<string, string | undefined> | undefined)?.[CSRF_COOKIE];

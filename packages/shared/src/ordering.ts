@@ -267,3 +267,52 @@ export const ORDER_STATUS_BN: Record<DemoOrderStatus, string> = {
   DEMO_COLLECTED: 'সংগ্রহ সম্পন্ন',
   DEMO_CANCELLED: 'বাতিল করা হয়েছে',
 };
+
+/* ───────────── production order statuses (real backend; the DEMO_* set above is for the local demo only) ───────────── */
+
+export type OrderStatus =
+  | 'PLACED' | 'PREPARING' | 'OUT_FOR_DELIVERY' | 'DELIVERED'
+  | 'PICKUP_REQUESTED' | 'READY_FOR_PICKUP' | 'PICKED_UP'
+  | 'PENDING_PAYMENT' | 'PREPAID' | 'READY_FOR_COLLECTION' | 'COLLECTED'
+  | 'CANCELLED';
+
+/** Forward-only status sequence per method. A bulk order starts at PENDING_PAYMENT and moves to PREPAID only after the provider confirms payment. */
+export const ORDER_FLOW: Record<FulfilmentMethod, OrderStatus[]> = {
+  HOME_DELIVERY: ['PLACED', 'PREPARING', 'OUT_FOR_DELIVERY', 'DELIVERED'],
+  EXPRESS_PICKUP: ['PICKUP_REQUESTED', 'PREPARING', 'READY_FOR_PICKUP', 'PICKED_UP'],
+  BULK_ORDER: ['PENDING_PAYMENT', 'PREPAID', 'PREPARING', 'READY_FOR_COLLECTION', 'COLLECTED'],
+};
+
+export const orderInitialStatus = (m: FulfilmentMethod): OrderStatus => ORDER_FLOW[m][0] as OrderStatus;
+export const orderFinalStatus = (m: FulfilmentMethod): OrderStatus => ORDER_FLOW[m].at(-1) as OrderStatus;
+
+/**
+ * Statuses an admin may move an order to next. Strictly one step forward, or CANCELLED while the order is live.
+ * PENDING_PAYMENT -> PREPAID is never an admin action (only a verified payment does that).
+ */
+export function nextOrderStatuses(method: FulfilmentMethod, current: OrderStatus): OrderStatus[] {
+  if (current === 'CANCELLED' || current === orderFinalStatus(method)) return [];
+  const flow = ORDER_FLOW[method];
+  const i = flow.indexOf(current);
+  if (i < 0) return [];
+  const next = flow[i + 1];
+  const out: OrderStatus[] = [];
+  if (next && !(current === 'PENDING_PAYMENT' && next === 'PREPAID')) out.push(next);
+  out.push('CANCELLED');
+  return out;
+}
+
+export const ORDER_STATUS_LABEL_BN: Record<OrderStatus, string> = {
+  PLACED: 'অর্ডার নেওয়া হয়েছে',
+  PREPARING: 'প্রস্তুত করা হচ্ছে',
+  OUT_FOR_DELIVERY: 'ডেলিভারির পথে',
+  DELIVERED: 'ডেলিভারি সম্পন্ন',
+  PICKUP_REQUESTED: 'পিকআপের অনুরোধ নেওয়া হয়েছে — এখনো নিশ্চিত নয়',
+  READY_FOR_PICKUP: 'পিকআপ নিশ্চিত — অর্ডার প্রস্তুত',
+  PICKED_UP: 'পিকআপ সম্পন্ন',
+  PENDING_PAYMENT: 'পেমেন্টের অপেক্ষায়',
+  PREPAID: 'পেমেন্ট নিশ্চিত — প্রস্তুতির অপেক্ষায়',
+  READY_FOR_COLLECTION: 'সংগ্রহের জন্য প্রস্তুত',
+  COLLECTED: 'সংগ্রহ সম্পন্ন',
+  CANCELLED: 'বাতিল করা হয়েছে',
+};
