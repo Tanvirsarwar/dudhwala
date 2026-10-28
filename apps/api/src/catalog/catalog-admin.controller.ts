@@ -254,7 +254,7 @@ export class CatalogAdminController {
       if (!v) throw notFound('Variant');
       await tx.productVariant.update({ where: { id: v.id }, data: { trackStock: true } });
       await this.inventory.setStock(tx, b.outletId, b.variantId, b.quantity, { userId: p.userId }, 'admin stock entry');
-      await this.audit.record({ action: 'inventory.set', entityType: 'inventory', entityId: `${b.outletId}:${b.variantId}`, after: { quantity: b.quantity } }, { principal: p }, req, tx);
+      await this.audit.record({ action: 'inventory.set', entityType: 'inventory', entityId: b.variantId, after: { outletId: b.outletId, quantity: b.quantity } }, { principal: p }, req, tx);
       return { ok: true };
     });
   }

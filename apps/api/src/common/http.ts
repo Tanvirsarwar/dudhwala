@@ -29,6 +29,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
       res.status(exception.status).json({ error: { code: exception.code, message: exception.message, details: exception.details, requestId } });
       return;
     }
+    // Body-parser errors (oversized or malformed JSON) carry an HTTP status and a type like "entity.too.large".
+    const parserErr = exception as { type?: unknown; status?: unknown };
+    if (typeof parserErr.type === 'string' && parserErr.type.startsWith('entity.') && typeof parserErr.status === 'number') {
+      const tooLarge = parserErr.status === 413;
+      res.status(parserErr.status).json({ error: { code: 'VALIDATION_FAILED', message: tooLarge ? 'Request body too large' : 'Invalid request body', requestId } });
+      return;
+    }
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const code = status === 404 ? 'NOT_FOUND' : status === 403 ? 'FORBIDDEN' : status === 401 ? 'UNAUTHENTICATED' : 'VALIDATION_FAILED';
