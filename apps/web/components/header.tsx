@@ -1,11 +1,10 @@
 import Link from 'next/link';
 import { SearchIcon, UserIcon } from './icons';
 import { SearchBox } from './search-box';
-import { AreaBar, CartButton } from './header-client';
+import { CartButton } from './header-client';
 import { LangToggle } from '@dudhwala/ui/lang';
 import { ThemeToggle } from '@dudhwala/ui/theme';
 import { ZoneBar } from './zone-bar';
-import { DEMO_BRANDING } from './developer-credit';
 
 /** Royal-blue header with the supplied logo lockup (shown unmodified on its own white chip). */
 export function Header() {
@@ -38,7 +37,6 @@ export function Header() {
         <LangToggle onBar />
         <ThemeToggle onBar />
       </div>
-      {!DEMO_BRANDING && <AreaBar />}
       <ZoneBar />
     </header>
   );

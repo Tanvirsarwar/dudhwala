@@ -24,12 +24,12 @@ const CATALOGUE = JSON.parse(readFileSync(new URL('../../../demo/mock-api/catalo
 describe('config (hours and bulk thresholds)', () => {
   it('serves defaults marked as placeholders, publicly', async () => {
     const res = await request(h.app.getHttpServer()).get('/v1/config').expect(200);
-    expect(res.body).toEqual({ hours: { openMinute: 600, closeMinute: 1320 }, bulk: { minTotalQuantity: 20, minTotalPoisha: 2_000_000, isPlaceholder: true } });
+    expect(res.body).toEqual({ hours: { openMinute: 600, closeMinute: 1320 }, bulk: { minTotalQuantity: 20, minTotalPoisha: 2_000_000, isPlaceholder: true }, payments: { enabled: false, sandbox: false } });
   });
   it('an admin saves real values: placeholder flag clears, change is audited, orders obey it', async () => {
     const admin = await adminAgent(h);
     const put = await admin.put('/v1/admin/config').send({ hours: { open: '09:00', close: '23:00' }, bulk: { minTotalQuantity: 30, minTotalTaka: 5000 } }).expect(200);
-    expect(put.body).toEqual({ hours: { openMinute: 540, closeMinute: 1380 }, bulk: { minTotalQuantity: 30, minTotalPoisha: 500_000, isPlaceholder: false } });
+    expect(put.body).toEqual({ hours: { openMinute: 540, closeMinute: 1380 }, bulk: { minTotalQuantity: 30, minTotalPoisha: 500_000, isPlaceholder: false }, payments: { enabled: false, sandbox: false } });
     expect((await request(h.app.getHttpServer()).get('/v1/config').expect(200)).body.bulk.isPlaceholder).toBe(false);
     const log = await h.prisma.auditLog.findFirstOrThrow({ where: { action: 'config.update' } });
     expect(log.before).toMatchObject({ bulk: { isPlaceholder: true } });

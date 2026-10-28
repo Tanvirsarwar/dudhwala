@@ -4,15 +4,16 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { orderService, tokenFor, type DemoOrder } from '@/lib/services';
 import { DemoOrderCard } from './demo-order-card';
+import { DEMO_BRANDING } from './developer-credit';
 
 /** Demo order page (/orders/DEMO-n): only the browser that placed the order can open it (private token). */
 export function DemoOrderDetail({ id }: { id: string }) {
   const [state, setState] = useState<{ kind: 'loading' } | { kind: 'ok'; order: DemoOrder } | { kind: 'missing' } | { kind: 'error' }>({ kind: 'loading' });
   const load = useCallback(async () => {
-    const token = tokenFor(id);
-    if (!token) return setState({ kind: 'missing' });
+    const token = DEMO_BRANDING ? tokenFor(id) : '';
+    if (token === null) return setState({ kind: 'missing' });
     try {
-      const order = await orderService.get(id, token);
+      const order = await orderService.get(id, token ?? '');
       setState(order ? { kind: 'ok', order } : { kind: 'missing' });
     } catch {
       setState((s) => (s.kind === 'ok' ? s : { kind: 'error' })); // keep showing the last good copy on a refresh failure
@@ -35,7 +36,7 @@ export function DemoOrderDetail({ id }: { id: string }) {
         {state.kind === 'missing' && (
           <div className="card p-8 text-center">
             <p className="font-semibold">অর্ডারটি পাওয়া যায়নি</p>
-            <p className="mt-1 text-sm text-muted">অর্ডারটি এই ব্রাউজার থেকে দেওয়া হয়নি, অথবা ডেমো ডেটা রিসেট হয়েছে।</p>
+            <p className="mt-1 text-sm text-muted">{DEMO_BRANDING ? 'অর্ডারটি এই ব্রাউজার থেকে দেওয়া হয়নি, অথবা ডেমো ডেটা রিসেট হয়েছে।' : 'অর্ডারটি আপনার অ্যাকাউন্টে নেই। সঠিক মোবাইল নম্বর দিয়ে প্রবেশ করেছেন কি?'}</p>
             <Link href="/account" className="btn btn-primary mt-4">
               আমার অর্ডার
             </Link>

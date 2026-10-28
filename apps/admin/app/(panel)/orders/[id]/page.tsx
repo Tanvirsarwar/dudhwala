@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { use, useState } from 'react';
-import type { DemoOrderStatus, FulfilmentMethod } from '@dudhwala/shared';
+import type { FulfilmentMethod } from '@dudhwala/shared';
 import { api } from '@/lib/api';
 import { METHOD_BN, ORDER_STATUS_BN, PAYMENT_BN, dateTime, taka } from '@/lib/format';
 import { useSession } from '@/lib/session';
@@ -11,19 +11,27 @@ import { Loading, Msg, OrderBadge, PageTitle } from '@/components/ui';
 
 interface Order {
   id: string;
+  orderNumber?: string;
   createdAt: string;
   method: FulfilmentMethod;
   zone: string | null;
-  status: DemoOrderStatus;
+  status: string;
   totalPoisha: number | null;
-  payment: string;
+  /** demo */
+  payment?: string;
+  /** live */
+  paymentStatus?: string;
   address?: { name: string; phone: string; line1: string; landmark: string };
   contact?: { name: string; phone: string };
   outlet?: { nameBn: string };
+  cancelReason?: string | null;
   pickupAt?: string;
-  lines: { key: string; productSlug: string; nameBn: string; quantity: number; unitPricePoisha: number | null; linePoisha: number | null }[];
-  history: { status: DemoOrderStatus; at: string; by: string }[];
-  flow: DemoOrderStatus[];
+  lines: { key?: string; variantId?: string | null; productSlug: string; nameBn: string; labelBn?: string; quantity: number; unitPricePoisha: number | null; linePoisha: number | null }[];
+  history: { status: string; at: string; by: string }[];
+  /** demo API */
+  flow?: string[];
+  /** live API: the only moves allowed from here (one step forward, or cancel) */
+  next?: string[];
 }
 
 export default function OrderPage({ params }: { params: Promise<{ id: string }> }) {
@@ -34,15 +42,16 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
   const [confirmCancel, setConfirmCancel] = useState(false);
   if (!o) return <Loading error={error} />;
 
-  const idx = o.flow.indexOf(o.status);
-  const finished = o.status === 'DEMO_CANCELLED' || idx === o.flow.length - 1;
-  const next = finished ? null : o.flow[idx + 1];
-  const move = (status: DemoOrderStatus) => act.run(async () => setData(await api<Order>(`/admin/orders/${encodeURIComponent(o.id)}`, { method: 'PATCH', body: { status } })), 'অবস্থা বদলানো হয়েছে');
+  const demoIdx = o.flow ? o.flow.indexOf(o.status) : -1;
+  const finished = o.next ? o.next.length === 0 : o.status === 'DEMO_CANCELLED' || demoIdx === (o.flow?.length ?? 0) - 1;
+  const next = finished ? null : o.next ? (o.next.find((s) => s !== 'CANCELLED') ?? null) : (o.flow?.[demoIdx + 1] ?? null);
+  const cancelTo = o.next ? 'CANCELLED' : 'DEMO_CANCELLED';
+  const move = (status: string) => act.run(async () => setData(await api<Order>(`/admin/orders/${encodeURIComponent(o.id)}`, { method: 'PATCH', body: { status } })), 'অবস্থা বদলানো হয়েছে');
   const who = o.address ?? o.contact;
 
   return (
     <>
-      <PageTitle title={o.id}>
+      <PageTitle title={o.orderNumber ?? o.id}>
         <Link href="/orders" className="btn btn-ghost btn-sm">
           ← সব অর্ডার
         </Link>
@@ -93,7 +102,7 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
               )}
               <div>
                 <dt className="inline font-semibold">পেমেন্ট: </dt>
-                <dd className="inline">{PAYMENT_BN[o.payment] ?? o.payment}</dd>
+                <dd className="inline">{PAYMENT_BN[o.paymentStatus ?? o.payment ?? ''] ?? o.paymentStatus ?? o.payment}</dd>
               </div>
             </dl>
           </section>
@@ -112,8 +121,8 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
               </thead>
               <tbody>
                 {o.lines.map((l) => (
-                  <tr key={l.key}>
-                    <td>{l.nameBn}</td>
+                  <tr key={l.key ?? l.variantId ?? l.productSlug}>
+                    <td>{l.labelBn ? `${l.nameBn} (${l.labelBn})` : l.nameBn}</td>
                     <td>{l.quantity}</td>
                     <td>{taka(l.unitPricePoisha)}</td>
                     <td>{taka(l.linePoisha)}</td>
@@ -156,7 +165,7 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
                   <div className="rounded-xl bg-danger-bg p-3 text-sm">
                     <p className="mb-2 font-semibold text-danger">অর্ডারটি বাতিল করবেন? এটি ফেরানো যাবে না।</p>
                     <div className="flex gap-2">
-                      <button type="button" className="btn btn-danger btn-sm" disabled={act.busy} onClick={() => void move('DEMO_CANCELLED').then(() => setConfirmCancel(false))}>
+                      <button type="button" className="btn btn-danger btn-sm" disabled={act.busy} onClick={() => void move(cancelTo).then(() => setConfirmCancel(false))}>
                         হ্যাঁ, বাতিল করুন
                       </button>
                       <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirmCancel(false)}>

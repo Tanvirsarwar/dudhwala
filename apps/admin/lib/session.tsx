@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation';
 import { api, ApiError } from './api';
 
 export interface Me {
-  user: { fullName: string; email: string };
   role: 'ADMIN' | 'MANAGER';
   /** false for managers: they can look at everything and change nothing (the API refuses writes as well) */
   canEdit: boolean;
+  mfaVerified?: boolean;
+  user: { fullName: string; email: string; mfaEnabled?: boolean };
 }
 interface SessionValue {
   me: Me;
@@ -49,17 +50,24 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let alive = true;
     api<Me>('/me')
-      .then((m) => alive && setMe(m))
+      .then((m) => {
+        if (!alive) return;
+        if (m.mfaVerified === false) router.replace('/mfa');
+        else setMe(m);
+      })
       .catch((e: unknown) => {
         if (!alive) return;
         if (e instanceof ApiError && e.status === 401) router.replace(loginPath());
         else setFailed(e instanceof Error ? e.message : 'Could not load your session');
       });
     const onUnauth = () => router.replace(loginPath());
+    const onMfa = () => router.replace('/mfa');
     window.addEventListener('dw:unauthenticated', onUnauth);
+    window.addEventListener('dw:mfa', onMfa);
     return () => {
       alive = false;
       window.removeEventListener('dw:unauthenticated', onUnauth);
+      window.removeEventListener('dw:mfa', onMfa);
     };
   }, [router]);
 

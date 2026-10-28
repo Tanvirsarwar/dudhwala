@@ -47,7 +47,7 @@ async function send(path: string, init: Init, retried: boolean): Promise<Respons
     await csrf(true);
     return send(path, init, true);
   }
-  if (res.status === 401 && typeof window !== 'undefined') window.dispatchEvent(new Event('dw:unauthenticated'));
+  if (res.status === 401 && typeof window !== 'undefined') window.dispatchEvent(new Event(data.error?.code === 'MFA_REQUIRED' ? 'dw:mfa' : 'dw:unauthenticated'));
   throw new ApiError(res.status, data.error?.code ?? 'ERROR', data.error?.message ?? `Request failed (${res.status})`, data.error?.details);
 }
 

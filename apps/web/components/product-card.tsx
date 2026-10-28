@@ -3,12 +3,13 @@ import type { ProductCardData } from '@/lib/api';
 import { taka } from '@/lib/format';
 import { ProductImage } from './product-image';
 import { QuickAdd } from './quick-add';
+import { DEMO_BRANDING } from './developer-credit';
 import { Tilt } from './pointer-motion';
 
 export function ProductCard({ p, index = 0 }: { p: ProductCardData; index?: number }) {
   const multi = p.variants.length > 1;
   const labels = p.variants.map((v) => v.labelBn).filter(Boolean).join(' · ');
-  const single = !multi && p.inStock && p.variants[0]?.availability === 'IN_STOCK' ? p.variants[0].id : null;
+  const single = !multi && p.inStock && p.variants[0]?.availability === 'IN_STOCK' && (DEMO_BRANDING || p.variants[0].pricePoisha !== null) ? p.variants[0].id : null;
   const offer = p.variants.some((v) => v.compareAtPoisha && v.pricePoisha !== null && v.compareAtPoisha > v.pricePoisha);
   return (
     <li className="reveal" style={{ ['--i' as string]: Math.min(index, 8) }}>

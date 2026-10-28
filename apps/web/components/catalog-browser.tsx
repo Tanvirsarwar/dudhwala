@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import type { Category, ProductCardData } from '@/lib/api';
 import { bnDigits } from '@/lib/format';
 import { corrections, makeCatalog, rank } from '@/lib/catalog-search';
-import { DEMO_ORDERING, useEligibility, useZone } from '@/lib/demo/zone';
+import { ZONE_ORDERING, useEligibility, useZone } from '@/lib/demo/zone';
 import { ProductGrid } from './product-card';
 import { SearchBox } from './search-box';
 
@@ -91,7 +91,7 @@ export function CatalogBrowser({ products: allProducts, categories, initialQ = '
           {bnDigits(shown.length)}টি পণ্য
         </span>
       </div>
-      {DEMO_ORDERING && zone === 'OUTER_CITY' && (
+      {ZONE_ORDERING && zone === 'OUTER_CITY' && (
         <p className="notice notice-info mb-3" role="note">
           <span>আউটার সিটির জন্য শুধু ডেলিভারিযোগ্য পণ্য দেখানো হচ্ছে।</span> <span>লুকানো পণ্য:</span> <b>{bnDigits(hidden)}</b>
         </p>

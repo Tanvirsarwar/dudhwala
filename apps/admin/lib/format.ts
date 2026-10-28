@@ -33,12 +33,20 @@ export function time(iso: string | Date): string {
   return `${two(p.h)}:${two(p.min)}`;
 }
 
-export { METHOD_BN, ORDER_STATUS_BN, ORDER_STATUS_FLOW } from '@dudhwala/shared';
+import { ORDER_STATUS_BN as DEMO_STATUS_BN, ORDER_STATUS_LABEL_BN } from '@dudhwala/shared';
+
+export { METHOD_BN, ORDER_STATUS_FLOW } from '@dudhwala/shared';
+/** Labels for demo (DEMO_*) and live statuses. */
+export const ORDER_STATUS_BN: Record<string, string> = { ...DEMO_STATUS_BN, ...ORDER_STATUS_LABEL_BN };
 
 export const PAYMENT_BN: Record<string, string> = {
   NOT_REQUIRED_DEMO: 'ক্যাশ অন ডেলিভারি / আউটলেটে (ডেমো)',
   DEMO_UNPAID: 'ডেমো/সিমুলেটেড পেমেন্ট — বাকি',
   DEMO_PAID_SIMULATED: 'ডেমো/সিমুলেটেড পেমেন্ট — সম্পন্ন',
+  NOT_REQUIRED: 'ডেলিভারি/পিকআপের সময় পরিশোধ',
+  PENDING: 'পেমেন্টের অপেক্ষায়',
+  PAID: 'পেমেন্ট যাচাই হয়েছে',
+  FAILED: 'পেমেন্ট ব্যর্থ',
 };
 
 export const ROLE_BN: Record<string, string> = { ADMIN: 'অ্যাডমিন', MANAGER: 'ম্যানেজার' };

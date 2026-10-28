@@ -1,9 +1,8 @@
 import Link from 'next/link';
-import { fetchAllProducts, serverGet, type Area, type Category, type ProductList } from '@/lib/api';
+import { fetchAllProducts, serverGet, type Category, type ProductList } from '@/lib/api';
 import { ProductGrid } from '@/components/product-card';
 import { CatalogBrowser } from '@/components/catalog-browser';
 import { ParallaxScene, Tilt } from '@/components/pointer-motion';
-import { DEMO_BRANDING } from '@/components/developer-credit';
 import { BulkPromo } from '@/components/bulk-promo';
 
 interface Home {
@@ -14,11 +13,10 @@ interface Home {
 
 export default async function HomePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const sp = await searchParams;
-  const [home, categories, products, areas] = await Promise.all([
+  const [home, categories, products] = await Promise.all([
     serverGet<Home>('/content/home'),
     serverGet<Category[]>('/catalog/categories'),
     fetchAllProducts(serverGet),
-    serverGet<Area[]>('/delivery/areas'),
   ]);
   const collections = await Promise.all(
     (home?.collections ?? []).map(async (c) => ({ ...c, products: (await serverGet<ProductList>(`/catalog/products?collection=${c.slug}&limit=8`))?.data ?? [] })),
@@ -103,26 +101,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         <CatalogBrowser products={products} categories={categories ?? []} initialCategory={typeof sp.category === 'string' ? sp.category : ''} initialQ={typeof sp.q === 'string' ? sp.q.slice(0, 80) : ''} initialSort={typeof sp.sort === 'string' ? sp.sort : ''} />
       </section>
 
-      {DEMO_BRANDING && <BulkPromo />}
-
-      {!DEMO_BRANDING && (
-      <section className="card reveal mt-8 p-4" aria-labelledby="area-title-home">
-        <h2 id="area-title-home" className="text-lg font-bold">
-          যেসব এলাকায় ডেলিভারি দেওয়া হয়
-        </h2>
-        {areas && areas.length > 0 ? (
-          <ul className="mt-3 flex flex-wrap gap-2">
-            {areas.map((a) => (
-              <li key={a.id} className="rounded-full bg-accent-100 px-3 py-1 text-sm text-brand-700">
-                {a.nameBn}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mt-2 text-muted">ডেলিভারি এলাকার তালিকা শীঘ্রই প্রকাশ করা হবে।</p>
-        )}
-      </section>
-      )}
+      <BulkPromo />
 
       {(hasPage('about') || hasPage('faq')) && (
         <section className="mt-6 grid gap-3 md:grid-cols-2">

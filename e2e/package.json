@@ -4,8 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "e2e": "playwright test",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "demo": "node demo/run.cjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",

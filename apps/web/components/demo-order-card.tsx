@@ -1,17 +1,17 @@
 'use client';
 
 import { dayLabel, taka, timeLabel, bnDigits } from '@/lib/format';
-import { METHOD_LABEL, PAYMENT_LABEL, STATUS_LABEL } from '@/lib/demo/messages';
+import { LIVE_PAYMENT_LABEL, METHOD_LABEL, PAYMENT_LABEL, STATUS_LABEL } from '@/lib/demo/messages';
 import type { DemoOrder } from '@/lib/services';
 import { ETA_TEXT } from './zone-bar';
 
-/** One demo order. Everything here is labelled demo; pickup and collection are never described as delivery. */
+/** One order (demo orders are labelled demo); pickup and collection are never described as delivery. */
 export function DemoOrderCard({ order }: { order: DemoOrder }) {
   return (
     <article className="card p-4" aria-label={order.id}>
       <header className="flex flex-wrap items-center gap-2">
-        <h3 className="font-latin text-lg font-bold">{order.id}</h3>
-        <span className="rounded-full bg-accent-100 px-2.5 py-0.5 text-xs font-bold text-brand-700">ডেমো</span>
+        <h3 className="font-latin text-lg font-bold">{order.orderNumber ?? order.id}</h3>
+        {order.demo && <span className="rounded-full bg-accent-100 px-2.5 py-0.5 text-xs font-bold text-brand-700">ডেমো</span>}
         <span className="text-sm font-semibold">{METHOD_LABEL[order.method]}</span>
       </header>
       <p className="mt-1 font-semibold text-brand-700" role="status">
@@ -60,7 +60,7 @@ export function DemoOrderCard({ order }: { order: DemoOrder }) {
         )}
         <div>
           <dt className="inline font-semibold">পেমেন্ট: </dt>
-          <dd className="inline">{PAYMENT_LABEL[order.payment]}</dd>
+          <dd className="inline">{order.paymentStatus ? LIVE_PAYMENT_LABEL[order.paymentStatus] : order.payment ? PAYMENT_LABEL[order.payment] : ''}</dd>
         </div>
       </dl>
       <ul className="mt-2 grid gap-0.5 text-sm">

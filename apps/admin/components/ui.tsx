@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useEffect, useRef } from 'react';
-import type { DemoOrderStatus } from '@dudhwala/shared';
 import { ORDER_STATUS_BN } from '@/lib/format';
 
 /** Status badges always carry text (never colour alone). Colours come from the shared status tokens. */
@@ -13,9 +12,9 @@ export function Badge({ tone = 'neutral', children }: { tone?: Tone; children: R
   return <span className={`badge ${TONE[tone]}`}>{children}</span>;
 }
 
-const FINAL = new Set(['DEMO_DELIVERED', 'DEMO_PICKED_UP', 'DEMO_COLLECTED']);
-export function OrderBadge({ status }: { status: DemoOrderStatus }) {
-  const tone: Tone = status === 'DEMO_CANCELLED' ? 'bad' : FINAL.has(status) ? 'good' : status.includes('READY') ? 'info' : status === 'DEMO_PREPARING' ? 'neutral' : 'warn';
+const FINAL = new Set(['DEMO_DELIVERED', 'DEMO_PICKED_UP', 'DEMO_COLLECTED', 'DELIVERED', 'PICKED_UP', 'COLLECTED']);
+export function OrderBadge({ status }: { status: string }) {
+  const tone: Tone = status === 'DEMO_CANCELLED' || status === 'CANCELLED' ? 'bad' : FINAL.has(status) ? 'good' : status.includes('READY') ? 'info' : status === 'DEMO_PREPARING' || status === 'PREPARING' ? 'neutral' : 'warn';
   return <Badge tone={tone}>{ORDER_STATUS_BN[status] ?? status}</Badge>;
 }
 

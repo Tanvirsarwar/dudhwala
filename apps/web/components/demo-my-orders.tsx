@@ -3,14 +3,30 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { forgetOrder, orderService, readOrderRefs, type DemoOrder } from '@/lib/services';
+import { DEMO_BRANDING } from './developer-credit';
+import { api } from '@/lib/api';
+import { OtpLogin } from './otp-login';
 import { DemoOrderCard } from './demo-order-card';
 
 type Row = { id: string; order: DemoOrder | null; state: 'ok' | 'missing' | 'error' };
 
-/** Demo "My orders": the orders placed from this browser (no customer login in the demo). Refreshes by itself. */
+/** My orders. Demo: orders placed from this browser. Live: the signed-in customer's orders. Refreshes by itself. */
 export function DemoMyOrders() {
   const [rows, setRows] = useState<Row[] | null>(null);
+  const [needLogin, setNeedLogin] = useState(false);
   const load = useCallback(async () => {
+    if (!DEMO_BRANDING) {
+      try {
+        await api('/me');
+        const orders = (await orderService.list?.()) ?? [];
+        setRows(orders.map((o) => ({ id: o.id, order: o, state: 'ok' as const })));
+        setNeedLogin(false);
+      } catch {
+        setNeedLogin(true);
+        setRows([]);
+      }
+      return;
+    }
     const refs = readOrderRefs();
     setRows(
       await Promise.all(
@@ -38,10 +54,16 @@ export function DemoMyOrders() {
   return (
     <div className="mx-auto max-w-3xl pt-6">
       <h1 className="text-2xl font-bold">আমার অর্ডার</h1>
-      <p className="notice notice-info mt-2">
-        <span>ডেমোতে লগইন নেই।</span> <span>এখানে শুধু এই ব্রাউজার থেকে দেওয়া অর্ডার দেখা যায়।</span>
-      </p>
-      {rows === null ? (
+      {DEMO_BRANDING && (
+        <p className="notice notice-info mt-2">
+          <span>ডেমোতে লগইন নেই।</span> <span>এখানে শুধু এই ব্রাউজার থেকে দেওয়া অর্ডার দেখা যায়।</span>
+        </p>
+      )}
+      {needLogin ? (
+        <div className="mt-4 max-w-md">
+          <OtpLogin onDone={() => void load()} />
+        </div>
+      ) : rows === null ? (
         <div className="mt-4 grid gap-3" aria-busy="true" aria-label="লোড হচ্ছে…">
           <div className="skeleton h-32 rounded-2xl" />
           <div className="skeleton h-32 rounded-2xl" />

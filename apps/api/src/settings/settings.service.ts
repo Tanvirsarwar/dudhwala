@@ -24,6 +24,13 @@ export const SETTINGS = {
   'fulfilment.dispatchOutletId': { schema: z.string().uuid().nullable(), default: null as string | null },
   /** Minutes a bulk order waits for its payment before stock is released. */
   'payments.holdMinutes': { schema: z.number().int().min(5).max(240), default: 30 },
+  /** Owner-supplied pages (About, FAQ, policies). Text is never written in code. */
+  'content.pages': {
+    schema: z.array(z.object({ slug: z.string().regex(/^[a-z-]{2,40}$/), titleBn: z.string().min(1).max(120), bodyBn: z.string().min(1).max(20_000) }).strict()).max(30),
+    default: [] as { slug: string; titleBn: string; bodyBn: string }[],
+  },
+  /** Shows the maintenance banner on the storefront. */
+  'site.maintenance': { schema: z.boolean(), default: false },
 } as const;
 
 export type SettingKey = keyof typeof SETTINGS;

@@ -23,5 +23,5 @@ check "Admin login page"                  "curl -fs --max-time 20 $ADMIN/login |
 check "Admin frame protection"            "hdr $ADMIN/login 'x-frame-options: deny'"
 check "HTTP redirects to HTTPS"           "[ \"\$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 \"\${WEB/https:/http:}/\")\" -ge 301 ]"
 check "Dev SMS outbox is not exposed"     "unregistered '$API/v1/dev/sms?phone=01700000000'"
-check "Payment simulator not exposed"     "unregistered $API/v1/payments/simulator/x"
+check "Payment sandbox refuses anonymous"  "[ \"\$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 -X POST $API/v1/payments/sandbox/x/complete)\" -ge 401 ]"
 exit $fail

@@ -12,12 +12,21 @@ import { Field, Loading, Msg, PageTitle } from '@/components/ui';
 interface Cfg {
   hours: { openMinute: number; closeMinute: number };
   bulk: { minTotalQuantity: number; minTotalPoisha: number; isPlaceholder: boolean };
+  payments?: { enabled: boolean; sandbox: boolean };
 }
+interface Outlets {
+  data: { id: string; code: string; nameBn: string; status: string }[];
+  dispatchOutletId: string | null;
+  collectionOutletId: string | null;
+}
+const DEMO = process.env.NEXT_PUBLIC_DEMO_BRANDING === '1';
 
 export default function SettingsPage() {
   const router = useRouter();
   const { canEdit } = useSession();
   const { data, error, reload } = useLoad<Cfg>('/admin/config');
+  const outlets = useLoad<Outlets>('/admin/outlets');
+  const roles = useAction();
   const [f, setF] = useState({ open: '', close: '', qty: '', amount: '' });
   const save = useAction();
   const reset = useAction();
@@ -58,7 +67,7 @@ export default function SettingsPage() {
         </div>
         <p className="mb-3 text-sm text-muted">এই সময়ের বাইরে দোকানে অর্ডার নেওয়া বন্ধ থাকে।</p>
         <h2 className="mb-2 mt-4 font-semibold">বাল্ক অর্ডারের ন্যূনতম সীমা</h2>
-        {data.bulk.isPlaceholder && <p className="mb-2 rounded-xl bg-warn-bg p-3 text-sm">এখনকার মান শুধু অস্থায়ী (ডেমো)। আপনার আসল সীমা দিয়ে সংরক্ষণ করুন।</p>}
+        {data.bulk.isPlaceholder && <p className="mb-2 rounded-xl bg-warn-bg p-3 text-sm">এখনকার মান শুধু অস্থায়ী (অনুমোদিত নয়)। আপনার আসল সীমা দিয়ে সংরক্ষণ করুন।</p>}
         <div className="grid grid-cols-2 gap-3">
           <Field label="মোট পণ্যের সংখ্যা (টি)" id="s-qty">
             <input id="s-qty" inputMode="numeric" className="field font-latin" value={f.qty} onChange={(e) => setF({ ...f, qty: e.target.value })} required />
@@ -74,6 +83,40 @@ export default function SettingsPage() {
         </button>
       </form>
 
+      <section className="card mt-6 max-w-xl p-4" aria-labelledby="roles">
+        <h2 id="roles" className="mb-2 font-semibold">
+          আউটলেট ও পেমেন্ট
+        </h2>
+        {outlets.data && outlets.data.data.length > 0 ? (
+          <>
+            {([['dispatchOutletId', 'হোম ডেলিভারির স্টক যে আউটলেট থেকে'], ['collectionOutletId', 'বাল্ক অর্ডার সংগ্রহের আউটলেট (মদিনা মার্কেট শাখা)']] as const).map(([k, label]) => (
+              <Field key={k} label={label} id={k}>
+                <select
+                  id={k}
+                  className="field"
+                  value={outlets.data?.[k] ?? ''}
+                  onChange={(e) => void roles.run(async () => { await api('/admin/fulfilment-outlets', { method: 'PUT', body: { [k]: e.target.value || null } }); await outlets.reload(); }, 'সংরক্ষণ হয়েছে')}
+                >
+                  <option value="">— বেছে নেওয়া হয়নি —</option>
+                  {outlets.data?.data.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.nameBn} ({o.code})
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            ))}
+            <Msg error={roles.error} ok={roles.ok} />
+          </>
+        ) : (
+          <p className="notice notice-warn text-sm">কোনো আউটলেট নেই। মালিকের দেওয়া তথ্য দিয়ে সেটআপ কমান্ড চালান (docs/SETUP_OWNER_DATA.md)।</p>
+        )}
+        <p className="mt-3 text-sm">
+          <b>অনলাইন পেমেন্ট:</b> {data.payments?.enabled ? (data.payments.sandbox ? 'স্যান্ডবক্স (নকল টাকা)' : 'চালু') : 'বন্ধ — বাল্ক অর্ডার নেওয়া যাবে না'}
+        </p>
+      </section>
+
+      {DEMO && (
       <section className="card mt-6 max-w-xl border-red-200 p-4" aria-labelledby="danger">
         <h2 id="danger" className="mb-1 font-semibold text-danger">
           ডেমো ডেটা রিসেট
@@ -88,6 +131,7 @@ export default function SettingsPage() {
           রিসেট করুন
         </button>
       </section>
+      )}
     </>
   );
 }

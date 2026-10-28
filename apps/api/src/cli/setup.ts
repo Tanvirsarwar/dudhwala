@@ -36,6 +36,8 @@ export const SetupFile = z
           .strict(),
       )
       .min(1),
+    /** Owner-written pages: About, FAQ, delivery policy, terms, refund policy, privacy. */
+    pages: z.array(z.object({ slug: z.string().regex(/^[a-z-]{2,40}$/), titleBn: z.string().min(1), bodyBn: z.string().min(1) }).strict()).optional(),
     /** Code of the outlet whose stock supplies home delivery. */
     dispatchOutletCode: z.string().optional(),
     /** Code of the bulk collection outlet (Modina Market Branch). */
@@ -61,6 +63,7 @@ export async function applySetup(prisma: PrismaService, raw: unknown): Promise<{
     }
     if (file.dispatchOutletCode) await settings.set('fulfilment.dispatchOutletId', ids.get(file.dispatchOutletCode) as string, null, tx);
     if (file.collectionOutletCode) await settings.set('bulk.collectionOutletId', ids.get(file.collectionOutletCode) as string, null, tx);
+    if (file.pages) await settings.set('content.pages', file.pages, null, tx);
     await tx.auditLog.create({ data: { id: newId(), actorRole: 'CLI', action: 'setup.applied', entityType: 'setting', entityId: 'setup', after: { outlets: file.outlets.map((o) => o.code) } } });
     return { outlets: file.outlets.length, dispatch: file.dispatchOutletCode ?? null, collection: file.collectionOutletCode ?? null };
   });

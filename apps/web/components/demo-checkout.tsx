@@ -11,15 +11,17 @@ import { bnDigits, dayLabel, minuteLabel, taka, timeLabel } from '@/lib/format';
 import { useConfig } from '@/lib/demo/config';
 import { ISSUE_MESSAGES, METHOD_LABEL } from '@/lib/demo/messages';
 import { useZone } from '@/lib/demo/zone';
-import { orderService, outletService, type DemoOrder, type Outlet } from '@/lib/services';
+import { orderService, outletService, paymentService, type DemoOrder, type Outlet } from '@/lib/services';
+import { DEMO_BRANDING } from './developer-credit';
 import { DemoOrderCard } from './demo-order-card';
 import { ETA_TEXT, useNow } from './zone-bar';
 
 const BLANK = { name: '', phone: '', line1: '', landmark: '' };
 
 /**
- * DEMO checkout (no OTP login, no real payment, no card form). Validation uses the shared rules in
- * @dudhwala/shared/ordering; they run in the browser here, so they are NOT security enforcement.
+ * Checkout for home delivery, express pickup and bulk orders. The local demo (NEXT_PUBLIC_DEMO_BRANDING=1) saves orders
+ * in the mock API with a simulated payment; the live shop requires a signed-in customer (see app/checkout/page.tsx) and
+ * places orders through the real API. The shared rules run in the browser only for fast feedback; the API enforces them.
  */
 export function DemoCheckout() {
   const { zone } = useZone();
@@ -32,6 +34,7 @@ export function DemoCheckout() {
   const [outletId, setOutletId] = useState('');
   const [pickupIso, setPickupIso] = useState('');
   const [paid, setPaid] = useState(false);
+  const [attemptKey] = useState(() => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`));
   const [tried, setTried] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [placed, setPlaced] = useState<DemoOrder | null>(null);
@@ -54,7 +57,8 @@ export function DemoCheckout() {
   const slots = useMemo(() => (now ? pickupSlots(new Date(minute * 60_000), 12, { ...PICKUP_RULES, hours: cfg.hoursFull }) : []), [now, minute, cfg.hoursFull]);
   const pickupAt = slots.find((s) => s.toISOString() === pickupIso) ?? slots[0] ?? null;
   const outlet = outlets.find((o) => o.id === outletId) ?? null;
-  const payment: DemoPaymentState = method === 'BULK_ORDER' ? (paid ? 'DEMO_PAID_SIMULATED' : 'DEMO_UNPAID') : 'NOT_REQUIRED_DEMO';
+  // live shop: a bulk order is paid after it is placed, so the form never waits for a payment
+  const payment: DemoPaymentState = method === 'BULK_ORDER' ? (paid || !DEMO_BRANDING ? 'DEMO_PAID_SIMULATED' : 'DEMO_UNPAID') : 'NOT_REQUIRED_DEMO';
 
   const issues = useMemo(
     () =>
@@ -89,6 +93,7 @@ export function DemoCheckout() {
       outlet,
       pickupAt,
       payment,
+      idempotencyKey: attemptKey,
       config: { hours: cfg.hours, bulk: cfg.bulk },
     });
     setSaving(false);
@@ -97,8 +102,10 @@ export function DemoCheckout() {
       return;
     }
     setPlaced(res.order);
-    void Promise.all(lines.map((l) => api(`/cart/items/${l.variantId}`, { method: 'PUT', body: { quantity: 0 } }).catch(() => null))).then(cartChanged);
-  }, [now, cart, issues, saving, method, zone, lines, form, outlet, pickupAt, payment, cfg]);
+    // demo: the mock API does not tie orders to the cart, so empty it here. Live: the API empties the signed-in customer's cart itself.
+    if (DEMO_BRANDING) void Promise.all(lines.map((l) => api(`/cart/items/${l.variantId}`, { method: 'PUT', body: { quantity: 0 } }).catch(() => null))).then(cartChanged);
+    else cartChanged();
+  }, [now, cart, issues, saving, method, zone, lines, form, outlet, pickupAt, payment, cfg, attemptKey]);
 
   // the confirmation card follows the status the admin sets
   useEffect(() => {
@@ -113,11 +120,18 @@ export function DemoCheckout() {
     return (
       <div className="mx-auto max-w-3xl pt-6">
         <p className="notice notice-ok" role="status">
-          <b>অর্ডার সংরক্ষিত হয়েছে।</b> <span>এটি আসল অর্ডার নয় এবং কোনো আসল পেমেন্ট হয়নি।</span>
+          {DEMO_BRANDING ? (
+            <>
+              <b>অর্ডার সংরক্ষিত হয়েছে।</b> <span>এটি আসল অর্ডার নয় এবং কোনো আসল পেমেন্ট হয়নি।</span>
+            </>
+          ) : (
+            <b>আপনার অর্ডার নেওয়া হয়েছে।</b>
+          )}
         </p>
         <div className="mt-3">
           <DemoOrderCard order={placed} />
         </div>
+        {!DEMO_BRANDING && placed.status === 'PENDING_PAYMENT' && <BulkPayment order={placed} onPaid={(o) => setPlaced(o)} />}
         <div className="mt-4 flex flex-wrap gap-2">
           <Link href="/account" className="btn btn-primary">
             আমার অর্ডার
@@ -167,9 +181,11 @@ export function DemoCheckout() {
   return (
     <div className="mx-auto max-w-5xl pt-6">
       <h1 className="text-2xl font-bold">চেকআউট</h1>
-      <p className="notice notice-info mt-2">
-        <b>ডেমো চেকআউট।</b> <span>কোনো আসল পেমেন্ট, কার্ড বা এসএমএস নেই।</span> <span>অর্ডার শুধু এই ব্রাউজারে সংরক্ষিত হয়।</span>
-      </p>
+      {DEMO_BRANDING && (
+        <p className="notice notice-info mt-2">
+          <b>ডেমো চেকআউট।</b> <span>কোনো আসল পেমেন্ট, কার্ড বা এসএমএস নেই।</span> <span>অর্ডার শুধু এই ব্রাউজারে সংরক্ষিত হয়।</span>
+        </p>
+      )}
       {now && !status.open && (
         <div className="notice notice-err mt-3" role="alert">
           <p className="font-semibold">{ISSUE_MESSAGES.ordering_closed}</p>
@@ -233,7 +249,7 @@ export function DemoCheckout() {
               {field('line1', 'ঠিকানা', 'street-address')}
               <p className="text-sm text-muted">{zone === 'IN_CITY' ? 'সিলেট সদরের যেকোনো জায়গায় ডেলিভারি হয়। শুধু আপনার পূর্ণ ঠিকানা লিখুন।' : 'সিলেটের বাইরের যেকোনো জায়গায় ডেলিভারি হয়। উপজেলা/জেলাসহ পূর্ণ ঠিকানা লিখুন।'}</p>
               {field('landmark', 'চেনার মতো স্থান (ঐচ্ছিক)', 'off')}
-              <p className="text-sm text-muted">পেমেন্ট: ক্যাশ অন ডেলিভারি (ডেমো — কোনো আসল পেমেন্ট নেই)।</p>
+              <p className="text-sm text-muted">{DEMO_BRANDING ? 'পেমেন্ট: ক্যাশ অন ডেলিভারি (ডেমো — কোনো আসল পেমেন্ট নেই)।' : 'পেমেন্ট: ডেলিভারির সময় পরিশোধ করুন।'}</p>
             </section>
           )}
 
@@ -274,7 +290,7 @@ export function DemoCheckout() {
                   ))}
                 </select>
               </div>
-              <p className="text-sm text-muted">পেমেন্ট: আউটলেটে (ডেমো — কোনো আসল পেমেন্ট নেই)।</p>
+              <p className="text-sm text-muted">{DEMO_BRANDING ? 'পেমেন্ট: আউটলেটে (ডেমো — কোনো আসল পেমেন্ট নেই)।' : 'পেমেন্ট: পিকআপের সময় আউটলেটে পরিশোধ করুন।'}</p>
             </section>
           )}
 
@@ -287,13 +303,23 @@ export function DemoCheckout() {
                 <b>সংগ্রহের স্থান:</b> <span>{BULK_CONFIG.collectionBranch.nameBn}</span>
               </p>
               <p className="text-sm text-muted">হোম ডেলিভারি ও তাৎক্ষণিক ডেলিভারি নেই।</p>
-              <div className="notice notice-warn">
-                <b>ডেমো/সিমুলেটেড পেমেন্ট</b>
-                <p className="text-sm">বাল্ক অর্ডারে আগে পেমেন্ট লাগে। এখানে কোনো আসল টাকা কাটা হয় না।</p>
-                <button type="button" className={`btn btn-compact mt-2 ${paid ? 'btn-accent' : 'btn-primary'}`} aria-pressed={paid} onClick={() => setPaid(true)}>
-                  {paid ? '✓ সিমুলেটেড পেমেন্ট সম্পন্ন' : 'সিমুলেটেড পেমেন্ট করুন'}
-                </button>
-              </div>
+              {DEMO_BRANDING ? (
+                <div className="notice notice-warn">
+                  <b>ডেমো/সিমুলেটেড পেমেন্ট</b>
+                  <p className="text-sm">বাল্ক অর্ডারে আগে পেমেন্ট লাগে। এখানে কোনো আসল টাকা কাটা হয় না।</p>
+                  <button type="button" className={`btn btn-compact mt-2 ${paid ? 'btn-accent' : 'btn-primary'}`} aria-pressed={paid} onClick={() => setPaid(true)}>
+                    {paid ? '✓ সিমুলেটেড পেমেন্ট সম্পন্ন' : 'সিমুলেটেড পেমেন্ট করুন'}
+                  </button>
+                </div>
+              ) : cfg.payments.enabled ? (
+                <p className="notice notice-info">
+                  <span>বাল্ক অর্ডারে আগে পেমেন্ট লাগে।</span> <span>অর্ডার দেওয়ার পরের ধাপে পেমেন্ট করবেন।</span>
+                </p>
+              ) : (
+                <p className="notice notice-err" role="alert">
+                  <span>অনলাইন পেমেন্ট এখনো চালু হয়নি, তাই এখন বাল্ক অর্ডার নেওয়া যাচ্ছে না।</span>
+                </p>
+              )}
             </section>
           )}
         </div>
@@ -316,7 +342,7 @@ export function DemoCheckout() {
           </p>
           {bulk.isBulk && (
             <p className="mt-2 text-xs text-muted">
-              <span>{cfg.isPlaceholder ? 'বাল্ক অর্ডারের সীমা (ডেমো, চূড়ান্ত নয়):' : 'বাল্ক অর্ডারের সীমা:'}</span> <b>{bnDigits(cfg.bulk.minTotalQuantity)}</b> <span>টি বা তার বেশি।</span>
+              <span>{cfg.isPlaceholder ? 'বাল্ক অর্ডারের সীমা (চূড়ান্ত নয়):' : 'বাল্ক অর্ডারের সীমা:'}</span> <b>{bnDigits(cfg.bulk.minTotalQuantity)}</b> <span>টি বা তার বেশি।</span>
             </p>
           )}
           {saveError && (
@@ -338,12 +364,74 @@ export function DemoCheckout() {
               </ul>
             </div>
           )}
-          <button type="button" className="btn btn-primary mt-4 w-full" onClick={() => void place()} aria-disabled={!status.open || undefined} aria-busy={saving} disabled={(now !== null && !status.open) || saving}>
+          <button type="button" className="btn btn-primary mt-4 w-full" onClick={() => void place()} aria-disabled={!status.open || undefined} aria-busy={saving} disabled={(now !== null && !status.open) || saving || (!DEMO_BRANDING && method === 'BULK_ORDER' && !cfg.payments.enabled)}>
             অর্ডার দিন
           </button>
-          <p className="mt-2 text-xs text-muted">এই যাচাই শুধু ডেমোর জন্য, নিরাপত্তা নিশ্চয়তা নয়।</p>
+          {DEMO_BRANDING && <p className="mt-2 text-xs text-muted">এই যাচাই শুধু ডেমোর জন্য, নিরাপত্তা নিশ্চয়তা নয়।</p>}
         </aside>
       </div>
     </div>
+  );
+}
+
+/** Bulk-order payment step (live shop). Only the API's verified webhook marks the order paid; this panel just starts the payment and re-reads the order. */
+function BulkPayment({ order, onPaid }: { order: DemoOrder; onPaid: (o: DemoOrder) => void }) {
+  const [state, setState] = useState<{ kind: 'idle' } | { kind: 'busy' } | { kind: 'sandbox'; tran: string } | { kind: 'error'; text: string }>({ kind: 'idle' });
+  const refresh = useCallback(async () => {
+    const o = await orderService.get(order.id, '');
+    if (o) onPaid(o);
+  }, [order.id, onPaid]);
+  const start = async () => {
+    setState({ kind: 'busy' });
+    try {
+      const p = await paymentService.start(order.id);
+      if (p.redirectUrl) {
+        window.location.href = p.redirectUrl;
+        return;
+      }
+      setState(p.sandbox ? { kind: 'sandbox', tran: p.merchantTranId } : { kind: 'error', text: 'পেমেন্ট পেজ খোলা যায়নি।' });
+    } catch (e) {
+      setState({ kind: 'error', text: e instanceof Error ? e.message : 'পেমেন্ট শুরু করা যায়নি' });
+    }
+  };
+  const finish = async (tran: string, outcome: 'success' | 'fail') => {
+    setState({ kind: 'busy' });
+    try {
+      await paymentService.sandboxComplete(tran, outcome);
+      await refresh();
+      setState(outcome === 'success' ? { kind: 'idle' } : { kind: 'error', text: 'স্যান্ডবক্স পেমেন্ট ব্যর্থ হয়েছে। আবার চেষ্টা করুন।' });
+    } catch (e) {
+      setState({ kind: 'error', text: e instanceof Error ? e.message : 'পেমেন্ট সম্পন্ন করা যায়নি' });
+    }
+  };
+  return (
+    <section className="card mt-3 p-4" aria-labelledby="bp-title">
+      <h2 id="bp-title" className="text-lg font-bold">
+        পেমেন্ট করুন
+      </h2>
+      <p className="text-sm text-muted">পেমেন্ট নিশ্চিত না হওয়া পর্যন্ত অর্ডার প্রস্তুত করা হবে না। নির্দিষ্ট সময়ের মধ্যে পেমেন্ট না করলে অর্ডার বাতিল হবে।</p>
+      {state.kind === 'sandbox' ? (
+        <div className="notice notice-warn mt-3">
+          <b>স্যান্ডবক্স পেমেন্ট — আসল টাকা কাটা হয় না।</b>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button type="button" className="btn btn-primary btn-compact" onClick={() => void finish(state.tran, 'success')}>
+              পেমেন্ট সফল ধরুন
+            </button>
+            <button type="button" className="btn btn-ghost btn-compact" onClick={() => void finish(state.tran, 'fail')}>
+              পেমেন্ট ব্যর্থ ধরুন
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button type="button" className="btn btn-primary mt-3" onClick={() => void start()} aria-busy={state.kind === 'busy'} disabled={state.kind === 'busy'}>
+          পেমেন্ট শুরু করুন
+        </button>
+      )}
+      {state.kind === 'error' && (
+        <p className="notice notice-err mt-3" role="alert">
+          {state.text}
+        </p>
+      )}
+    </section>
   );
 }

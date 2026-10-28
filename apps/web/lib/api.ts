@@ -43,15 +43,19 @@ const BN_ERRORS: Record<string, string> = {
   FORBIDDEN: 'এই কাজের অনুমতি নেই।',
   NOT_FOUND: 'খুঁজে পাওয়া যায়নি।',
   VALIDATION_FAILED: 'তথ্যগুলো আবার দেখে নিন — কিছু একটা সঠিক নয়।',
-  SLOT_FULL: 'এই ডেলিভারি সময়টি পূর্ণ হয়ে গেছে। অন্য সময় বেছে নিন।',
   OUT_OF_STOCK: 'দুঃখিত, কিছু পণ্য এখন স্টকে নেই।',
-  COUPON_INVALID: 'কুপনটি প্রযোজ্য নয়।',
-  AREA_NOT_SERVICEABLE: 'এই এলাকায় এখন ডেলিভারি দেওয়া হচ্ছে না।',
-  MIN_ORDER_NOT_MET: 'ন্যূনতম অর্ডারের পরিমাণ পূরণ হয়নি।',
-  COD_NOT_ELIGIBLE: 'এই অর্ডারে ক্যাশ অন ডেলিভারি নেওয়া যাচ্ছে না।',
-  PRICE_CHANGED: 'কিছু পণ্যের দাম বদলেছে। কার্ট আবার দেখে নিন।',
-  PAYMENT_PROVIDER_UNAVAILABLE: 'অনলাইন পেমেন্ট এখন পাওয়া যাচ্ছে না। একটু পরে চেষ্টা করুন বা ক্যাশ অন ডেলিভারি নিন।',
-  NO_SINGLE_OUTLET: 'সব পণ্য একসাথে একটি আউটলেট থেকে পাঠানো যাচ্ছে না। কার্ট থেকে কিছু পণ্য সরিয়ে দেখুন।',
+  PRODUCT_UNAVAILABLE: 'কিছু পণ্য আর পাওয়া যাচ্ছে না। কার্ট আবার দেখে নিন।',
+  PRICE_NOT_SET: 'কিছু পণ্যের দাম এখনো নির্ধারিত হয়নি, তাই অর্ডার করা যাচ্ছে না।',
+  NOT_DELIVERABLE: 'কিছু পণ্য এই জোনে ডেলিভারি করা যায় না।',
+  ZONE_REQUIRED: 'ডেলিভারি জোন বেছে নিন।',
+  ORDERING_CLOSED: 'এখন অর্ডার নেওয়া বন্ধ আছে।',
+  PICKUP_INVALID: 'পিকআপের সময় সঠিক নয়। অন্তত ১ ঘণ্টা পরের, আউটলেট খোলা থাকার সময় বেছে নিন।',
+  BULK_REQUIRED: 'এই অর্ডার বাল্ক অর্ডারের আওতায় পড়ে। বাল্ক অর্ডার হিসেবে দিন।',
+  NOT_BULK: 'কার্টে বাল্ক অর্ডারের ন্যূনতম পরিমাণ নেই।',
+  BULK_NOT_CONFIGURED: 'বাল্ক অর্ডার এখনো চালু হয়নি।',
+  PAYMENTS_DISABLED: 'অনলাইন পেমেন্ট এখনো চালু হয়নি, তাই বাল্ক অর্ডার নেওয়া যাচ্ছে না।',
+  IDEMPOTENCY_CONFLICT: 'এই অর্ডারের তথ্য বদলে গেছে। পাতাটি রিফ্রেশ করে আবার চেষ্টা করুন।',
+  SERVICE_UNAVAILABLE: 'সেবাটি এখন চালু নেই। কিছুক্ষণ পরে চেষ্টা করুন।',
   CONFLICT: 'অবস্থা বদলে গেছে। পাতাটি রিফ্রেশ করে আবার চেষ্টা করুন।',
   INVALID_TRANSITION: 'এই অর্ডারে এখন এটি করা যাবে না।',
 };
@@ -140,17 +144,8 @@ export interface Category {
   nameEn: string | null;
 }
 
-export interface Area {
-  id: string;
-  slug: string;
-  nameBn: string;
-  nameEn: string | null;
-}
-
 export interface CartView {
   id: string | null;
-  areaId: string | null;
-  couponCode: string | null;
   lines: { variantId: string; productSlug: string; nameBn: string; nameEn: string | null; labelBn: string; image: string | null; unitPricePoisha: number | null; quantity: number; lineTotalPoisha: number | null; available: boolean; maxQty: number; categorySlug?: string; outerCityStatus?: OuterCityStatus | null }[];
   subtotalPoisha: number | null;
   itemCount: number;

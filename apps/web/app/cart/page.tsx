@@ -7,7 +7,8 @@ import { bnDigits, taka } from '@/lib/format';
 import { ProductImage } from '@/components/product-image';
 import { bulkStatus } from '@dudhwala/shared';
 import { useConfig } from '@/lib/demo/config';
-import { DEMO_ORDERING, useEligibility, useZone } from '@/lib/demo/zone';
+import { ZONE_ORDERING, useEligibility, useZone } from '@/lib/demo/zone';
+import { DEMO_BRANDING } from '@/components/developer-credit';
 
 export default function CartPage() {
   const [cart, setCart] = useState<CartView | null>(null);
@@ -48,7 +49,7 @@ export default function CartPage() {
   // Zone revalidation (demo): lines that cannot go to the chosen zone are flagged, never silently removed, and block checkout.
   const ineligible = new Set(cart.lines.filter((l) => !eligible({ categorySlug: l.categorySlug ?? '', outerCityStatus: l.outerCityStatus }).eligible).map((l) => l.variantId));
   const blocked = cart.lines.some((l) => !l.available) || ineligible.size > 0;
-  const bulk = DEMO_ORDERING ? bulkStatus(cart.lines.map((l) => ({ quantity: l.quantity, linePoisha: l.lineTotalPoisha })), cfg.bulk) : null;
+  const bulk = ZONE_ORDERING ? bulkStatus(cart.lines.map((l) => ({ quantity: l.quantity, linePoisha: l.lineTotalPoisha })), cfg.bulk) : null;
 
   return (
     <div className="mx-auto max-w-5xl pt-6">
@@ -63,7 +64,7 @@ export default function CartPage() {
       ) : (
         <div className="grid gap-6 md:grid-cols-[1fr_320px]">
           <div className="grid content-start gap-3">
-          {DEMO_ORDERING && ineligible.size > 0 && (
+          {ZONE_ORDERING && ineligible.size > 0 && (
             <div className="notice notice-err" role="alert">
               <p className="font-semibold">
                 <b>{bnDigits(ineligible.size)}</b>
@@ -142,7 +143,7 @@ export default function CartPage() {
               <span>সাবটোটাল</span>
               <strong>{taka(cart.subtotalPoisha)}</strong>
             </div>
-            <p className="mt-1 text-sm text-muted">{DEMO_ORDERING ? 'ডেমো অর্ডার: ডেলিভারি চার্জ নেই, কোনো আসল পেমেন্ট নেই।' : 'ডেলিভারি চার্জ ও ছাড় চেকআউটে হিসাব হবে।'}</p>
+            <p className="mt-1 text-sm text-muted">{DEMO_BRANDING ? 'ডেমো অর্ডার: ডেলিভারি চার্জ নেই, কোনো আসল পেমেন্ট নেই।' : 'ডেলিভারি চার্জ এখন নেই। চূড়ান্ত মোট চেকআউটে দেখা যাবে।'}</p>
             {error && (
               <p role="alert" className="mt-3 rounded-lg bg-danger-bg p-3 text-sm text-danger">
                 {error}
@@ -152,9 +153,9 @@ export default function CartPage() {
               চেকআউট
             </Link>
             {blocked && <p className="mt-2 text-sm text-danger">{ineligible.size > 0 ? 'চিহ্নিত পণ্যগুলো ঠিক করে নিন।' : 'অপ্রাপ্য পণ্যগুলো ঠিক করে নিন।'}</p>}
-            {DEMO_ORDERING && bulk && (
+            {ZONE_ORDERING && bulk && (
               <p className="mt-3 text-xs text-muted">
-                <span>{cfg.isPlaceholder ? 'বাল্ক অর্ডারের সীমা (ডেমো, চূড়ান্ত নয়):' : 'বাল্ক অর্ডারের সীমা:'}</span> <b>{bnDigits(cfg.bulk.minTotalQuantity)}</b> <span>টি বা তার বেশি।</span>
+                <span>{cfg.isPlaceholder ? 'বাল্ক অর্ডারের সীমা (চূড়ান্ত নয়):' : 'বাল্ক অর্ডারের সীমা:'}</span> <b>{bnDigits(cfg.bulk.minTotalQuantity)}</b> <span>টি বা তার বেশি।</span>
               </p>
             )}
           </aside>

@@ -2,16 +2,13 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { zoneEligibility, type DeliveryZone, type Eligibility, type EligibilityProduct } from '@dudhwala/shared';
-import { DEMO_BRANDING } from '@/components/developer-credit';
 
 /**
- * Delivery-zone state for the DEMO build. Persisted in localStorage under a clearly demo key.
- * The eligibility RULES live in @dudhwala/shared (ordering.ts); filtering here is a demo convenience, not enforcement:
- * the real backend must re-check every cart and order (docs/PHASE2_INTEGRATION.md).
- * Outside the demo build the zone is fixed to IN_CITY, so the production storefront behaves as before.
+ * Delivery-zone state (In City / Outer City), kept in localStorage. The eligibility RULES live in @dudhwala/shared
+ * (ordering.ts); filtering here is a convenience for the shopper, not enforcement: the API re-checks every order.
  */
 export const ZONE_KEY = 'dw.demo.zone';
-export const DEMO_ORDERING = DEMO_BRANDING;
+export const ZONE_ORDERING = true;
 
 interface ZoneCtx {
   zone: DeliveryZone;
@@ -30,7 +27,7 @@ const read = (): DeliveryZone => {
 export function ZoneProvider({ children }: { children: React.ReactNode }) {
   const [zone, set] = useState<DeliveryZone>('IN_CITY');
   useEffect(() => {
-    if (!DEMO_ORDERING) return;
+    if (!ZONE_ORDERING) return;
     set(read());
     const on = () => set(read());
     window.addEventListener('dw:zone', on);
@@ -55,8 +52,8 @@ export function ZoneProvider({ children }: { children: React.ReactNode }) {
 
 export const useZone = () => useContext(Ctx);
 
-/** Eligibility of a product for the current zone (always eligible outside the demo build). */
+/** Eligibility of a product for the current zone. */
 export function useEligibility() {
   const { zone } = useZone();
-  return useCallback((p: EligibilityProduct): Eligibility => (DEMO_ORDERING ? zoneEligibility(p, zone) : { eligible: true, reason: 'in_city_all' }), [zone]);
+  return useCallback((p: EligibilityProduct): Eligibility => (ZONE_ORDERING ? zoneEligibility(p, zone) : { eligible: true, reason: 'in_city_all' }), [zone]);
 }

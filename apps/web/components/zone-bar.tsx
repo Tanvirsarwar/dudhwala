@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { orderingStatus, zoneEligibility, zonedParts, type DeliveryZone } from '@dudhwala/shared';
 import { bnDigits, timeLabel } from '@/lib/format';
-import { DEMO_ORDERING, useZone } from '@/lib/demo/zone';
+import { ZONE_ORDERING, useZone } from '@/lib/demo/zone';
 import { useConfig } from '@/lib/demo/config';
 import { useCart } from './header-client';
 
@@ -52,7 +52,7 @@ export function ZoneBar() {
   const { zone, setZone } = useZone();
   const { cart } = useCart();
   const now = useNow();
-  if (!DEMO_ORDERING) return null;
+  if (!ZONE_ORDERING) return null;
   const blocked = zone === 'OUTER_CITY' ? (cart?.lines ?? []).filter((l) => !zoneEligibility({ categorySlug: l.categorySlug ?? '', outerCityStatus: l.outerCityStatus }, zone).eligible).length : 0;
   const seg = (z: DeliveryZone, label: string) => (
     <button type="button" className={`seg ${zone === z ? 'is-active' : ''}`} aria-pressed={zone === z} onClick={() => setZone(z)}>

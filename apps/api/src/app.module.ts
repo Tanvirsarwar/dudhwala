@@ -30,6 +30,7 @@ import { OrdersAdminController } from './orders/orders-admin.controller.js';
 import { DisabledProvider, PaymentProvider, SandboxProvider } from './payments/provider.js';
 import { PaymentsService } from './payments/payments.service.js';
 import { PaymentsController } from './payments/payments.controller.js';
+import { ContentController } from './content/content.controller.js';
 import { MaintenanceJob } from './jobs/maintenance.js';
 import { createMediaStorage, LocalMediaController, MediaService, MediaStorage } from './media/media.js';
 
@@ -75,6 +76,7 @@ export class AppModule {
         AuthController,
         MeController,
         ConfigController,
+        ContentController,
         OutletsController,
         CatalogPublicController,
         CatalogAdminController,

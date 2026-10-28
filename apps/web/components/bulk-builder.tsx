@@ -65,10 +65,10 @@ export function BulkBuilder({ products, categories }: { products: ProductCardDat
     <div className="pt-6">
       <h1 className="text-2xl font-bold">বাল্ক অর্ডার</h1>
       <p className="notice notice-info mt-2" role="note">
-        <span>পণ্য বেছে সংখ্যা দিন। সংগ্রহ শুধু মদিনা মার্কেট শাখা থেকে; হোম ডেলিভারি নেই। আগে পেমেন্ট লাগে (ডেমো/সিমুলেটেড পেমেন্ট, কোনো আসল টাকা কাটা হয় না)।</span>
+        <span>পণ্য বেছে সংখ্যা দিন। সংগ্রহ শুধু মদিনা মার্কেট শাখা থেকে; হোম ডেলিভারি নেই। আগে পেমেন্ট লাগে।</span>
       </p>
       <p className="mt-2 text-sm text-muted">
-        <span>{cfg.isPlaceholder ? 'ন্যূনতম (ডেমো, চূড়ান্ত নয়):' : 'ন্যূনতম:'}</span> <b>{bnDigits(min)}</b> <span>টি পণ্য।</span> <span>অথবা মোট দাম</span> <b>{taka(cfg.bulk.minTotalPoisha)}</b> <span>বা তার বেশি।</span>
+        <span>{cfg.isPlaceholder ? 'ন্যূনতম (চূড়ান্ত নয়):' : 'ন্যূনতম:'}</span> <b>{bnDigits(min)}</b> <span>টি পণ্য।</span> <span>অথবা মোট দাম</span> <b>{taka(cfg.bulk.minTotalPoisha)}</b> <span>বা তার বেশি।</span>
       </p>
       <label htmlFor="bulk-q" className="label mt-3 block">
         খুঁজুন

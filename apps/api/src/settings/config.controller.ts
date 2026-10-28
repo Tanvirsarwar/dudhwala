@@ -8,6 +8,7 @@ import { AuditService } from '../audit/audit.service.js';
 import { AppError } from '../common/errors.js';
 import { parse } from '../common/http.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { PaymentProvider } from '../payments/provider.js';
 import { SettingsService } from './settings.service.js';
 
 const UpdateConfig = z
@@ -23,11 +24,12 @@ export class ConfigController {
     @Inject(SettingsService) private readonly settings: SettingsService,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(PaymentProvider) private readonly payments: PaymentProvider,
   ) {}
 
   private async view() {
     const { config, bulkApproved } = await this.settings.ordering();
-    return { hours: config.hours, bulk: { ...config.bulk, isPlaceholder: !bulkApproved } };
+    return { hours: config.hours, bulk: { ...config.bulk, isPlaceholder: !bulkApproved }, payments: { enabled: this.payments.enabled, sandbox: this.payments.sandbox } };
   }
 
   /** Public: ordering hours and bulk thresholds (the storefront shows and pre-checks them; the server enforces them). */

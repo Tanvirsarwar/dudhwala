@@ -21,12 +21,13 @@ export function LoginForm({ as }: { as: 'admin' | 'manager' }) {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    let mfa = false;
     const ok = await a.run(async () => {
-      await api('/auth/staff/login', { body: { login, password, as } });
+      mfa = (await api<{ mfaRequired: boolean }>('/auth/staff/login', { body: { login, password, as } })).mfaRequired;
     });
     if (!ok) return;
     rememberArea(manager ? 'MANAGER' : 'ADMIN');
-    window.location.href = '/';
+    window.location.href = mfa ? '/mfa' : '/';
   }
 
   return (

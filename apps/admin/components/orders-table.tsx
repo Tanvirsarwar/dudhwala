@@ -1,16 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import type { DemoOrderStatus, FulfilmentMethod } from '@dudhwala/shared';
+import type { FulfilmentMethod } from '@dudhwala/shared';
 import { METHOD_BN, dateTime, taka } from '@/lib/format';
 import { OrderBadge, TableWrap } from './ui';
 
 export interface OrderRow {
   id: string;
+  orderNumber?: string;
   createdAt: string;
   method: FulfilmentMethod;
   zone: string | null;
-  status: DemoOrderStatus;
+  status: string;
   totalPoisha: number | null;
   itemCount: number;
   customer: string | null;
@@ -36,7 +37,7 @@ export function OrdersTable({ rows }: { rows: OrderRow[] }) {
             <tr key={r.id}>
               <td>
                 <Link href={`/orders/${r.id}`} className="font-latin font-semibold text-link underline">
-                  {r.id}
+                  {r.orderNumber ?? r.id}
                 </Link>
               </td>
               <td className="font-latin whitespace-nowrap">{dateTime(r.createdAt)}</td>

@@ -1,6 +1,9 @@
-import type { DeliveryZone, DemoPaymentState, FulfilmentMethod, Issue } from '@dudhwala/shared';
+import type { DeliveryZone, DemoPaymentState, FulfilmentMethod, Issue, OrderStatus } from '@dudhwala/shared';
 
-/** Demo order types. Phase 2 replaces the demo service, not these shapes (docs/PHASE2_INTEGRATION.md). */
+/**
+ * Order types shared by the local demo (mock API, DEMO_* statuses, `DEMO-n` ids, private order token) and the live
+ * shop (real API, production statuses, signed-in customer). The service in ./index picks the implementation.
+ */
 export interface Outlet {
   id: string;
   code: string;
@@ -9,9 +12,13 @@ export interface Outlet {
   addressLine: string | null;
 }
 
-export type { DemoOrderStatus } from '@dudhwala/shared';
 import type { DemoOrderStatus } from '@dudhwala/shared';
+export type { DemoOrderStatus } from '@dudhwala/shared';
 export { ORDER_STATUS_FLOW as STATUS_FLOW } from '@dudhwala/shared';
+
+/** A demo status (DEMO_PLACED, …) or a live one (PLACED, …). */
+export type AnyOrderStatus = DemoOrderStatus | OrderStatus;
+export type LivePaymentStatus = 'NOT_REQUIRED' | 'PENDING' | 'PAID' | 'FAILED';
 
 export interface DemoOrderLine {
   key: string;
@@ -26,17 +33,22 @@ export interface DemoOrderLine {
 export interface DemoOrder {
   /** private lookup token returned once at creation; only the browser that placed the order keeps it */
   token?: string;
-  /** always starts with "DEMO-": never mistaken for a real order number */
+  /** demo: "DEMO-n" (never mistaken for a real order). live: the order's uuid; show `orderNumber` to people. */
   id: string;
-  demo: true;
+  orderNumber?: string;
+  demo: boolean;
   createdAt: string;
   method: FulfilmentMethod;
   zone: DeliveryZone | null;
-  status: DemoOrderStatus;
+  status: AnyOrderStatus;
   lines: DemoOrderLine[];
   /** null when any price is not known yet */
   totalPoisha: number | null;
-  payment: DemoPaymentState;
+  /** demo only */
+  payment?: DemoPaymentState;
+  /** live only */
+  paymentStatus?: LivePaymentStatus;
+  paymentExpiresAt?: string | null;
   address?: { name: string; phone: string; line1: string; landmark: string };
   /** pickup and bulk orders: who collects */
   contact?: { name: string; phone: string };
@@ -56,6 +68,8 @@ export interface PlaceOrderInput {
   outlet?: Outlet | null;
   pickupAt?: Date | null;
   payment: DemoPaymentState;
+  /** live: one key per checkout attempt, so a double tap or retry cannot create two orders */
+  idempotencyKey?: string;
 }
 
 export type PlaceResult = { ok: true; order: DemoOrder } | { ok: false; issues: Issue[]; message?: string };
@@ -64,9 +78,11 @@ export type PlaceResult = { ok: true; order: DemoOrder } | { ok: false; issues: 
 export interface OrderService {
   place(input: PlaceOrderInput & { config?: import('@dudhwala/shared').OrderingConfig }): Promise<PlaceResult>;
   /** Current status of an order (customers have no login in the demo; the order id is the handle). */
-  status(id: string): Promise<DemoOrderStatus | null>;
+  status(id: string): Promise<AnyOrderStatus | null>;
   /** Full customer view of an order. `null` = not found (or wrong token). Throws on network failure. */
   get(id: string, token: string): Promise<DemoOrder | null>;
+  /** Live: the signed-in customer's orders, newest first. Demo: not used (orders are remembered per browser). */
+  list?(): Promise<DemoOrder[]>;
 }
 export interface OutletService {
   list(): Promise<Outlet[]>;

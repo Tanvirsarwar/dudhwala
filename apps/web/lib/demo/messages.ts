@@ -15,7 +15,7 @@ export const ISSUE_MESSAGES: Record<IssueCode, string> = {
   pickup_invalid: 'পিকআপের সময় বেছে নিন।',
   pickup_too_soon: 'পিকআপের সময় অন্তত ১ ঘণ্টা পরে হতে হবে।',
   pickup_outside_hours: 'পিকআপের সময় অর্ডারের সময়সীমার মধ্যে হতে হবে।',
-  bulk_prepayment_required: 'বাল্ক অর্ডারে আগে পেমেন্ট (ডেমো/সিমুলেটেড) করতে হবে।',
+  bulk_prepayment_required: 'বাল্ক অর্ডারে আগে পেমেন্ট করতে হবে।',
 };
 
 export const REASON_MESSAGES: Record<EligibilityReason, string> = {
@@ -30,7 +30,13 @@ export const REASON_MESSAGES: Record<EligibilityReason, string> = {
 
 import type { DemoPaymentState } from '@dudhwala/shared';
 
-export { METHOD_BN as METHOD_LABEL, ORDER_STATUS_BN as STATUS_LABEL } from '@dudhwala/shared';
+import { ORDER_STATUS_BN, ORDER_STATUS_LABEL_BN, type DemoOrderStatus, type OrderStatus } from '@dudhwala/shared';
+
+export { METHOD_BN as METHOD_LABEL } from '@dudhwala/shared';
+/** Customer wording for demo (DEMO_*) and live statuses. */
+export const STATUS_LABEL: Record<DemoOrderStatus | OrderStatus, string> = { ...ORDER_STATUS_BN, ...ORDER_STATUS_LABEL_BN };
+
+export const LIVE_PAYMENT_LABEL = { NOT_REQUIRED: 'ডেলিভারি/পিকআপের সময় পরিশোধ', PENDING: 'পেমেন্টের অপেক্ষায়', PAID: 'পেমেন্ট সম্পন্ন', FAILED: 'পেমেন্ট ব্যর্থ' } as const;
 
 export const PAYMENT_LABEL: Record<DemoPaymentState, string> = {
   NOT_REQUIRED_DEMO: 'ডেমো — ক্যাশ অন ডেলিভারি (কোনো আসল পেমেন্ট নেই)',
