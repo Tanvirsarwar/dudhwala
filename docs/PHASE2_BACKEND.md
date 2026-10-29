@@ -1,7 +1,7 @@
 # Phase 2 — backend: plan, status, how to verify
 
 ## 1. Audit result (what was there)
-The repository already held a large NestJS/Prisma backend (258 passing tests) built for a different business model: delivery areas, time slots, cash on delivery, riders, coupons, per-outlet zone rules. It did not match the V2.7 rules (In City/Outer City zones, pickup, bulk, 10:00–22:00 ordering). Decision: **keep the infrastructure** (sessions, Argon2id, TOTP, CSRF, rate limits, idempotency, audit, S3 media, CLI pattern) and **replace the domain layer** with a compact one. Frontends were not redesigned: they changed only behind the existing service boundaries (`apps/web/lib/services`).
+The repository already held a large NestJS/Prisma backend (258 passing tests) built for a different business model: delivery areas, time slots, cash on delivery, riders, coupons, per-outlet zone rules. It did not match the V2.7 rules (In Sylhet/Outer Sylhet zones, pickup, bulk, 10:00–22:00 ordering). Decision: **keep the infrastructure** (sessions, Argon2id, TOTP, CSRF, rate limits, idempotency, audit, S3 media, CLI pattern) and **replace the domain layer** with a compact one. Frontends were not redesigned: they changed only behind the existing service boundaries (`apps/web/lib/services`).
 
 ## 2. Checklist
 | # | Item | Status |
@@ -11,12 +11,12 @@ The repository already held a large NestJS/Prisma backend (258 passing tests) bu
 | 3 | Catalogue: public + admin CRUD, variants, prices, image upload (S3 / dev disk), hidden-by-default, audit with before/after | done |
 | 4 | Stock: per outlet, atomic reserve / commit / release, append-only ledger, no overselling (tested with parallel orders) | done |
 | 5 | Orders: server pricing, zones, hours, pickup, bulk (quantity OR amount), idempotency, ownership, status flow, cancel | done |
-| 6 | Payments: provider port, signed webhook, dedupe, amount check, expiry, sandbox, production-disabled | done (no real provider) |
+| 6 | Payment: cash on delivery only — method/status stored per order, staff mark cash received; online payment code removed (Supabase update) | done |
 | 7 | Settings: hours, bulk thresholds (flagged unapproved until saved), dispatch + collection outlets, owner pages | done |
 | 8 | CLI: `create-staff`, `setup`, `import-catalogue` (idempotent), `reset-mfa` | done |
 | 9 | Storefront + admin wired to the real API (OTP gate, orders, bulk payment step, MFA screens) | done |
 | 10 | Tests, docs, deployment files | done (below) |
-| 11 | Real payment provider, SMS provider, real data, live deployment | **waiting on the owner** — [SETUP_OWNER_DATA](SETUP_OWNER_DATA.md) |
+| 11 | SMS provider, real data, live deployment | **waiting on the owner** — [SETUP_OWNER_DATA](SETUP_OWNER_DATA.md) |
 
 ## 3. What changed in the repository
 - `apps/api`: new domain modules `catalog`, `cart`, `orders`, `payments`, `outlets`, `inventory`, `settings`, `content`, `jobs`; removed delivery/slots/COD/rider/coupon/finance/notification/privacy modules and their tests. Schema rewritten; migration `0005_v2_domain` **drops all old tables** (there is no production data; see DEPLOY_PHASE2 before running it anywhere that has data).
@@ -33,9 +33,9 @@ The repository already held a large NestJS/Prisma backend (258 passing tests) bu
 | Lint + typecheck, all packages | 0 errors |
 | Demo mock API (`pnpm test:demo`) | 19 / 19 |
 | Demo browser suites (storefront, admin, platform incl. a11y/axe/responsive/EN, resilience) | 83 + 70 + 54 + 8, all pass — demo behaviour unchanged |
-| Live-shop browser test (`e2e/demo/live.cjs`: real API + PostgreSQL) | 17 / 17: OTP login at checkout, order with server price, My orders, anonymous cannot see it, admin 2FA enrolment, status change visible to customer, manager read-only, bulk order → sandbox payment → PREPAID, no console/5xx errors |
+| Live-shop browser test (`e2e/demo/live.cjs`: real API + PostgreSQL) | 17 / 17 (before the COD update, see §8): OTP login at checkout, order with server price, My orders, anonymous cannot see it, admin 2FA enrolment, status change visible to customer, manager read-only, bulk order → sandbox payment → PREPAID, no console/5xx errors |
 
-What the API tests cover (mandatory categories): authentication, role permissions, manager read-only, ownership, ordering hours (09:59/10:00/21:59/22:00), zones and Outer City eligibility, pickup lead time and outlet hours, bulk by quantity and by amount (and below), server-side pricing (client prices rejected), stock reservation/overselling/cancel/commit, idempotent and parallel-duplicate orders, status transitions, payment webhook signature/duplicate/amount mismatch/late payment/expiry, image upload validation, catalogue import idempotence, audit log append-only, env production guards, rate limiting and lockout.
+What the API tests cover (mandatory categories): authentication, role permissions, manager read-only, ownership, ordering hours (09:59/10:00/21:59/22:00), zones and Outer Sylhet eligibility, pickup lead time and outlet hours, bulk by quantity and by amount (and below), server-side pricing (client prices rejected), stock reservation/overselling/cancel/commit, idempotent and parallel-duplicate orders, status transitions, image upload validation, catalogue import idempotence, audit log append-only, env production guards, rate limiting and lockout.
 
 **Not verified (cannot be in this sandbox):** `prisma migrate deploy` with Prisma's native engine (the migration SQL was generated from the schema and applied with `psql`; the repository CI runs `prisma migrate deploy` and a drift check — if it reports drift, run the `generate-migration` workflow and commit its output); a real payment gateway; a real SMS provider; S3 against a real bucket (covered only by a protocol-level test); a hosted deployment; load testing; an external penetration test.
 
@@ -54,7 +54,7 @@ DATABASE_URL=… node dist/cli/reset-mfa.js --email …
 
 ## 6. Live-shop browser test (local)
 1. Throw-away PostgreSQL; apply `apps/api/prisma/migrations/*/migration.sql` in order with `psql`.
-2. API env: `NODE_ENV=development PAYMENTS_PROVIDER=sandbox SMS_PROVIDER=log ENABLE_DEV_OUTBOX=true` plus origins `http://127.0.0.1:3200` / `:3201`, secrets, `MEDIA_DIR`. `node dist/main.js`.
+2. API env: `NODE_ENV=development SMS_PROVIDER=log ENABLE_DEV_OUTBOX=true` plus origins `http://127.0.0.1:3200` / `:3201`, secrets, `MEDIA_DIR`. `node dist/main.js`.
 3. `node dist/cli/setup.js` with an outlet `MODINA-MARKET` (dispatch + collection), `import-catalogue --activate`, `create-staff` for `admin@live.test` / `manager@live.test`; set price 5000 and stock for products `ds-01`, `ds-02` (the test uses these) via SQL or the admin.
 4. Build web/admin **without** `NEXT_PUBLIC_DEMO_BRANDING` and with `NEXT_PUBLIC_API_URL=http://127.0.0.1:4000/v1`; `next start -p 3200` / `-p 3201`. Clear `apps/web/.next/cache/fetch-cache` between runs (catalogue pages cache for 30 s by design).
 5. `PW_CHROMIUM_PATH=… node e2e/demo/live.cjs`. Use a fresh database each run (the test enrols the admin's 2FA).
@@ -67,3 +67,10 @@ DATABASE_URL=… node dist/cli/reset-mfa.js --email …
 - Product photos: one per product; replaced images stay in the bucket (no delete from storage).
 - Search is `ILIKE` (no trigram index); fine for hundreds of products.
 - Variant removal is blocked once it has orders or stock history (append-only ledger).
+
+## 8. Update — UI refinement, COD only, Supabase lockdown
+- Zones are now labelled **In Sylhet / Outer Sylhet** (Bangla UI: ইন সিলেট / আউটার সিলেট) everywhere; the stored values stay `IN_CITY` / `OUTER_CITY`. Each zone has its own home-delivery fee (admin Settings, default 0); the server computes it and stores zone + fee on the order.
+- The Bulk Order action is now **Order From Showroom** (same page, same flow: collection at Modina Market Branch). The 20-item / amount rule and the `BULK_ORDER` method name remain internally.
+- Online payment removed: no gateway code, tables, env variables or webhook. Orders carry `paymentMethod=COD` and `paymentStatus=UNPAID|PAID`; admins record cash received.
+- Migration `0006_cod_only_rls` (tested on data) and Row Level Security on every table: see [SUPABASE_VERCEL](SUPABASE_VERCEL.md).
+- Tests after this update: API 152/152, shared 73/73, demo mock 19/19, live-shop browser test 28/28; demo browser suites see the final report. (The API test count fell because the payment/webhook tests were removed with the feature; new COD, fee, showroom and RLS tests were added.)

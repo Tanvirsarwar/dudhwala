@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { zoneEligibility, type DeliveryZone, type Eligibility, type EligibilityProduct } from '@dudhwala/shared';
 
 /**
- * Delivery-zone state (In City / Outer City), kept in localStorage. The eligibility RULES live in @dudhwala/shared
+ * Delivery-zone state (In Sylhet / Outer Sylhet), kept in localStorage. The eligibility RULES live in @dudhwala/shared
  * (ordering.ts); filtering here is a convenience for the shopper, not enforcement: the API re-checks every order.
  */
 export const ZONE_KEY = 'dw.demo.zone';

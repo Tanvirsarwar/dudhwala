@@ -9,8 +9,10 @@ interface ApiOrder {
   method: DemoOrder['method'];
   zone: DemoOrder['zone'];
   status: AnyOrderStatus;
+  paymentMethod: 'COD';
   paymentStatus: LivePaymentStatus;
-  paymentExpiresAt: string | null;
+  subtotalPoisha: number;
+  deliveryFeePoisha: number;
   lines: { variantId: string | null; productSlug: string; nameBn: string; nameEn: string | null; labelBn: string; quantity: number; unitPricePoisha: number; linePoisha: number }[];
   totalPoisha: number;
   address: { name: string; phone: string; line1: string; landmark: string } | null;
@@ -27,8 +29,10 @@ const toOrder = (o: ApiOrder): DemoOrder => ({
   method: o.method,
   zone: o.zone,
   status: o.status,
+  paymentMethod: o.paymentMethod,
   paymentStatus: o.paymentStatus,
-  paymentExpiresAt: o.paymentExpiresAt,
+  subtotalPoisha: o.subtotalPoisha,
+  deliveryFeePoisha: o.deliveryFeePoisha,
   lines: o.lines.map((l) => ({ key: l.variantId ?? l.productSlug, productSlug: l.productSlug, nameBn: l.labelBn ? `${l.nameBn} (${l.labelBn})` : l.nameBn, nameEn: l.nameEn, quantity: l.quantity, unitPricePoisha: l.unitPricePoisha, linePoisha: l.linePoisha })),
   totalPoisha: o.totalPoisha,
   ...(o.address ? { address: o.address } : {}),
@@ -53,7 +57,7 @@ export const liveOrderService: OrderService = {
       address: input.address,
       outletId: input.outlet?.id ?? null,
       pickupAt: input.pickupAt ?? null,
-      payment: 'DEMO_PAID_SIMULATED', // a bulk order is paid after it is placed (see payment step), so skip the prepayment check here
+      payment: 'DEMO_PAID_SIMULATED', // cash on delivery: nothing is prepaid, so the demo's prepayment rule does not apply
       ...(input.config ? { config: input.config } : {}),
     });
     if (issues.length > 0) return { ok: false, issues };
@@ -95,16 +99,4 @@ export const liveOrderService: OrderService = {
   async list() {
     return (await api<ApiOrder[]>('/orders')).map(toOrder);
   },
-};
-
-export interface PaymentStart {
-  merchantTranId: string;
-  provider: string;
-  sandbox: boolean;
-  redirectUrl: string | null;
-}
-/** Bulk-order payment. Only the API's webhook can mark an order paid; the sandbox call below stands in for the gateway and moves no money. */
-export const paymentService = {
-  start: (orderId: string) => api<PaymentStart>(`/orders/${encodeURIComponent(orderId)}/payment`, { method: 'POST', body: {} }),
-  sandboxComplete: (merchantTranId: string, outcome: 'success' | 'fail') => api<{ result: string }>(`/payments/sandbox/${encodeURIComponent(merchantTranId)}/complete`, { method: 'POST', body: { outcome } }),
 };

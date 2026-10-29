@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Request } from 'express';
 import { randomInt } from 'node:crypto';
-import { nextOrderStatuses, orderFinalStatus, orderInitialStatus, type FulfilmentMethod, type OrderStatus as FlowStatus } from '@dudhwala/shared';
+import { deliveryFeePoisha, nextOrderStatuses, orderFinalStatus, orderInitialStatus, type FulfilmentMethod, type OrderStatus as FlowStatus, type PaymentStatus } from '@dudhwala/shared';
 import { Clock } from '../common/clock.js';
 import { newId, sha256Hex } from '../common/crypto.js';
 import { AppError, notFound } from '../common/errors.js';
@@ -12,7 +12,6 @@ import { OutletsService } from '../outlets/outlets.service.js';
 import { SettingsService } from '../settings/settings.service.js';
 import { CartService } from '../cart/cart.service.js';
 import { LIMITS, RateLimitService } from '../rate-limit/rate-limit.service.js';
-import { PaymentProvider } from '../payments/provider.js';
 import type { Principal } from '../access/principal.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { assertOrderRules, type RuleLine } from './order-rules.js';
@@ -47,7 +46,6 @@ export class OrdersService {
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(CartService) private readonly carts: CartService,
     @Inject(RateLimitService) private readonly limits: RateLimitService,
-    @Inject(PaymentProvider) private readonly payments: PaymentProvider,
   ) {}
 
   // ───────────── placing ─────────────
@@ -119,11 +117,10 @@ export class OrdersService {
           pickup: input.method === 'EXPRESS_PICKUP' ? { at: input.pickupAt ?? null, outletOpen: pickupOutletOpen as (at: Date) => boolean } : undefined,
         });
 
-        if (input.method === 'BULK_ORDER' && !this.payments.enabled) throw new AppError('PAYMENTS_DISABLED', 'অনলাইন পেমেন্ট এখনো চালু হয়নি, তাই বাল্ক অর্ডার নেওয়া যাচ্ছে না');
 
         const orderId = newId();
         const status = orderInitialStatus(input.method);
-        const holdMinutes = await this.settings.get('payments.holdMinutes', tx);
+        const fee = deliveryFeePoisha(input.method, input.method === 'HOME_DELIVERY' ? input.zone : null, await this.settings.get('delivery.fees', tx));
         const bulkRule = input.method === 'BULK_ORDER' ? await this.settings.get('bulk.rule', tx) : null;
         const order = await tx.order.create({
           data: {
@@ -134,18 +131,18 @@ export class OrdersService {
             method: input.method,
             zone: input.method === 'HOME_DELIVERY' ? input.zone : null,
             status,
-            paymentStatus: input.method === 'BULK_ORDER' ? 'PENDING' : 'NOT_REQUIRED',
+            paymentMethod: 'COD',
+            paymentStatus: 'UNPAID',
             contactName: input.contact.name.trim(),
             contactPhone: checked.phone,
             addressLine1: input.method === 'HOME_DELIVERY' ? (input.contact.line1 ?? '').trim() : null,
             addressLandmark: input.method === 'HOME_DELIVERY' ? input.contact.landmark?.trim() || null : null,
             pickupAt: input.method === 'EXPRESS_PICKUP' ? (input.pickupAt as Date) : null,
             subtotalPoisha: checked.subtotalPoisha,
-            deliveryFeePoisha: 0,
-            totalPoisha: checked.subtotalPoisha,
+            deliveryFeePoisha: fee,
+            totalPoisha: checked.subtotalPoisha + fee,
             idempotencyKey,
             bulkRuleSnapshot: bulkRule ?? undefined,
-            paymentExpiresAt: input.method === 'BULK_ORDER' ? new Date(now.getTime() + holdMinutes * 60_000) : null,
             createdAt: now,
           },
         });
@@ -203,8 +200,9 @@ export class OrdersService {
       method: o.method,
       zone: o.zone,
       status: o.status,
+      paymentMethod: o.paymentMethod,
       paymentStatus: o.paymentStatus,
-      paymentExpiresAt: o.paymentExpiresAt,
+      paidAt: o.paidAt,
       lines: o.items.map((i) => ({
         variantId: i.productVariantId,
         productSlug: i.productSlug,
@@ -265,13 +263,12 @@ export class OrdersService {
     to: FlowStatus,
     who: { actor: Principal | { system: string }; reason?: string | null },
     req?: Request,
-    opts: { allowPayment?: boolean } = {},
   ): Promise<OrderFull> {
     const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM "order" WHERE id = ${orderId}::uuid FOR UPDATE`;
     if (rows.length === 0) throw notFound('Order');
     const o = await tx.order.findUniqueOrThrow({ where: { id: orderId } });
     const from = o.status as FlowStatus;
-    const allowed = opts.allowPayment && from === 'PENDING_PAYMENT' && to === 'PREPAID' ? [to] : nextOrderStatuses(o.method, from);
+    const allowed = nextOrderStatuses(o.method, from);
     if (!allowed.includes(to)) throw new AppError('INVALID_TRANSITION', 'এই অবস্থায় এই পরিবর্তন করা যাবে না', { from, to, allowed });
 
     const stockActor: StockActor = 'system' in who.actor ? { system: who.actor.system } : who.actor.kind === 'STAFF' ? { userId: who.actor.userId } : { userId: who.actor.userId };
@@ -279,14 +276,9 @@ export class OrdersService {
     const data: Prisma.OrderUpdateInput = { status: to };
     if (to === 'CANCELLED') {
       data.cancelReason = who.reason ?? null;
-      if (o.paymentStatus === 'PENDING') data.paymentStatus = 'FAILED';
       await this.inventory.release(tx, orderId, stockActor, who.reason ?? 'cancelled');
     }
     if (to === orderFinalStatus(o.method)) await this.inventory.commit(tx, orderId, stockActor);
-    if (to === 'PREPAID') {
-      data.paymentStatus = 'PAID';
-      data.paymentExpiresAt = null;
-    }
     const changed = await tx.order.updateMany({ where: { id: orderId, status: from }, data: { ...data, updatedAt: now } as Prisma.OrderUpdateManyMutationInput });
     if (changed.count === 0) throw new AppError('CONFLICT', 'The order changed; reload and try again');
     await tx.orderStatusEvent.create({
@@ -310,18 +302,19 @@ export class OrdersService {
     return this.load(tx, orderId);
   }
 
-  /** Cancels bulk orders whose payment window passed; their stock goes back on the shelf. Idempotent. */
-  async expireUnpaid(): Promise<number> {
-    const due = await this.prisma.order.findMany({ where: { status: 'PENDING_PAYMENT', paymentExpiresAt: { lt: this.clock.now() } }, select: { id: true }, take: 200 });
-    let n = 0;
-    for (const { id } of due) {
-      try {
-        await this.prisma.$transaction((tx) => this.transition(tx, id, 'CANCELLED', { actor: { system: 'payment_timeout' }, reason: 'Payment window expired' }));
-        n++;
-      } catch (e) {
-        if (!(e instanceof AppError)) throw e; // already moved on (paid or cancelled): nothing to do
+  /** Staff record that the cash was (or was not) collected. Independent of the delivery status; not allowed on cancelled orders. */
+  async setPaymentStatus(orderId: string, to: PaymentStatus, p: Extract<Principal, { kind: 'STAFF' }>, req: Request): Promise<OrderFull> {
+    return this.prisma.$transaction(async (tx) => {
+      const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM "order" WHERE id = ${orderId}::uuid FOR UPDATE`;
+      if (rows.length === 0) throw notFound('Order');
+      const o = await tx.order.findUniqueOrThrow({ where: { id: orderId } });
+      if (o.status === 'CANCELLED') throw new AppError('INVALID_TRANSITION', 'Cancelled orders cannot be marked paid');
+      if (o.paymentStatus !== to) {
+        const now = this.clock.now();
+        await tx.order.update({ where: { id: orderId }, data: to === 'PAID' ? { paymentStatus: 'PAID', paidAt: now, paidById: p.userId } : { paymentStatus: 'UNPAID', paidAt: null, paidById: null } });
+        await this.audit.record({ action: 'order.payment', entityType: 'order', entityId: orderId, before: { paymentStatus: o.paymentStatus }, after: { paymentStatus: to } }, { principal: p }, req, tx);
       }
-    }
-    return n;
+      return this.load(tx, orderId);
+    });
   }
 }

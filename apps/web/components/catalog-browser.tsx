@@ -93,7 +93,7 @@ export function CatalogBrowser({ products: allProducts, categories, initialQ = '
       </div>
       {ZONE_ORDERING && zone === 'OUTER_CITY' && (
         <p className="notice notice-info mb-3" role="note">
-          <span>আউটার সিটির জন্য শুধু ডেলিভারিযোগ্য পণ্য দেখানো হচ্ছে।</span> <span>লুকানো পণ্য:</span> <b>{bnDigits(hidden)}</b>
+          <span>আউটার সিলেটের জন্য শুধু ডেলিভারিযোগ্য পণ্য দেখানো হচ্ছে।</span> <span>লুকানো পণ্য:</span> <b>{bnDigits(hidden)}</b>
         </p>
       )}
       <nav aria-label="ক্যাটাগরি অনুযায়ী পণ্য" className="cat-bar">

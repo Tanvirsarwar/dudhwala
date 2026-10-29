@@ -10,8 +10,8 @@ describe('toEnglish: demo ordering strings', () => {
     expect(toEnglish('সোমবার, ১০ মার্চ')).toBe('Mon, 10 Mar');
   });
   it('translates the key zone, fulfilment and payment labels', () => {
-    expect(toEnglish('ইন সিটি')).toBe('In City');
-    expect(toEnglish('আউটার সিটি')).toBe('Outer City');
+    expect(toEnglish('ইন সিলেট')).toBe('In Sylhet');
+    expect(toEnglish('আউটার সিলেট')).toBe('Outer Sylhet');
     expect(toEnglish('এক্সপ্রেস পিকআপ')).toBe('Express Pickup');
     expect(toEnglish('ডেমো/সিমুলেটেড পেমেন্ট')).toBe('Demo/Simulated Payment');
     expect(toEnglish('দাম শীঘ্রই জানানো হবে')).toBe('Price to be announced');

@@ -27,9 +27,6 @@ import { CartController } from './cart/cart.controller.js';
 import { OrdersService } from './orders/orders.service.js';
 import { OrdersController } from './orders/orders.controller.js';
 import { OrdersAdminController } from './orders/orders-admin.controller.js';
-import { DisabledProvider, PaymentProvider, SandboxProvider } from './payments/provider.js';
-import { PaymentsService } from './payments/payments.service.js';
-import { PaymentsController } from './payments/payments.controller.js';
 import { ContentController } from './content/content.controller.js';
 import { MaintenanceJob } from './jobs/maintenance.js';
 import { createMediaStorage, LocalMediaController, MediaService, MediaStorage } from './media/media.js';
@@ -47,7 +44,6 @@ export class AppModule {
       { provide: ENV, useValue: env },
       { provide: Clock, useValue: overrides.clock ?? new SystemClock() },
       { provide: SmsSender, useValue: overrides.sms ?? createSmsSender(env) },
-      { provide: PaymentProvider, useValue: env.PAYMENTS_PROVIDER === 'sandbox' ? new SandboxProvider(env.PAYMENTS_WEBHOOK_SECRET) : new DisabledProvider() },
       { provide: MediaStorage, useValue: overrides.media ?? createMediaStorage(env) },
       PrismaService,
       AuditService,
@@ -61,7 +57,6 @@ export class AppModule {
       CatalogService,
       CartService,
       OrdersService,
-      PaymentsService,
       MaintenanceJob,
       MediaService,
       // Order matters: CSRF runs before session/permission checks.
@@ -83,7 +78,6 @@ export class AppModule {
         CartController,
         OrdersController,
         OrdersAdminController,
-        PaymentsController,
         ...(env.MEDIA_STORAGE === 'local' ? [LocalMediaController] : []),
         ...((env.NODE_ENV === 'development' || env.NODE_ENV === 'test') && env.SMS_PROVIDER === 'log' && env.ENABLE_DEV_OUTBOX === 'true' ? [DevSmsOutboxController] : []),
       ],

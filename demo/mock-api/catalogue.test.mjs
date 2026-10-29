@@ -41,11 +41,11 @@ test('catalogue: every product and category name has an English translation', ()
   for (const c of categories) assert.ok(EN_DICT[c.nameBn], `missing EN for ${c.nameBn}`);
 });
 
-test('eligibility: In City accepts every product', () => {
+test('eligibility: In Sylhet accepts every product', () => {
   assert.equal(elig('IN_CITY').length, 59);
 });
 
-test('eligibility: Outer City = verified Bakery + ticked Dairy Sweets + the four confirmed Doi items', () => {
+test('eligibility: Outer Sylhet = verified Bakery + ticked Dairy Sweets + the four confirmed Doi items', () => {
   const out = elig('OUTER_CITY');
   assert.equal(out.length, 25);
   assert.deepEqual([...ids(out.filter((p) => p.categorySlug === 'dairy-sweets'))].sort(), ['ds-24', 'ds-25']);
@@ -53,11 +53,11 @@ test('eligibility: Outer City = verified Bakery + ticked Dairy Sweets + the four
   assert.deepEqual([...ids(out.filter((p) => p.categorySlug === 'doi-dairy'))].sort(), ['doi-03', 'doi-04', 'doi-06', 'doi-07'], 'bati doi, premium doi, premium cup doi, cup doi');
 });
 
-test('eligibility: uncertain mappings are not enabled for Outer City', () => {
+test('eligibility: uncertain mappings are not enabled for Outer Sylhet', () => {
   const out = ids(elig('OUTER_CITY'));
   for (const id of ['ds-04', 'doi-01', 'doi-02', 'doi-05', 'doi-08', 'doi-11', 'bk-vanilla-biscuit', 'bk-salt-biscuit', 'bk-dry-cake', 'bk-sweet-cake', 'bk-bos-cake', 'bk-honey-toast']) assert.ok(!out.has(id), id);
   const unverified = cat.products.filter((p) => !p.nameVerified).map((p) => p.id);
   assert.equal(unverified.length, 11);
   // unverified bakery names are excluded; unverified dairy-sweet names are excluded because they are not ticked
-  for (const id of unverified) assert.ok(!out.has(id), `unverified product enabled for Outer City: ${id}`);
+  for (const id of unverified) assert.ok(!out.has(id), `unverified product enabled for Outer Sylhet: ${id}`);
 });

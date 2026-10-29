@@ -26,8 +26,7 @@ export async function createApp(env: Env, overrides: AppOverrides = {}): Promise
   );
   app.use(cookieParser());
   // JSON: small by default; the product-image route carries a base64 photo (5 MB file ~ 7 MB text).
-  // The raw bytes are kept for webhook signature checks (a signature covers the exact bytes received).
-  const small = json({ limit: '64kb', verify: (req, _res, buf) => void ((req as { rawBody?: Buffer }).rawBody = buf) });
+  const small = json({ limit: '64kb' });
   const large = json({ limit: '8mb' });
   app.use((req: { path: string }, res: unknown, next: () => void) =>
     (/^\/v1\/admin\/products\/[0-9a-f-]{36}\/image$/.test(req.path) ? large : small)(req as never, res as never, next as never),

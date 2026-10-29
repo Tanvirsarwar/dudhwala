@@ -326,8 +326,6 @@ enum DeliveryZone {
 enum OrderStatus {
   PLACED
   PICKUP_REQUESTED
-  PENDING_PAYMENT
-  PREPAID
   PREPARING
   OUT_FOR_DELIVERY
   READY_FOR_PICKUP
@@ -338,11 +336,15 @@ enum OrderStatus {
   CANCELLED
 }
 
+/// Cash on delivery is the only payment method (no online gateway).
+enum PaymentMethod {
+  COD
+}
+
+/// UNPAID until staff record that the cash was collected. Separate from the order's delivery status.
 enum PaymentStatus {
-  NOT_REQUIRED
-  PENDING
+  UNPAID
   PAID
-  FAILED
 }
 
 model Order {
@@ -354,7 +356,10 @@ model Order {
   method         FulfilmentMethod
   zone           DeliveryZone?
   status         OrderStatus
-  paymentStatus  PaymentStatus    @default(NOT_REQUIRED) @map("payment_status")
+  paymentMethod  PaymentMethod    @default(COD) @map("payment_method")
+  paymentStatus  PaymentStatus    @default(UNPAID) @map("payment_status")
+  paidAt         DateTime?        @map("paid_at") @db.Timestamptz
+  paidById       String?          @map("paid_by") @db.Uuid
   contactName    String           @map("contact_name") @db.VarChar(80)
   contactPhone   String           @map("contact_phone") @db.VarChar(14)
   addressLine1   String?          @map("address_line1") @db.VarChar(300)
@@ -365,9 +370,8 @@ model Order {
   totalPoisha    Int              @map("total_poisha")
   currency       String           @default("BDT") @db.Char(3)
   idempotencyKey String           @map("idempotency_key") @db.VarChar(64)
-  /// Bulk thresholds in force when the order was placed (audit trail; marked unapproved until the owner signs off).
+  /// Showroom (bulk-size) thresholds in force when the order was placed (audit trail).
   bulkRuleSnapshot Json?          @map("bulk_rule_snapshot")
-  paymentExpiresAt DateTime?      @map("payment_expires_at") @db.Timestamptz
   cancelReason   String?          @map("cancel_reason")
   createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz
   updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz
@@ -376,13 +380,13 @@ model Order {
   outlet    Outlet             @relation(fields: [outletId], references: [id])
   items     OrderItem[]
   events    OrderStatusEvent[]
-  payments  Payment[]
   movements StockMovement[]
 
   @@unique([userId, idempotencyKey])
   @@index([outletId, status, createdAt(sort: Desc)])
   @@index([userId, createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
+  @@index([paymentStatus, createdAt(sort: Desc)], map: "order_payment_status_idx")
   @@map("order")
 }
 
@@ -419,55 +423,6 @@ model OrderStatusEvent {
 
   @@index([orderId, createdAt])
   @@map("order_status_event")
-}
-
-// ───────────────────────── Payments ─────────────────────────
-
-enum PaymentRecordStatus {
-  INITIATED
-  PAID
-  FAILED
-  CANCELLED
-}
-
-model Payment {
-  id               String              @id @db.Uuid
-  orderId          String              @map("order_id") @db.Uuid
-  provider         String              @db.VarChar(32)
-  status           PaymentRecordStatus @default(INITIATED)
-  amountPoisha     Int                 @map("amount_poisha")
-  currency         String              @default("BDT") @db.Char(3)
-  /// Our reference sent to the provider; unique.
-  merchantTranId   String              @unique @map("merchant_tran_id") @db.VarChar(64)
-  providerTranId   String?             @map("provider_tran_id") @db.VarChar(128)
-  verifiedAt       DateTime?           @map("verified_at") @db.Timestamptz
-  paidAmountPoisha Int?                @map("paid_amount_poisha")
-  failureCode      String?             @map("failure_code")
-  createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt        DateTime            @updatedAt @map("updated_at") @db.Timestamptz
-  order            Order               @relation(fields: [orderId], references: [id])
-  events           PaymentEvent[]
-
-  @@unique([provider, providerTranId])
-  @@index([orderId])
-  @@map("payment")
-}
-
-/// Append-only evidence of every webhook received (dedupe key: provider + providerEventId).
-model PaymentEvent {
-  id               String   @id @db.Uuid
-  paymentId        String?  @map("payment_id") @db.Uuid
-  provider         String   @db.VarChar(32)
-  providerEventId  String   @map("provider_event_id") @db.VarChar(128)
-  signatureValid   Boolean  @map("signature_valid")
-  payload          Json
-  receivedAt       DateTime @default(now()) @map("received_at") @db.Timestamptz
-  processingResult String?  @map("processing_result")
-  payment          Payment? @relation(fields: [paymentId], references: [id])
-
-  @@unique([provider, providerEventId])
-  @@index([paymentId])
-  @@map("payment_event")
 }
 
 // ───────────────────────── Platform ─────────────────────────

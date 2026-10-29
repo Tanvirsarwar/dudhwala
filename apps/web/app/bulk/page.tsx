@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { fetchAllProducts, serverGet, type Category } from '@/lib/api';
 import { BulkBuilder } from '@/components/bulk-builder';
 
-export const metadata: Metadata = { title: 'বাল্ক অর্ডার' };
+export const metadata: Metadata = { title: 'শোরুম থেকে অর্ডার' };
 
 /** Bulk order builder : pick many products with quantities, then continue to the demo checkout. */
 export default async function BulkPage() {

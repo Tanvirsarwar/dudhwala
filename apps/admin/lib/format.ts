@@ -43,10 +43,8 @@ export const PAYMENT_BN: Record<string, string> = {
   NOT_REQUIRED_DEMO: 'ক্যাশ অন ডেলিভারি / আউটলেটে (ডেমো)',
   DEMO_UNPAID: 'ডেমো/সিমুলেটেড পেমেন্ট — বাকি',
   DEMO_PAID_SIMULATED: 'ডেমো/সিমুলেটেড পেমেন্ট — সম্পন্ন',
-  NOT_REQUIRED: 'ডেলিভারি/পিকআপের সময় পরিশোধ',
-  PENDING: 'পেমেন্টের অপেক্ষায়',
-  PAID: 'পেমেন্ট যাচাই হয়েছে',
-  FAILED: 'পেমেন্ট ব্যর্থ',
+  UNPAID: 'বাকি — ডেলিভারি/পিকআপের সময় নগদে নেওয়া হবে',
+  PAID: 'টাকা পাওয়া গেছে',
 };
 
 export const ROLE_BN: Record<string, string> = { ADMIN: 'অ্যাডমিন', MANAGER: 'ম্যানেজার' };

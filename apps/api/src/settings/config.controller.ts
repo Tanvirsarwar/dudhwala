@@ -8,13 +8,14 @@ import { AuditService } from '../audit/audit.service.js';
 import { AppError } from '../common/errors.js';
 import { parse } from '../common/http.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { PaymentProvider } from '../payments/provider.js';
 import { SettingsService } from './settings.service.js';
 
 const UpdateConfig = z
   .object({
     hours: z.object({ open: z.string(), close: z.string() }).strict(),
     bulk: z.object({ minTotalQuantity: z.number().int().min(1).max(100_000), minTotalTaka: z.number().int().min(1).max(100_000_000) }).strict(),
+    /** whole taka per zone; omitted = unchanged */
+    deliveryFeesTaka: z.object({ IN_CITY: z.number().int().min(0).max(10_000), OUTER_CITY: z.number().int().min(0).max(10_000) }).strict().optional(),
   })
   .strict();
 
@@ -24,12 +25,16 @@ export class ConfigController {
     @Inject(SettingsService) private readonly settings: SettingsService,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(PrismaService) private readonly prisma: PrismaService,
-    @Inject(PaymentProvider) private readonly payments: PaymentProvider,
   ) {}
 
   private async view() {
     const { config, bulkApproved } = await this.settings.ordering();
-    return { hours: config.hours, bulk: { ...config.bulk, isPlaceholder: !bulkApproved }, payments: { enabled: this.payments.enabled, sandbox: this.payments.sandbox } };
+    return {
+      hours: config.hours,
+      bulk: { ...config.bulk, isPlaceholder: !bulkApproved },
+      deliveryFees: await this.settings.get('delivery.fees'),
+      paymentMethods: ['COD'],
+    };
   }
 
   /** Public: ordering hours and bulk thresholds (the storefront shows and pre-checks them; the server enforces them). */
@@ -57,9 +62,10 @@ export class ConfigController {
     const before = await this.view();
     await this.prisma.$transaction(async (tx) => {
       await this.settings.set('ordering.hours', { openMinute: open, closeMinute: close }, p.userId, tx);
+      if (b.deliveryFeesTaka) await this.settings.set('delivery.fees', { IN_CITY: b.deliveryFeesTaka.IN_CITY * 100, OUTER_CITY: b.deliveryFeesTaka.OUTER_CITY * 100 }, p.userId, tx);
       await this.settings.set('bulk.rule', { minTotalQuantity: b.bulk.minTotalQuantity, minTotalPoisha: b.bulk.minTotalTaka * 100, approved: true }, p.userId, tx);
       await this.audit.record(
-        { action: 'config.update', entityType: 'setting', entityId: 'ordering', before, after: { hours: { open: minutesToHHMM(open), close: minutesToHHMM(close) }, bulk: b.bulk } },
+        { action: 'config.update', entityType: 'setting', entityId: 'ordering', before, after: { hours: { open: minutesToHHMM(open), close: minutesToHHMM(close) }, bulk: b.bulk, deliveryFeesTaka: b.deliveryFeesTaka ?? null } },
         { principal: p },
         req,
         tx,

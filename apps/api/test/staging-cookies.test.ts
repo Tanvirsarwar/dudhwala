@@ -3,8 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { makeStaff, PASSWORD, startHarness, type Harness } from './support/harness.js';
 
 /**
- * Boots the API with staging-shaped settings (https origins on one registrable domain, S3 media,
- * payment sandbox) and checks the cookie, CORS and CSRF behaviour the deployment guide relies on.
+ * Boots the API with staging-shaped settings (https origins on one registrable domain, S3 media) and checks the cookie, CORS and CSRF behaviour the deployment guide relies on.
  */
 const SHOP = 'https://shop.example.test';
 const ADMIN = 'https://admin.example.test';
@@ -19,8 +18,6 @@ const STAGING_ENV = {
   STORAGE_ACCESS_KEY_ID: 'id',
   STORAGE_SECRET_ACCESS_KEY: 'secret',
   MEDIA_PUBLIC_URL: 'https://media.example.test',
-  PAYMENTS_PROVIDER: 'sandbox',
-  PAYMENTS_WEBHOOK_SECRET: 'x'.repeat(40),
   SMS_PROVIDER: 'http',
   SMS_HTTP_URL: 'https://sms.example.test/send',
 };

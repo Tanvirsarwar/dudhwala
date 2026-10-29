@@ -12,6 +12,7 @@ export interface OrderRow {
   method: FulfilmentMethod;
   zone: string | null;
   status: string;
+  paymentStatus?: string;
   totalPoisha: number | null;
   itemCount: number;
   customer: string | null;
@@ -30,6 +31,7 @@ export function OrdersTable({ rows }: { rows: OrderRow[] }) {
             <th>পণ্য</th>
             <th>মোট</th>
             <th>অবস্থা</th>
+            <th>পেমেন্ট</th>
           </tr>
         </thead>
         <tbody>
@@ -48,6 +50,7 @@ export function OrdersTable({ rows }: { rows: OrderRow[] }) {
               <td>
                 <OrderBadge status={r.status} />
               </td>
+              <td>{r.paymentStatus === 'PAID' ? 'টাকা পাওয়া গেছে' : r.paymentStatus === 'UNPAID' ? 'বাকি' : '—'}</td>
             </tr>
           ))}
         </tbody>

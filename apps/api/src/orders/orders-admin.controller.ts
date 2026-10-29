@@ -10,7 +10,8 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { OrdersService } from './orders.service.js';
 import type { Prisma } from '../generated/prisma/client.js';
 
-const StatusPatch = z.object({ status: z.enum(['PLACED', 'PREPARING', 'OUT_FOR_DELIVERY', 'DELIVERED', 'PICKUP_REQUESTED', 'READY_FOR_PICKUP', 'PICKED_UP', 'PENDING_PAYMENT', 'PREPAID', 'READY_FOR_COLLECTION', 'COLLECTED', 'CANCELLED']), reason: z.string().trim().max(300).optional() }).strict();
+const StatusPatch = z.object({ status: z.enum(['PLACED', 'PREPARING', 'OUT_FOR_DELIVERY', 'DELIVERED', 'PICKUP_REQUESTED', 'READY_FOR_PICKUP', 'PICKED_UP', 'READY_FOR_COLLECTION', 'COLLECTED', 'CANCELLED']), reason: z.string().trim().max(300).optional() }).strict();
+const PaymentPatch = z.object({ paymentStatus: z.enum(['UNPAID', 'PAID']) }).strict();
 const ListQuery = z
   .object({
     status: z.string().max(40).optional(),
@@ -52,6 +53,7 @@ export class OrdersAdminController {
         zone: o.zone,
         status: o.status,
         paymentStatus: o.paymentStatus,
+        deliveryFeePoisha: o.deliveryFeePoisha,
         totalPoisha: o.totalPoisha,
         itemCount: o.items.reduce((s, i) => s + i.quantity, 0),
         customer: o.contactName,
@@ -75,6 +77,13 @@ export class OrdersAdminController {
     const b = parse(StatusPatch, body);
     const o = await this.prisma.$transaction((tx) => this.orders.transition(tx, id, b.status, { actor: p, reason: b.reason ?? null }, req));
     return this.orders.staffView(o);
+  }
+
+  /** Record that the cash was collected (or undo a mistake). Delivery status is unaffected. */
+  @Patch('orders/:id/payment')
+  @StaffWrite()
+  async payment(@CurrentPrincipal() p: StaffPrincipal, @Param('id', ParseUUIDPipe) id: string, @Body() body: unknown, @Req() req: Request) {
+    return this.orders.staffView(await this.orders.setPaymentStatus(id, parse(PaymentPatch, body).paymentStatus, p, req));
   }
 
   @Get('summary')

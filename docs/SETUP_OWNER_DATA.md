@@ -12,10 +12,10 @@
 | 8 | **Outer City list**: items marked `pending_verification` / `pending_confirmation` (ds-04 and 6 bakery names) | admin → product → Outer City | stay excluded until approved |
 | 9 | **Bulk thresholds** (quantity and amount) | admin → Settings | placeholder 20 items / Tk 20,000, shown as "not final" until saved |
 | 10 | **Ordering hours** confirmation (10:00–22:00 Dhaka assumed) | admin → Settings | default |
-| 11 | **Payment provider** (bKash / SSLCOMMERZ / …): merchant account, sandbox + live credentials, webhook signing scheme, refund process | needs a real adapter implementing `PaymentProvider` (`apps/api/src/payments/provider.ts`) | `PAYMENTS_PROVIDER=disabled`: bulk orders off |
+| 11 | ~~Payment provider~~ — not needed: the shop takes **cash on delivery only** | — | done |
 | 12 | **SMS provider** for OTP (Bangladeshi bulk-SMS HTTP API): URL, parameter names, sender id, key | `SMS_HTTP_*` env | none → customers cannot log in in staging/production |
-| 13 | **Payment for home delivery / pickup**: confirm it is collected offline (cash/mobile at handover) | wording in checkout; schema `NOT_REQUIRED` | assumed |
-| 14 | **Delivery fee** per zone (or none) | not built | 0 |
+| 13 | Confirm cash is collected by the rider/at the showroom and who may mark orders paid (admin only today) | admin → order → "টাকা পাওয়া গেছে" | assumed |
+| 14 | **Delivery fee** for In Sylhet and Outer Sylhet | admin → Settings → ডেলিভারি চার্জ | 0 (free) until set |
 | 15 | **Page texts**: About, FAQ, delivery policy, terms, refund policy, privacy | `pages` array in the setup file | none → no page links |
 | 16 | **Domain names**, hosting account, database, object-storage bucket + CDN URL | `.env` / hosting secrets | none |
 | 17 | **Admin and manager people** (emails) | `cli/create-staff` | none |

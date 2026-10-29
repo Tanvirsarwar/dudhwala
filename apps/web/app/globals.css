@@ -42,11 +42,17 @@
 
   /* delivery zone strip (demo ordering) + fulfilment option cards */
   .zone-bar { border-top: 1px solid rgba(255, 255, 255, 0.1); background: color-mix(in srgb, var(--dw-bar-2) 88%, transparent); color: #fff; font-size: 0.875rem; }
+  /* zone switch + showroom action: one row, same height; scrolls sideways instead of wrapping or clipping on very narrow screens */
+  .zone-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: nowrap; max-width: 100%; overflow-x: auto; }
+  .zone-action { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 1rem; border-radius: 999px; background: #fff; color: #1d2672; font-size: 0.8125rem; font-weight: 700; white-space: nowrap; flex: none; }
+  .zone-action:hover { background: #e9ebff; }
   .zone-chip { display: inline-flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; padding: 0.15rem 0.7rem; border-radius: 999px; font-weight: 600; font-size: 0.8125rem; }
   .zone-chip-open { background: rgba(98, 224, 162, 0.2); color: #c8f7dc; }
   .zone-chip-closed { background: rgba(255, 190, 90, 0.22); color: #ffe2b0; }
   .zone-chip-warn { background: #fff1d6; color: #7a3d00; }
-  .opt-card { display: block; cursor: pointer; border-radius: var(--dw-r-lg); padding: 0.85rem 1rem; background: var(--dw-surface-soft); border: 2px solid var(--dw-line); transition: border-color var(--dw-base), background-color var(--dw-base); }
+  .opt-card { position: relative; display: block; cursor: pointer; border-radius: var(--dw-r-lg); padding: 0.85rem 1rem; background: var(--dw-surface-soft); border: 2px solid var(--dw-line); transition: border-color var(--dw-base), background-color var(--dw-base); }
+  .opt-row { display: flex; gap: 0.5rem; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 0.25rem; }
+  .opt-row > .opt-card { flex: 1 0 10.5rem; scroll-snap-align: start; }
   .opt-card:hover:not([aria-disabled='true']) { border-color: var(--dw-brand-500); }
   .opt-card:has(input:checked) { border-color: var(--dw-brand-600); background: var(--dw-brand-50); }
   .opt-card:has(input:focus-visible) { outline: 3px solid var(--dw-focus); outline-offset: 2px; }

@@ -217,18 +217,18 @@ export default function ProductEditPage({ params }: { params: Promise<{ id: stri
 
           <fieldset disabled={ro} className="card p-4">
             <legend className="sr-only">ডেলিভারি</legend>
-            <h2 className="mb-2 font-semibold">আউটার সিটি ডেলিভারি</h2>
+            <h2 className="mb-2 font-semibold">আউটার সিলেট ডেলিভারি</h2>
             <Field label="এই পণ্য সিলেটের বাইরে ডেলিভারি হবে?" id="f-outer">
               <select id="f-outer" className="field" value={f.outerCityStatus ?? ''} onChange={(e) => set({ outerCityStatus: (e.target.value || null) as OuterCityStatus | null })}>
                 <option value="">ডিফল্ট (বেকারি হলে হ্যাঁ, অন্যথায় না)</option>
-                <option value="approved">হ্যাঁ — আউটার সিটিতে চালু</option>
-                <option value="disabled">না — আউটার সিটিতে বন্ধ</option>
+                <option value="approved">হ্যাঁ — আউটার সিলেটে চালু</option>
+                <option value="disabled">না — আউটার সিলেটে বন্ধ</option>
                 <option value="pending_verification">যাচাই বাকি (বন্ধ)</option>
                 <option value="pending_confirmation">নিশ্চিত করা বাকি (বন্ধ)</option>
               </select>
             </Field>
             <p className={`rounded-xl p-3 text-sm ${outer.eligible ? 'bg-ok-bg text-success' : 'bg-brand-100 text-brand-700'}`}>
-              <b>ফলাফল:</b> <span>{outer.eligible ? 'আউটার সিটিতে ১-২ দিনে ডেলিভারি হবে।' : 'আউটার সিটিতে ডেলিভারি হবে না।'}</span> <span>ইন সিটিতে সব পণ্য ২৪ ঘণ্টার মধ্যে ডেলিভারি হয়।</span>
+              <b>ফলাফল:</b> <span>{outer.eligible ? 'আউটার সিলেটে ১-২ দিনে ডেলিভারি হবে।' : 'আউটার সিলেটে ডেলিভারি হবে না।'}</span> <span>ইন সিলেটে সব পণ্য ২৪ ঘণ্টার মধ্যে ডেলিভারি হয়।</span>
             </p>
           </fieldset>
 

@@ -3,13 +3,11 @@ import { ENV, type Env } from '../config/env.js';
 import { Clock } from '../common/clock.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RateLimitService } from '../rate-limit/rate-limit.service.js';
-import { OrdersService } from '../orders/orders.service.js';
 
 const DAY = 86_400_000;
 
 /**
  * In-process housekeeping (no queue needed at this scale; every task is idempotent and safe if two instances run it):
- *  - every minute: cancel unpaid bulk orders past their payment window and release their stock
  *  - every hour: delete expired short-lived security records (sessions/OTP after 30 days, idempotency records after 1 day,
  *    rate-limit windows after 2 days, expired anonymous carts)
  * Disabled when NODE_ENV=test (tests call the methods directly).
@@ -22,7 +20,6 @@ export class MaintenanceJob implements OnModuleInit, OnModuleDestroy {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(RateLimitService) private readonly limits: RateLimitService,
-    @Inject(OrdersService) private readonly orders: OrdersService,
     @Inject(Clock) private readonly clock: Clock,
     @Inject(ENV) private readonly env: Env,
   ) {}
@@ -30,7 +27,6 @@ export class MaintenanceJob implements OnModuleInit, OnModuleDestroy {
   onModuleInit(): void {
     if (this.env.NODE_ENV === 'test') return;
     const run = (name: string, fn: () => Promise<unknown>) => () => void fn().catch((e: unknown) => this.logger.error(`${name} failed: ${e instanceof Error ? e.message : String(e)}`));
-    this.timers.push(setInterval(run('expireUnpaid', () => this.orders.expireUnpaid()), 60_000).unref());
     this.timers.push(setInterval(run('cleanup', () => this.cleanup()), 3_600_000).unref());
   }
 

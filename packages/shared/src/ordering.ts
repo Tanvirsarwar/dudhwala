@@ -7,14 +7,14 @@ import { tryNormalizeBdMobile } from './phone.js';
 
 export type DeliveryZone = 'IN_CITY' | 'OUTER_CITY';
 export type FulfilmentMethod = 'HOME_DELIVERY' | 'EXPRESS_PICKUP' | 'BULK_ORDER';
-/** Product-level Outer City flag (data, admin-editable later). Absent = decided by the category rule only. */
+/** Product-level Outer Sylhet flag (data, admin-editable later). Absent = decided by the category rule only. */
 export type OuterCityStatus = 'approved' | 'pending_verification' | 'pending_confirmation' | 'disabled';
 export type DemoPaymentState = 'NOT_REQUIRED_DEMO' | 'DEMO_UNPAID' | 'DEMO_PAID_SIMULATED';
 
 /* ───────────── eligibility ───────────── */
 
 /**
- * Outer City rules. Whole Bakery category is eligible; every other item is eligible only when the owner flags it
+ * Outer Sylhet rules. Whole Bakery category is eligible; every other item is eligible only when the owner flags it
  * "approved" (admin product page). Items flagged pending/disabled are never eligible, whatever their category.
  */
 export const ELIGIBILITY_RULES = {
@@ -251,7 +251,7 @@ export const ORDER_STATUS_FLOW: Record<FulfilmentMethod, DemoOrderStatus[]> = {
   BULK_ORDER: ['DEMO_PREPAID_SIMULATED', 'DEMO_PREPARING', 'DEMO_READY_FOR_COLLECTION', 'DEMO_COLLECTED'],
 };
 
-export const METHOD_BN: Record<FulfilmentMethod, string> = { HOME_DELIVERY: 'হোম ডেলিভারি', EXPRESS_PICKUP: 'এক্সপ্রেস পিকআপ', BULK_ORDER: 'বাল্ক অর্ডার' };
+export const METHOD_BN: Record<FulfilmentMethod, string> = { HOME_DELIVERY: 'হোম ডেলিভারি', EXPRESS_PICKUP: 'এক্সপ্রেস পিকআপ', BULK_ORDER: 'শোরুম থেকে অর্ডার' };
 
 /** Customer-facing wording: pickup counts as confirmed only once the outlet has marked it ready. */
 export const ORDER_STATUS_BN: Record<DemoOrderStatus, string> = {
@@ -273,23 +273,31 @@ export const ORDER_STATUS_BN: Record<DemoOrderStatus, string> = {
 export type OrderStatus =
   | 'PLACED' | 'PREPARING' | 'OUT_FOR_DELIVERY' | 'DELIVERED'
   | 'PICKUP_REQUESTED' | 'READY_FOR_PICKUP' | 'PICKED_UP'
-  | 'PENDING_PAYMENT' | 'PREPAID' | 'READY_FOR_COLLECTION' | 'COLLECTED'
+  | 'READY_FOR_COLLECTION' | 'COLLECTED'
   | 'CANCELLED';
 
-/** Forward-only status sequence per method. A bulk order starts at PENDING_PAYMENT and moves to PREPAID only after the provider confirms payment. */
+/** Forward-only status sequence per method. Payment is separate (cash on delivery / at the showroom): see PaymentStatus. */
 export const ORDER_FLOW: Record<FulfilmentMethod, OrderStatus[]> = {
   HOME_DELIVERY: ['PLACED', 'PREPARING', 'OUT_FOR_DELIVERY', 'DELIVERED'],
   EXPRESS_PICKUP: ['PICKUP_REQUESTED', 'PREPARING', 'READY_FOR_PICKUP', 'PICKED_UP'],
-  BULK_ORDER: ['PENDING_PAYMENT', 'PREPAID', 'PREPARING', 'READY_FOR_COLLECTION', 'COLLECTED'],
+  BULK_ORDER: ['PLACED', 'PREPARING', 'READY_FOR_COLLECTION', 'COLLECTED'],
 };
+
+/** Cash on delivery is the only payment method. UNPAID until staff record that the cash was collected. */
+export type PaymentMethod = 'COD';
+export type PaymentStatus = 'UNPAID' | 'PAID';
+export const PAYMENT_STATUS_BN: Record<PaymentStatus, string> = { UNPAID: 'পেমেন্ট বাকি (ক্যাশ অন ডেলিভারি)', PAID: 'পেমেন্ট নেওয়া হয়েছে' };
+
+/** Delivery fee per zone, in poisha. The shop sets these in Settings; unset means no fee. */
+export type DeliveryFees = Record<DeliveryZone, number>;
+export const NO_DELIVERY_FEES: DeliveryFees = { IN_CITY: 0, OUTER_CITY: 0 };
+/** Only home delivery is charged; pickup and showroom collection never are. */
+export const deliveryFeePoisha = (method: FulfilmentMethod, zone: DeliveryZone | null, fees: DeliveryFees = NO_DELIVERY_FEES): number => (method === 'HOME_DELIVERY' && zone ? fees[zone] : 0);
 
 export const orderInitialStatus = (m: FulfilmentMethod): OrderStatus => ORDER_FLOW[m][0] as OrderStatus;
 export const orderFinalStatus = (m: FulfilmentMethod): OrderStatus => ORDER_FLOW[m].at(-1) as OrderStatus;
 
-/**
- * Statuses an admin may move an order to next. Strictly one step forward, or CANCELLED while the order is live.
- * PENDING_PAYMENT -> PREPAID is never an admin action (only a verified payment does that).
- */
+/** Statuses an admin may move an order to next: strictly one step forward, or CANCELLED while the order is live. */
 export function nextOrderStatuses(method: FulfilmentMethod, current: OrderStatus): OrderStatus[] {
   if (current === 'CANCELLED' || current === orderFinalStatus(method)) return [];
   const flow = ORDER_FLOW[method];
@@ -297,7 +305,7 @@ export function nextOrderStatuses(method: FulfilmentMethod, current: OrderStatus
   if (i < 0) return [];
   const next = flow[i + 1];
   const out: OrderStatus[] = [];
-  if (next && !(current === 'PENDING_PAYMENT' && next === 'PREPAID')) out.push(next);
+  if (next) out.push(next);
   out.push('CANCELLED');
   return out;
 }
@@ -310,8 +318,6 @@ export const ORDER_STATUS_LABEL_BN: Record<OrderStatus, string> = {
   PICKUP_REQUESTED: 'পিকআপের অনুরোধ নেওয়া হয়েছে — এখনো নিশ্চিত নয়',
   READY_FOR_PICKUP: 'পিকআপ নিশ্চিত — অর্ডার প্রস্তুত',
   PICKED_UP: 'পিকআপ সম্পন্ন',
-  PENDING_PAYMENT: 'পেমেন্টের অপেক্ষায়',
-  PREPAID: 'পেমেন্ট নিশ্চিত — প্রস্তুতির অপেক্ষায়',
   READY_FOR_COLLECTION: 'সংগ্রহের জন্য প্রস্তুত',
   COLLECTED: 'সংগ্রহ সম্পন্ন',
   CANCELLED: 'বাতিল করা হয়েছে',

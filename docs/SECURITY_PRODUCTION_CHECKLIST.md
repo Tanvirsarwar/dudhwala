@@ -14,6 +14,13 @@ Legend: **Done** = implemented and covered by an automated test; **Config** = do
 | SMS provider for real OTP delivery | **Open** (owner) |
 | Staff accounts cannot be created through the web; only by CLI with a password from the environment | Done |
 
+## Database exposure (Supabase)
+| Control | Status |
+|---|---|
+| RLS enabled on every table, no policies, `anon`/`authenticated` revoked; tested with a non-owner role reading 0 rows | Done |
+| No Supabase key or URL in any browser bundle or `NEXT_PUBLIC_*` variable; no Supabase client library used | Done |
+| Supabase project's Data API switched off; DB password and pooler string set only on the API host | Config / **Open** (needs the live project) |
+
 ## Authorisation
 | Control | Status |
 |---|---|
@@ -24,11 +31,11 @@ Legend: **Done** = implemented and covered by an automated test; **Config** = do
 ## Request safety
 | Control | Status |
 |---|---|
-| CSRF double-submit token + Origin allow-list on all writes; webhooks authenticated by signature | Done |
+| CSRF double-submit token + Origin allow-list on all writes | Done |
 | CORS limited to the two configured origins | Done (set origins: Config) |
 | Strict zod validation on every body (unknown fields rejected, e.g. client-sent prices); size limits (64 KB, 8 MB for photos) | Done |
 | Helmet headers, CSP `default-src 'none'`, no-store, HSTS in production, request ids | Done |
-| Rate limits (login, OTP, orders, payment start, webhook, cart) in PostgreSQL so all instances share them | Done |
+| Rate limits (login, OTP, orders, cart) in PostgreSQL so all instances share them | Done |
 | No raw SQL with user input (parameterised template queries only) | Done |
 ## Business-rule integrity (server side)
 | Control | Status |
@@ -36,9 +43,9 @@ Legend: **Done** = implemented and covered by an automated test; **Config** = do
 | Prices, totals, bulk class, zone eligibility, hours, pickup rules computed from the database; client values ignored | Done |
 | Stock: guarded atomic updates, no overselling under parallel orders, append-only ledger, CHECK constraints | Done |
 | Idempotent order creation (header key + request hash), parallel duplicates create one order | Done |
-| Payment: signature first, event dedupe, amount/currency match, first verified success wins, bulk order cannot reach PREPAID otherwise (also a database CHECK) | Done |
+| Payment: cash on delivery only; `paymentStatus` set only by an authenticated ADMIN (audited), never by the client; no payment gateway or webhook surface | Done |
 | Order status machine (one forward step, locked when finished), row lock on change | Done |
-| Audit log of admin writes, order events, failed logins, rejected webhooks; update/delete blocked by trigger | Done |
+| Audit log of admin writes, order events, failed logins; update/delete blocked by trigger | Done |
 ## Data and files
 | Control | Status |
 |---|---|
@@ -49,7 +56,7 @@ Legend: **Done** = implemented and covered by an automated test; **Config** = do
 | Backups, restore test (`verify-restore.sql`) | Procedure + local round trip done; **Open** on the real database |
 | PII: phone numbers and addresses stored in orders; retention period and deletion process not decided | **Open** (owner/legal); account-deletion requests were removed from scope |
 ## Not yet done
-Real payment adapter and its sandbox/live certification · SMS provider test with a real phone · external penetration test / ZAP scan · load test · monitoring and alerting wiring · dependency audit (`pnpm audit` not re-run in this phase; the earlier zod 3.x advisory stands) · rotation script for `DATA_ENCRYPTION_KEY` · production deployment itself.
+SMS provider test with a real phone · external penetration test / ZAP scan · load test · monitoring and alerting wiring · dependency audit (`pnpm audit` not re-run in this phase; the earlier zod 3.x advisory stands) · rotation script for `DATA_ENCRYPTION_KEY` · production deployment itself.
 
 ## Go-live gate (all must be true)
-1. Owner data in (SETUP_OWNER_DATA 1–10, 15–17). 2. Real SMS works end to end. 3. Payment provider decision made; until then bulk orders stay off. 4. Restore test passed on the real database. 5. Admin 2FA enrolled, recovery codes stored. 6. `smoke.sh` passes against production URLs. 7. Someone has placed and fulfilled a real test order of each type.
+1. Owner data in (SETUP_OWNER_DATA 1–10, 15–17). 2. Real SMS works end to end. 3. Cash handling process agreed (who collects, who marks paid). 4. Restore test passed on the real database. 5. Admin 2FA enrolled, recovery codes stored. 6. `smoke.sh` passes against production URLs. 7. Someone has placed and fulfilled a real test order of each type.

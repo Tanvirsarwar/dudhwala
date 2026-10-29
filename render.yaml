@@ -27,7 +27,6 @@ services:
       - { key: SESSION_SECRET, generateValue: true }
       - { key: OTP_HMAC_KEY, generateValue: true }
       - { key: DATA_ENCRYPTION_KEY, generateValue: true }
-      - { key: PAYMENTS_WEBHOOK_SECRET, generateValue: true }
       # media: Supabase Storage through its S3-compatible API
       - { key: MEDIA_STORAGE, value: s3 }
       - { key: STORAGE_ENDPOINT, sync: false }
@@ -36,8 +35,6 @@ services:
       - { key: STORAGE_ACCESS_KEY_ID, sync: false }
       - { key: STORAGE_SECRET_ACCESS_KEY, sync: false }
       - { key: MEDIA_PUBLIC_URL, sync: false }
-      # payments: sandbox only (fake money, clearly labelled in the UI). Use `disabled` to switch online payment off.
-      - { key: PAYMENTS_PROVIDER, value: sandbox }
       # SMS: the API refuses to start on staging without an https SMS URL. This reserved ".invalid" host can never
       # resolve, so no SMS is ever sent (and customer OTP login is therefore unavailable in this preview).
       - { key: SMS_PROVIDER, value: http }

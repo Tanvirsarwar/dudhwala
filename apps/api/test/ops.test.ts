@@ -24,12 +24,12 @@ const CATALOGUE = JSON.parse(readFileSync(new URL('../../../demo/mock-api/catalo
 describe('config (hours and bulk thresholds)', () => {
   it('serves defaults marked as placeholders, publicly', async () => {
     const res = await request(h.app.getHttpServer()).get('/v1/config').expect(200);
-    expect(res.body).toEqual({ hours: { openMinute: 600, closeMinute: 1320 }, bulk: { minTotalQuantity: 20, minTotalPoisha: 2_000_000, isPlaceholder: true }, payments: { enabled: false, sandbox: false } });
+    expect(res.body).toEqual({ hours: { openMinute: 600, closeMinute: 1320 }, bulk: { minTotalQuantity: 20, minTotalPoisha: 2_000_000, isPlaceholder: true }, deliveryFees: { IN_CITY: 0, OUTER_CITY: 0 }, paymentMethods: ['COD'] });
   });
   it('an admin saves real values: placeholder flag clears, change is audited, orders obey it', async () => {
     const admin = await adminAgent(h);
     const put = await admin.put('/v1/admin/config').send({ hours: { open: '09:00', close: '23:00' }, bulk: { minTotalQuantity: 30, minTotalTaka: 5000 } }).expect(200);
-    expect(put.body).toEqual({ hours: { openMinute: 540, closeMinute: 1380 }, bulk: { minTotalQuantity: 30, minTotalPoisha: 500_000, isPlaceholder: false }, payments: { enabled: false, sandbox: false } });
+    expect(put.body).toEqual({ hours: { openMinute: 540, closeMinute: 1380 }, bulk: { minTotalQuantity: 30, minTotalPoisha: 500_000, isPlaceholder: false }, deliveryFees: { IN_CITY: 0, OUTER_CITY: 0 }, paymentMethods: ['COD'] });
     expect((await request(h.app.getHttpServer()).get('/v1/config').expect(200)).body.bulk.isPlaceholder).toBe(false);
     const log = await h.prisma.auditLog.findFirstOrThrow({ where: { action: 'config.update' } });
     expect(log.before).toMatchObject({ bulk: { isPlaceholder: true } });
@@ -150,7 +150,7 @@ describe('HTTP hardening', () => {
     const mods = await Promise.all([
       import('../src/auth/auth.controller.js'), import('../src/catalog/catalog-admin.controller.js'), import('../src/catalog/catalog-public.controller.js'),
       import('../src/cart/cart.controller.js'), import('../src/orders/orders.controller.js'), import('../src/orders/orders-admin.controller.js'),
-      import('../src/payments/payments.controller.js'), import('../src/outlets/outlets.controller.js'), import('../src/settings/config.controller.js'), import('../src/health/health.controller.js'),
+      import('../src/outlets/outlets.controller.js'), import('../src/settings/config.controller.js'), import('../src/health/health.controller.js'),
     ]);
     let handlers = 0;
     for (const m of mods) {
@@ -174,11 +174,11 @@ describe('HTTP hardening', () => {
 
 describe('environment guards', () => {
   const base = { ...TEST_RAW_ENV, NODE_ENV: 'production', API_PUBLIC_URL: 'https://api.example.test', MEDIA_STORAGE: 's3', STORAGE_BUCKET: 'b', STORAGE_ACCESS_KEY_ID: 'i', STORAGE_SECRET_ACCESS_KEY: 's', MEDIA_PUBLIC_URL: 'https://m.example.test', SMS_PROVIDER: 'http', SMS_HTTP_URL: 'https://sms.example.test/x', WEB_ORIGIN: 'https://shop.example.test', ADMIN_ORIGIN: 'https://admin.example.test' };
-  it('accepts a sane production configuration (payments disabled by default)', () => {
-    expect(loadEnv(base).PAYMENTS_PROVIDER).toBe('disabled');
+  it('accepts a sane production configuration (needs no payment-gateway settings)', () => {
+    expect(loadEnv(base).NODE_ENV).toBe('production');
+    expect(Object.keys(loadEnv(base)).some((k) => /PAYMENT|SSLCOMMERZ|STRIPE/i.test(k))).toBe(false);
   });
-  it('refuses the payment sandbox, plain-http API, local media, log SMS and the dev outbox in production', () => {
-    expect(() => loadEnv({ ...base, PAYMENTS_PROVIDER: 'sandbox', PAYMENTS_WEBHOOK_SECRET: 'x'.repeat(40) })).toThrow(/PAYMENTS_PROVIDER/);
+  it('refuses plain-http API, local media, log SMS and the dev outbox in production', () => {
     expect(() => loadEnv({ ...base, API_PUBLIC_URL: 'http://api.example.test' })).toThrow(/API_PUBLIC_URL/);
     expect(() => loadEnv({ ...base, MEDIA_STORAGE: 'local' })).toThrow(/MEDIA_STORAGE/);
     expect(() => loadEnv({ ...base, SMS_PROVIDER: 'log' })).toThrow(/SMS_PROVIDER/);

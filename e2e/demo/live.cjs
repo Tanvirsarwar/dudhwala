@@ -1,6 +1,7 @@
 // Browser test of the LIVE shop (real API + PostgreSQL), not the demo. Needs the stack from docs/LIVE_LOCAL_TEST.md:
-// API :4000 (PAYMENTS_PROVIDER=sandbox, ENABLE_DEV_OUTBOX=true, NODE_ENV=development), storefront :3200, admin :3201,
-// outlet MODINA-MARKET set up, products ds-01/ds-02 priced and stocked, admin admin@live.test / manager@live.test.
+// API :4000 (ENABLE_DEV_OUTBOX=true, NODE_ENV=development), storefront :3200, admin :3201,
+// outlet MODINA-MARKET set up, setting delivery.fees {IN_CITY:6000, OUTER_CITY:12000}, products ds-01/ds-02 priced (Tk 50) and stocked,
+// admin admin@live.test / manager@live.test.
 const { chromium, request } = require('@playwright/test');
 const crypto = require('node:crypto');
 const WEB = process.env.LIVE_WEB || 'http://127.0.0.1:3200';
@@ -39,6 +40,20 @@ function totp(secretB32, offset = 0) {
   await c.goto(`${WEB}/p/ds-01`);
   ok('product page shows the real price', (await c.textContent('main')).includes('৫০') || (await c.textContent('main')).includes('50'));
   ok('no DEMO wording in the live shop', !/ডেমো/.test(await c.textContent('body')));
+  const bar = await c.textContent('.zone-bar');
+  ok('zone labels read In Sylhet / Outer Sylhet (Bangla UI: ইন সিলেট / আউটার সিলেট)', bar.includes('ইন সিলেট') && bar.includes('আউটার সিলেট') && !/সিটি/.test(await c.textContent('body')));
+  ok('showroom action replaces the bulk order link', bar.includes('শোরুম থেকে অর্ডার') && !/বাল্ক/.test(await c.textContent('body')));
+  for (const w of [1280, 768, 390]) {
+    await c.setViewportSize({ width: w, height: 900 });
+    const tops = await c.$$eval('.zone-actions > *', (els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+    const over = await c.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+    ok(`zone switch + showroom button share one row at ${w}px, no page overflow`, tops.length === 2 && tops[0] === tops[1] && !over, JSON.stringify(tops));
+  }
+  await c.setViewportSize({ width: 1280, height: 900 });
+  await c.getByRole('link', { name: 'শোরুম থেকে অর্ডার' }).first().click();
+  await c.waitForURL('**/bulk');
+  ok('showroom button opens the working showroom-order page', (await c.textContent('h1')).includes('শোরুম থেকে অর্ডার'));
+  await c.goto(`${WEB}/p/ds-01`);
   await c.getByRole('button', { name: 'কার্টে যোগ করুন' }).first().click();
   await c.getByText('কার্টে যোগ হয়েছে').waitFor();
   const unpriced = await mk();
@@ -54,13 +69,21 @@ function totp(secretB32, offset = 0) {
   await c.getByRole('button', { name: 'যাচাই করুন' }).click();
   await c.locator('#dc-name').waitFor();
   ok('OTP login reaches the checkout form with the cart kept', (await c.textContent('body')).includes('অর্ডারের সারাংশ'));
+  ok('checkout shows the zone fee in the summary (Tk 60 for In Sylhet)', (await c.textContent('aside')).includes('ডেলিভারি চার্জ') && (await c.textContent('aside')).includes('৬০'));
+  for (const w of [1280, 768, 390]) {
+    await c.setViewportSize({ width: w, height: 900 });
+    const tops = await c.$$eval('.opt-row > .opt-card', (els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+    const over = await c.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+    ok(`the three fulfilment options sit side by side at ${w}px, no page overflow`, tops.length === 3 && new Set(tops).size === 1 && !over, JSON.stringify(tops));
+  }
+  await c.setViewportSize({ width: 1280, height: 900 });
   await c.locator('#dc-name').fill('রহিম উদ্দিন');
   await c.locator('#dc-phone').fill('01812345678');
   await c.locator('#dc-line1').fill('বাসা ১২, রোড ৩, সিলেট');
   await c.getByRole('button', { name: 'অর্ডার দিন' }).click();
   await c.getByText('আপনার অর্ডার নেওয়া হয়েছে।').waitFor();
   const body = await c.textContent('main');
-  ok('order confirmation shows an order number and the server price', /DW\d{6}[A-Z0-9]{5}/.test(body) && body.includes('৫০'));
+  ok('order confirmation shows an order number, the zone, the delivery charge and COD unpaid', /DW\d{6}[A-Z0-9]{5}/.test(body) && body.includes('ইন সিলেট') && body.includes('ডেলিভারি চার্জ') && body.includes('১১০') && body.includes('পেমেন্ট বাকি'), body.slice(0, 200));
   const orderNo = /DW\d{6}[A-Z0-9]{5}/.exec(body)[0];
   await c.goto(`${WEB}/account`);
   await c.getByText(orderNo).first().waitFor();
@@ -96,6 +119,10 @@ function totp(secretB32, offset = 0) {
   await a.getByRole('button', { name: 'প্রস্তুত করা হচ্ছে' }).click();
   await a.getByText('অবস্থা বদলানো হয়েছে').waitFor();
   ok('admin moves the order one step (PLACED -> PREPARING)', true);
+  ok('admin order page shows the zone (ইন সিলেট) and the delivery charge', (await a.textContent('main')).includes('ইন সিলেট') && (await a.textContent('main')).includes('ডেলিভারি চার্জ'));
+  await a.getByRole('button', { name: 'টাকা পাওয়া গেছে' }).click();
+  await a.getByText('পেমেন্টের অবস্থা বদলানো হয়েছে').waitFor();
+  ok('admin records the cash as received (payment status is separate from delivery status)', true);
   await c.goto(`${WEB}/account`);
   await c.getByText('প্রস্তুত করা হচ্ছে').first().waitFor();
   ok('customer sees the new status', true);
@@ -130,12 +157,9 @@ function totp(secretB32, offset = 0) {
   await bk.locator('#dc-name').fill('কোম্পানি');
   await bk.locator('#dc-phone').fill('01712345670');
   await bk.getByRole('button', { name: 'অর্ডার দিন' }).click();
-  await bk.getByRole('button', { name: 'পেমেন্ট শুরু করুন' }).click();
-  await bk.getByText('স্যান্ডবক্স পেমেন্ট — আসল টাকা কাটা হয় না।').waitFor();
-  ok('bulk payment is labelled sandbox / no real money', true);
-  await bk.getByRole('button', { name: 'পেমেন্ট সফল ধরুন' }).click();
-  await bk.getByText('পেমেন্ট নিশ্চিত — প্রস্তুতির অপেক্ষায়').first().waitFor();
-  ok('bulk order becomes PREPAID only after the verified (signed) payment event', true);
+  await bk.getByText('আপনার অর্ডার নেওয়া হয়েছে।').waitFor();
+  const sb = await bk.textContent('main');
+  ok('showroom order is placed for collection at Modina Market Branch, cash unpaid, no online payment step', sb.includes('মদিনা মার্কেট শাখা') && sb.includes('পেমেন্ট বাকি') && !/পেমেন্ট শুরু করুন|স্যান্ডবক্স/.test(sb));
 
   ok('no console/page errors or 5xx', errs.length === 0, errs.join(' | '));
   await b.close();

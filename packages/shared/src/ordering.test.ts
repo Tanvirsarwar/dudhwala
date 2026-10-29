@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  availableFulfilments, nextOrderStatuses, orderFinalStatus, orderInitialStatus, bulkStatus, BULK_CONFIG, earliestPickup, hhmmToMinutes, minutesToHHMM, orderingStatus, pickupSlots, validateCheckout, validatePickup, zonedParts, zoneEligibility,
+  availableFulfilments, deliveryFeePoisha, nextOrderStatuses, orderFinalStatus, orderInitialStatus, bulkStatus, BULK_CONFIG, earliestPickup, hhmmToMinutes, minutesToHHMM, orderingStatus, pickupSlots, validateCheckout, validatePickup, zonedParts, zoneEligibility,
   type CheckoutInput, type CheckoutLine,
 } from './ordering.js';
 
@@ -11,10 +11,10 @@ const sweetApproved = { categorySlug: 'dairy-sweets', outerCityStatus: 'approved
 const sweetPlain = { categorySlug: 'dairy-sweets' };
 
 describe('zoneEligibility', () => {
-  it('In City accepts every category and flag', () => {
+  it('In Sylhet accepts every category and flag', () => {
     for (const p of [bakery, sweetPlain, sweetApproved, { categorySlug: 'doi-dairy' }, { categorySlug: 'x', outerCityStatus: 'pending_verification' as const }]) expect(zoneEligibility(p, 'IN_CITY').eligible).toBe(true);
   });
-  it('Outer City: all Bakery, only approved Dairy Sweets and Doi, nothing else', () => {
+  it('Outer Sylhet: all Bakery, only approved Dairy Sweets and Doi, nothing else', () => {
     expect(zoneEligibility(bakery, 'OUTER_CITY')).toEqual({ eligible: true, reason: 'category_rule' });
     expect(zoneEligibility(sweetApproved, 'OUTER_CITY')).toEqual({ eligible: true, reason: 'approved_item' });
     expect(zoneEligibility(sweetPlain, 'OUTER_CITY')).toEqual({ eligible: false, reason: 'item_not_approved' });
@@ -101,7 +101,7 @@ describe('validateCheckout', () => {
     expect(codes(home({ now: at('2026-03-10T17:00:00Z') }))).toContain('ordering_closed');
     expect(codes(home({ lines: [] }))).toContain('cart_empty');
   });
-  it('Outer City names every ineligible line instead of dropping it', () => {
+  it('Outer Sylhet names every ineligible line instead of dropping it', () => {
     const r = validateCheckout(home({ zone: 'OUTER_CITY', lines: [line('ok', bakery), line('bad', sweetPlain), line('ok2', sweetApproved)] }));
     expect(r).toEqual([{ code: 'item_not_deliverable', line: 'bad' }]);
   });
@@ -156,12 +156,23 @@ describe('production order flow', () => {
     expect(nextOrderStatuses('HOME_DELIVERY', 'DELIVERED')).toEqual([]);
     expect(nextOrderStatuses('BULK_ORDER', 'CANCELLED')).toEqual([]);
   });
-  it('never lets staff mark a bulk order paid', () => {
-    expect(nextOrderStatuses('BULK_ORDER', 'PENDING_PAYMENT')).toEqual(['CANCELLED']);
-    expect(nextOrderStatuses('BULK_ORDER', 'PREPAID')).toEqual(['PREPARING', 'CANCELLED']);
+  it('showroom (bulk-size) orders follow the collection flow', () => {
+    expect(nextOrderStatuses('BULK_ORDER', 'PLACED')).toEqual(['PREPARING', 'CANCELLED']);
+    expect(nextOrderStatuses('BULK_ORDER', 'READY_FOR_COLLECTION')).toEqual(['COLLECTED', 'CANCELLED']);
   });
   it('starts each method at its first status', () => {
-    expect(orderInitialStatus('BULK_ORDER')).toBe('PENDING_PAYMENT');
+    expect(orderInitialStatus('BULK_ORDER')).toBe('PLACED');
     expect(orderFinalStatus('BULK_ORDER')).toBe('COLLECTED');
+  });
+});
+
+describe('delivery fees', () => {
+  const fees = { IN_CITY: 6000, OUTER_CITY: 12000 };
+  it('charges the zone fee for home delivery only', () => {
+    expect(deliveryFeePoisha('HOME_DELIVERY', 'IN_CITY', fees)).toBe(6000);
+    expect(deliveryFeePoisha('HOME_DELIVERY', 'OUTER_CITY', fees)).toBe(12000);
+    expect(deliveryFeePoisha('EXPRESS_PICKUP', null, fees)).toBe(0);
+    expect(deliveryFeePoisha('BULK_ORDER', null, fees)).toBe(0);
+    expect(deliveryFeePoisha('HOME_DELIVERY', 'IN_CITY')).toBe(0);
   });
 });

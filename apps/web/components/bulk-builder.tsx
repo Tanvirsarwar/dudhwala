@@ -63,7 +63,7 @@ export function BulkBuilder({ products, categories }: { products: ProductCardDat
 
   return (
     <div className="pt-6">
-      <h1 className="text-2xl font-bold">বাল্ক অর্ডার</h1>
+      <h1 className="text-2xl font-bold">শোরুম থেকে অর্ডার</h1>
       <p className="notice notice-info mt-2" role="note">
         <span>পণ্য বেছে সংখ্যা দিন। সংগ্রহ শুধু মদিনা মার্কেট শাখা থেকে; হোম ডেলিভারি নেই। আগে পেমেন্ট লাগে।</span>
       </p>
@@ -107,7 +107,7 @@ export function BulkBuilder({ products, categories }: { products: ProductCardDat
       })}
       {shown.length === 0 && <p className="card mt-4 p-6 text-center">আপনার সার্চের সাথে মেলে এমন কোনো পণ্য নেই</p>}
 
-      <div className="action-bar" role="region" aria-label="বাল্ক অর্ডারের সারাংশ">
+      <div className="action-bar" role="region" aria-label="শোরুম অর্ডারের সারাংশ">
         <p className="text-sm">
           <span>মোট:</span> <b>{bnDigits(total)}</b> <span>টি</span>
           {!ready && (

@@ -1,6 +1,6 @@
 # Dudhwala — online ordering platform
 
-Storefront, admin panel and backend for **Dudhwala Food Products** (দুধওয়ালা), Sylhet. Three ways to order: **home delivery** (In City / Outer City), **express pickup** (at least 1 hour ahead, outlet hours) and **bulk orders** (prepaid, collected at Modina Market Branch). Ordering hours 10:00–22:00 Asia/Dhaka.
+Storefront, admin panel and backend for **Dudhwala Food Products** (দুধওয়ালা), Sylhet. Three ways to order: **home delivery** (In Sylhet / Outer Sylhet), **express pickup** (at least 1 hour ahead, outlet hours) and **bulk orders** (prepaid, collected at Modina Market Branch). Ordering hours 10:00–22:00 Asia/Dhaka.
 
 **Status — Phase 2 (backend v1.0).** The backend, live storefront/admin integration and tests are done and verified locally. It is **not deployed** and **not launch-ready**: it still needs the owner's data and a payment provider. See [docs/PHASE2_BACKEND.md](docs/PHASE2_BACKEND.md) (what is built vs. what waits for the owner) and [docs/SETUP_OWNER_DATA.md](docs/SETUP_OWNER_DATA.md).
 
@@ -43,6 +43,6 @@ node e2e/demo/live.cjs            # live-shop browser test; stack described in d
 
 ## Documentation
 
-Current (Phase 2): [PHASE2_BACKEND](docs/PHASE2_BACKEND.md) · [ADMIN_AND_API_CONTRACT](docs/ADMIN_AND_API_CONTRACT.md) · [DEPLOY_PHASE2](docs/DEPLOY_PHASE2.md) · [SECURITY_PRODUCTION_CHECKLIST](docs/SECURITY_PRODUCTION_CHECKLIST.md) · [SETUP_OWNER_DATA](docs/SETUP_OWNER_DATA.md) · [CATALOGUE_V2_5_1](docs/CATALOGUE_V2_5_1.md) · [DEPLOYMENT_FRONTEND](docs/DEPLOYMENT_FRONTEND.md).
+Current (Phase 2): [PHASE2_BACKEND](docs/PHASE2_BACKEND.md) · [ADMIN_AND_API_CONTRACT](docs/ADMIN_AND_API_CONTRACT.md) · [DEPLOY_PHASE2](docs/DEPLOY_PHASE2.md) · [SUPABASE_VERCEL](docs/SUPABASE_VERCEL.md) · [SECURITY_PRODUCTION_CHECKLIST](docs/SECURITY_PRODUCTION_CHECKLIST.md) · [SETUP_OWNER_DATA](docs/SETUP_OWNER_DATA.md) · [CATALOGUE_V2_5_1](docs/CATALOGUE_V2_5_1.md) · [DEPLOYMENT_FRONTEND](docs/DEPLOYMENT_FRONTEND.md).
 
 Earlier documents (PRD, TRD, APP_FLOW, API_SPECIFICATION, DATABASE_SCHEMA, DEPLOYMENT_RUNBOOK, PAYMENT_GATEWAY_GUIDE, OPERATIONS_GUIDE, SECURITY_REVIEW, …) describe the original delivery-slot / COD / rider design. They are kept for history and carry a banner; where they disagree with the Phase 2 documents, Phase 2 wins.

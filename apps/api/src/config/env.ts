@@ -27,9 +27,6 @@ const EnvSchema = z
     STORAGE_BUCKET: z.string().default(''),
     STORAGE_ACCESS_KEY_ID: z.string().default(''),
     STORAGE_SECRET_ACCESS_KEY: z.string().default(''),
-    /** disabled = no online payment (bulk orders cannot be placed). sandbox = fake money, never allowed in production. */
-    PAYMENTS_PROVIDER: z.enum(['disabled', 'sandbox']).default('disabled'),
-    PAYMENTS_WEBHOOK_SECRET: z.string().min(32).default('dev-only-payments-webhook-secret-0123456789'),
     SMS_PROVIDER: z.enum(['log', 'http']).default('log'),
     SMS_HTTP_URL: z.string().default(''),
     SMS_HTTP_METHOD: z.enum(['GET', 'POST']).default('POST'),
@@ -46,12 +43,6 @@ const EnvSchema = z
     const live = env.NODE_ENV === 'production' || env.NODE_ENV === 'staging';
     if (live && !env.API_PUBLIC_URL.startsWith('https://')) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['API_PUBLIC_URL'], message: 'must be https outside development' });
-    }
-    if (env.NODE_ENV === 'production' && env.PAYMENTS_PROVIDER === 'sandbox') {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['PAYMENTS_PROVIDER'], message: 'the payment sandbox cannot run in production' });
-    }
-    if (live && env.PAYMENTS_PROVIDER !== 'disabled' && env.PAYMENTS_WEBHOOK_SECRET.startsWith('dev-only')) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['PAYMENTS_WEBHOOK_SECRET'], message: 'set a real secret outside development' });
     }
     if (live && env.MEDIA_STORAGE !== 's3') {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['MEDIA_STORAGE'], message: 'use s3 outside development (local disk is lost on redeploy)' });

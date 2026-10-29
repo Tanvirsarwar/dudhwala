@@ -18,7 +18,8 @@ export { ORDER_STATUS_FLOW as STATUS_FLOW } from '@dudhwala/shared';
 
 /** A demo status (DEMO_PLACED, …) or a live one (PLACED, …). */
 export type AnyOrderStatus = DemoOrderStatus | OrderStatus;
-export type LivePaymentStatus = 'NOT_REQUIRED' | 'PENDING' | 'PAID' | 'FAILED';
+export type { PaymentStatus as LivePaymentStatus } from '@dudhwala/shared';
+import type { PaymentStatus as LivePaymentStatusT } from '@dudhwala/shared';
 
 export interface DemoOrderLine {
   key: string;
@@ -47,8 +48,10 @@ export interface DemoOrder {
   /** demo only */
   payment?: DemoPaymentState;
   /** live only */
-  paymentStatus?: LivePaymentStatus;
-  paymentExpiresAt?: string | null;
+  paymentMethod?: 'COD';
+  paymentStatus?: LivePaymentStatusT;
+  deliveryFeePoisha?: number;
+  subtotalPoisha?: number;
   address?: { name: string; phone: string; line1: string; landmark: string };
   /** pickup and bulk orders: who collects */
   contact?: { name: string; phone: string };

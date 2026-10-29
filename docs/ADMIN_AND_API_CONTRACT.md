@@ -3,9 +3,9 @@
 Base path `/v1`. JSON. Money is integer poisha (`null` = price not set yet). Times are ISO-8601 UTC; the business clock is Asia/Dhaka (UTC+6, no DST). The local demo's mock API (`demo/mock-api`) follows the same shapes for catalogue, cart, config, admin products/categories; it differs only where marked **demo**.
 
 ## Conventions
-- **Errors:** `{ "error": { "code", "message", "details?", "requestId" } }`. Codes: `VALIDATION_FAILED 400`, `UNAUTHENTICATED 401`, `MFA_REQUIRED 401`, `OTP_INVALID/OTP_EXPIRED 401`, `FORBIDDEN 403`, `READ_ONLY 403`, `NOT_FOUND 404`, `OUT_OF_STOCK/PRODUCT_UNAVAILABLE/INVALID_TRANSITION/CONFLICT/IDEMPOTENCY_CONFLICT 409`, `PRICE_NOT_SET/NOT_DELIVERABLE/ZONE_REQUIRED/ORDERING_CLOSED/PICKUP_INVALID/BULK_REQUIRED/NOT_BULK 422`, `ACCOUNT_LOCKED 423`, `RATE_LIMITED 429`, `BULK_NOT_CONFIGURED/PAYMENTS_DISABLED/SERVICE_UNAVAILABLE 503`. Oversized body → 413, malformed JSON → 400. Stack traces never reach clients.
+- **Errors:** `{ "error": { "code", "message", "details?", "requestId" } }`. Codes: `VALIDATION_FAILED 400`, `UNAUTHENTICATED 401`, `MFA_REQUIRED 401`, `OTP_INVALID/OTP_EXPIRED 401`, `FORBIDDEN 403`, `READ_ONLY 403`, `NOT_FOUND 404`, `OUT_OF_STOCK/PRODUCT_UNAVAILABLE/INVALID_TRANSITION/CONFLICT/IDEMPOTENCY_CONFLICT 409`, `PRICE_NOT_SET/NOT_DELIVERABLE/ZONE_REQUIRED/ORDERING_CLOSED/PICKUP_INVALID/BULK_REQUIRED/NOT_BULK 422`, `ACCOUNT_LOCKED 423`, `RATE_LIMITED 429`, `BULK_NOT_CONFIGURED/SERVICE_UNAVAILABLE 503`. Oversized body → 413, malformed JSON → 400. Stack traces never reach clients.
 - **Cookies:** customer `dw_sid` (HttpOnly, SameSite=Lax), staff `dw_admin_sid` (HttpOnly, SameSite=Strict), cart `dw_cart`; `Secure` in staging/production. Customer calls send `x-dw-audience: customer` so a staff cookie in the same browser is never used for shopping.
-- **CSRF:** every non-GET needs `x-csrf-token` (from `GET /auth/csrf`, double-submit cookie `dw_csrf`) and an allowed `Origin`. Webhooks are exempt (signature instead).
+- **CSRF:** every non-GET needs `x-csrf-token` (from `GET /auth/csrf`, double-submit cookie `dw_csrf`) and an allowed `Origin`.
 - **Idempotency:** `POST /orders` requires `Idempotency-Key` (8–64 of `A-Za-z0-9_-`).
 
 ## Roles
@@ -34,7 +34,7 @@ Base path `/v1`. JSON. Money is integer poisha (`null` = price not set yet). Tim
 | `GET /catalog/categories` | active categories |
 | `GET /catalog/products?category&q&sort=newest\|price_asc\|price_desc&inStock&page&limit≤48` | cards `{id,slug,nameBn,nameEn,categorySlug,image,outerCityStatus,fromPricePoisha,inStock,variants[{id,labelBn,pricePoisha,compareAtPoisha,availability}]}`; only `active` products in `active` categories; **stock counts are never exposed**, only `IN_STOCK`/`OUT_OF_STOCK` |
 | `GET /catalog/products/:slug` | detail with `content`, `images`, `variants[].maxQty` |
-| `GET /config` | `{hours:{openMinute,closeMinute}, bulk:{minTotalQuantity,minTotalPoisha,isPlaceholder}, payments:{enabled,sandbox}}` |
+| `GET /config` | `{hours:{openMinute,closeMinute}, bulk:{minTotalQuantity,minTotalPoisha,isPlaceholder}, deliveryFees:{IN_CITY,OUTER_CITY}, paymentMethods:["COD"]}` (fees in poisha; the UI labels the zones **In Sylhet** / **Outer Sylhet**) |
 | `GET /outlets` | active outlets with weekly `hours` |
 | `GET /content/home`, `GET /content/pages/:slug` | owner-written pages (empty until supplied) |
 | `GET /cart`, `PUT /cart/items/:variantId {quantity 0..999}` | server cart, re-priced on every read; unpriced/hidden/out-of-stock refused |
@@ -49,27 +49,24 @@ Base path `/v1`. JSON. Money is integer poisha (`null` = price not set yet). Tim
   "contact": { "name", "phone" },                         // pickup, bulk
   "outletId": "uuid", "pickupAt": "ISO-8601" }            // pickup
 ```
-Server rules, in order (first violated rule is returned): ordering open (hours from settings) → product active and priced → quantity ≤ per-order cap → bulk classification (quantity **or** amount; bulk cart must be `BULK_ORDER`, non-bulk cannot) → home delivery: zone chosen, address present, every product eligible for the zone (Outer City: bakery, or `outerCityStatus=approved`; `pending_*`/`disabled` never) → pickup: ≥ 60 min ahead, ≤ 7 days, outlet open that weekday/time (outlet with no hours entered falls back to ordering hours) → stock reserved atomically at the fulfilling outlet (home: dispatch outlet; pickup: chosen outlet; bulk: Modina Market Branch) → bulk additionally needs the collection outlet configured and online payment enabled. One database transaction; any failure reserves nothing.
+Server rules, in order (first violated rule is returned): ordering open (hours from settings) → product active and priced → quantity ≤ per-order cap → bulk classification (quantity **or** amount; bulk cart must be `BULK_ORDER`, non-bulk cannot) → home delivery: zone chosen, address present, every product eligible for the zone (Outer Sylhet: bakery, or `outerCityStatus=approved`; `pending_*`/`disabled` never) → pickup: ≥ 60 min ahead, ≤ 7 days, outlet open that weekday/time (outlet with no hours entered falls back to ordering hours) → stock reserved atomically at the fulfilling outlet (home: dispatch outlet; pickup: chosen outlet; bulk: Modina Market Branch) → a showroom order additionally needs the collection outlet configured. One database transaction; any failure reserves nothing.
 
-Result `201` (replay with the same key and body: `200`, `replayed:true`; same key with a different body: `409 IDEMPOTENCY_CONFLICT`). Initial status: `PLACED` / `PICKUP_REQUESTED` / `PENDING_PAYMENT`.
+Result `201` (replay with the same key and body: `200`, `replayed:true`; same key with a different body: `409 IDEMPOTENCY_CONFLICT`). Initial status: `PLACED` / `PICKUP_REQUESTED` / `PLACED`.
 `GET /orders`, `GET /orders/:id`, `GET /orders/:id/status` — **owner only**; another customer's id answers `404`, same as an unknown id.
 
-Order view: `{id, orderNumber, createdAt, method, zone, status, paymentStatus, paymentExpiresAt, lines[{variantId,productSlug,nameBn,nameEn,labelBn,quantity,unitPricePoisha,linePoisha}], subtotalPoisha, deliveryFeePoisha(0), totalPoisha, address|null, contact|null, pickupAt, outlet, history[{status,at}]}`.
+Order view: `{id, orderNumber, createdAt, method, zone, status, paymentMethod, paymentStatus, paidAt, lines[{variantId,productSlug,nameBn,nameEn,labelBn,quantity,unitPricePoisha,linePoisha}], subtotalPoisha, deliveryFeePoisha(0), totalPoisha, address|null, contact|null, pickupAt, outlet, history[{status,at}]}`.
 
 ### Status flows (forward only, one step at a time; `CANCELLED` from any live status)
 - Home: `PLACED → PREPARING → OUT_FOR_DELIVERY → DELIVERED`
 - Pickup: `PICKUP_REQUESTED → PREPARING → READY_FOR_PICKUP → PICKED_UP` (the customer sees pickup as confirmed only at `READY_FOR_PICKUP`)
-- Bulk: `PENDING_PAYMENT → PREPAID → PREPARING → READY_FOR_COLLECTION → COLLECTED`. `PREPAID` is reached **only** by a verified payment event; staff cannot set it.
-Cancelling releases the stock reservation; finishing commits it (on-hand drops). Finished and cancelled orders are locked. Defined in `packages/shared/src/ordering.ts` (`ORDER_FLOW`).
+- Showroom order (`method=BULK_ORDER`, shown as **Order From Showroom**; cart reaches the quantity/amount threshold; collected at Modina Market Branch): `PLACED → PREPARING → READY_FOR_COLLECTION → COLLECTED`
+Cancelling releases the stock reservation; finishing commits it. Finished and cancelled orders are locked. Defined in `packages/shared/src/ordering.ts` (`ORDER_FLOW`).
 
-## Payments (bulk orders only)
-| Call | Access | Notes |
-|---|---|---|
-| `POST /orders/:id/payment` | owner | starts/reuses a payment attempt → `{paymentId, merchantTranId, provider, sandbox, redirectUrl}`; `503 PAYMENTS_DISABLED` while no provider is active |
-| `POST /webhooks/payments` | provider (signature) | header `x-dw-signature` = hex HMAC-SHA256 of the raw body with `PAYMENTS_WEBHOOK_SECRET`. Order of checks: signature → dedupe by `eventId` → amount **and** currency must equal the order's → first verified success wins (`PAID`, order `PREPAID`). Replays are acknowledged and ignored; money received for an already cancelled/expired order is recorded in the audit log as `payment.refund_required`. |
-| `POST /payments/sandbox/:merchantTranId/complete {outcome}` | owner | **sandbox provider only** (404 otherwise; refused in production): signs an event and sends it through the same webhook code path. No real money. |
-An unpaid bulk order is cancelled and its stock released after `payments.holdMinutes` (30). Browser redirects never mark an order paid.
-No real gateway adapter exists yet: with `PAYMENTS_PROVIDER=disabled` (the default and the only production value today) bulk orders cannot be placed.
+## Payment: cash on delivery only
+Every order has `paymentMethod: "COD"` and `paymentStatus: "UNPAID" | "PAID"` (with `paidAt`), independent of the delivery status. Placing an order never marks it paid, and the client cannot send either field (strict schema). An **ADMIN** records the cash with `PATCH /admin/orders/:id/payment {paymentStatus}` (audited; not allowed on cancelled orders; managers get `READ_ONLY`). There is no online payment, gateway, webhook or payment table.
+
+## Delivery fee
+`deliveryFeePoisha` is set by the server from the zone: `delivery.fees` setting (`IN_CITY` = In Sylhet, `OUTER_CITY` = Outer Sylhet), default 0, edited in admin Settings (`PUT /admin/config {deliveryFeesTaka:{IN_CITY,OUTER_CITY}}`). Charged for home delivery only; `totalPoisha = subtotalPoisha + deliveryFeePoisha`. The zone and fee are stored on the order.
 
 ## Staff (`/admin/*`)
 | Call | ADMIN | MANAGER |
@@ -82,8 +79,8 @@ No real gateway adapter exists yet: with `PAYMENTS_PROVIDER=disabled` (the defau
 | `POST /admin/inventory {outletId,variantId,quantity}` (counted on-hand at any outlet) | yes | 403 |
 | `GET/POST /admin/categories`, `PATCH /admin/categories/:id` | yes | read only |
 | `GET /admin/orders?status&method&q&page&limit`, `GET /admin/orders/:id` (adds `next[]`, `cancelReason`) | yes | yes |
-| `PATCH /admin/orders/:id {status, reason?}` | yes | 403 |
-| `GET /admin/config`, `PUT /admin/config {hours:{open,close}, bulk:{minTotalQuantity,minTotalTaka}}` (saving clears the "placeholder" flag) | yes | read only |
+| `PATCH /admin/orders/:id {status, reason?}`, `PATCH /admin/orders/:id/payment {paymentStatus}` | yes | 403 |
+| `GET /admin/config`, `PUT /admin/config {hours:{open,close}, bulk:{minTotalQuantity,minTotalTaka}, deliveryFeesTaka?:{IN_CITY,OUTER_CITY}}` (saving clears the "placeholder" flag) | yes | read only |
 | `GET /admin/outlets`, `PATCH /admin/outlets/:id`, `PUT /admin/outlets/:id/hours`, `PUT /admin/fulfilment-outlets {dispatchOutletId,collectionOutletId}` | yes | read only |
 | `GET /admin/audit?entityType&entityId&limit` | yes | yes |
 
@@ -93,4 +90,4 @@ Variant `stock`: units available at the dispatch outlet; `null` = **stock not co
 `GET /health/live` (process up), `GET /health/ready` (database reachable and migrated). No versions, hosts or secrets.
 
 ## Not in this phase
-Coupons, delivery fee, saved addresses, customer self-cancel, refunds API, SMS order notifications, account-deletion requests, a real payment gateway adapter. (Removed with the old design: areas, delivery slots, COD, riders.)
+Coupons, saved addresses, customer self-cancel, SMS order notifications, account-deletion requests, any online payment. (Removed with the old design: areas, delivery slots, COD, riders.)

@@ -12,10 +12,10 @@ export function DeliveryInfo({ categorySlug, outerCityStatus }: { categorySlug: 
   return (
     <ul className="mt-3 grid gap-1.5 text-sm" aria-label="ডেলিভারি জোন">
       <li className="notice notice-info">
-        <b>ইন সিটি:</b> <span>{ETA_TEXT.IN_CITY}</span>
+        <b>ইন সিলেট:</b> <span>{ETA_TEXT.IN_CITY}</span>
       </li>
       <li className={`notice ${outer.eligible ? 'notice-info' : 'notice-warn'}`}>
-        <b>আউটার সিটি:</b> <span>{outer.eligible ? ETA_TEXT.OUTER_CITY : REASON_MESSAGES[outer.reason]}</span>
+        <b>আউটার সিলেট:</b> <span>{outer.eligible ? ETA_TEXT.OUTER_CITY : REASON_MESSAGES[outer.reason]}</span>
       </li>
     </ul>
   );

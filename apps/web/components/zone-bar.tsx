@@ -63,21 +63,23 @@ export function ZoneBar() {
     <div className="zone-bar">
       <div className="page-w flex flex-wrap items-center gap-x-3 gap-y-1.5 py-1.5 text-sm">
         <span className="font-semibold">ডেলিভারি জোন:</span>
-        <div role="group" aria-label="ডেলিভারি জোন" className="seg-group on-bar">
-          {seg('IN_CITY', 'ইন সিটি')}
-          {seg('OUTER_CITY', 'আউটার সিটি')}
+        <div className="zone-actions">
+          <div role="group" aria-label="ডেলিভারি জোন" className="seg-group on-bar">
+            {seg('IN_CITY', 'ইন সিলেট')}
+            {seg('OUTER_CITY', 'আউটার সিলেট')}
+          </div>
+          <Link href="/bulk" className="zone-action">
+            শোরুম থেকে অর্ডার
+          </Link>
         </div>
         <span>{ETA_TEXT[zone]}</span>
         <OrderingChip now={now} />
         {blocked > 0 && (
           <Link href="/cart" className="zone-chip zone-chip-warn" role="alert">
             <b>{bnDigits(blocked)}</b>
-            <span>টি পণ্য আউটার সিটিতে ডেলিভারি হবে না — কার্ট দেখুন</span>
+            <span>টি পণ্য আউটার সিলেটে ডেলিভারি হবে না — কার্ট দেখুন</span>
           </Link>
         )}
-        <Link href="/bulk" className="ml-auto inline-flex min-h-9 items-center font-semibold underline decoration-accent-500 underline-offset-4">
-          বাল্ক অর্ডার
-        </Link>
       </div>
     </div>
   );

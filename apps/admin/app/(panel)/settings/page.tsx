@@ -12,7 +12,7 @@ import { Field, Loading, Msg, PageTitle } from '@/components/ui';
 interface Cfg {
   hours: { openMinute: number; closeMinute: number };
   bulk: { minTotalQuantity: number; minTotalPoisha: number; isPlaceholder: boolean };
-  payments?: { enabled: boolean; sandbox: boolean };
+  deliveryFees?: { IN_CITY: number; OUTER_CITY: number };
 }
 interface Outlets {
   data: { id: string; code: string; nameBn: string; status: string }[];
@@ -27,7 +27,7 @@ export default function SettingsPage() {
   const { data, error, reload } = useLoad<Cfg>('/admin/config');
   const outlets = useLoad<Outlets>('/admin/outlets');
   const roles = useAction();
-  const [f, setF] = useState({ open: '', close: '', qty: '', amount: '' });
+  const [f, setF] = useState({ open: '', close: '', qty: '', amount: '', feeIn: '0', feeOut: '0' });
   const save = useAction();
   const reset = useAction();
   const [confirm, setConfirm] = useState('');
@@ -35,7 +35,7 @@ export default function SettingsPage() {
     if (!canEdit) router.replace('/');
   }, [canEdit, router]);
   useEffect(() => {
-    if (data) setF({ open: minutesToHHMM(data.hours.openMinute), close: minutesToHHMM(data.hours.closeMinute), qty: String(data.bulk.minTotalQuantity), amount: poishaToInput(data.bulk.minTotalPoisha) });
+    if (data) setF({ open: minutesToHHMM(data.hours.openMinute), close: minutesToHHMM(data.hours.closeMinute), qty: String(data.bulk.minTotalQuantity), amount: poishaToInput(data.bulk.minTotalPoisha), feeIn: poishaToInput(data.deliveryFees?.IN_CITY ?? 0) || '0', feeOut: poishaToInput(data.deliveryFees?.OUTER_CITY ?? 0) || '0' });
   }, [data]);
   if (!canEdit || !data) return <Loading error={error} />;
 
@@ -49,9 +49,10 @@ export default function SettingsPage() {
           void save.run(async () => {
             const open = hhmmToMinutes(f.open), close = hhmmToMinutes(f.close);
             if (open === null || close === null || open >= close) throw new Error('খোলার সময় বন্ধের সময়ের আগে হতে হবে');
-            if (!/^\d+$/.test(f.qty) || Number(f.qty) < 1) throw new Error('বাল্কের ন্যূনতম সংখ্যা ১ বা বেশি হতে হবে');
-            if (!/^\d+$/.test(f.amount) || Number(f.amount) < 1) throw new Error('বাল্কের ন্যূনতম টাকা পূর্ণ সংখ্যায় লিখুন');
-            await api('/admin/config', { method: 'PUT', body: { hours: { open: f.open, close: f.close }, bulk: { minTotalQuantity: Number(f.qty), minTotalTaka: Number(f.amount) } } });
+            if (!/^\d+$/.test(f.qty) || Number(f.qty) < 1) throw new Error('শোরুম অর্ডারের ন্যূনতম সংখ্যা ১ বা বেশি হতে হবে');
+            if (!/^\d+$/.test(f.amount) || Number(f.amount) < 1) throw new Error('শোরুম অর্ডারের ন্যূনতম টাকা পূর্ণ সংখ্যায় লিখুন');
+            if (!/^\d+$/.test(f.feeIn) || !/^\d+$/.test(f.feeOut)) throw new Error('ডেলিভারি চার্জ পূর্ণ টাকায় লিখুন (০ হলে ফ্রি)');
+            await api('/admin/config', { method: 'PUT', body: { hours: { open: f.open, close: f.close }, bulk: { minTotalQuantity: Number(f.qty), minTotalTaka: Number(f.amount) }, deliveryFeesTaka: { IN_CITY: Number(f.feeIn), OUTER_CITY: Number(f.feeOut) } } });
             await reload();
           }, 'সংরক্ষণ হয়েছে। দোকানে এক মিনিটের মধ্যে কার্যকর হবে।');
         }}
@@ -66,7 +67,7 @@ export default function SettingsPage() {
           </Field>
         </div>
         <p className="mb-3 text-sm text-muted">এই সময়ের বাইরে দোকানে অর্ডার নেওয়া বন্ধ থাকে।</p>
-        <h2 className="mb-2 mt-4 font-semibold">বাল্ক অর্ডারের ন্যূনতম সীমা</h2>
+        <h2 className="mb-2 mt-4 font-semibold">শোরুম অর্ডারের ন্যূনতম সীমা</h2>
         {data.bulk.isPlaceholder && <p className="mb-2 rounded-xl bg-warn-bg p-3 text-sm">এখনকার মান শুধু অস্থায়ী (অনুমোদিত নয়)। আপনার আসল সীমা দিয়ে সংরক্ষণ করুন।</p>}
         <div className="grid grid-cols-2 gap-3">
           <Field label="মোট পণ্যের সংখ্যা (টি)" id="s-qty">
@@ -76,7 +77,17 @@ export default function SettingsPage() {
             <input id="s-amt" inputMode="numeric" className="field font-latin" value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} required />
           </Field>
         </div>
-        <p className="mb-3 text-sm text-muted">যেকোনো একটি পূরণ হলেই অর্ডারটি বাল্ক হবে (শুধু মদিনা মার্কেট শাখা থেকে সংগ্রহ)।</p>
+        <p className="mb-3 text-sm text-muted">যেকোনো একটি পূরণ হলেই অর্ডারটি শোরুম অর্ডার হবে (শুধু মদিনা মার্কেট শাখা থেকে সংগ্রহ)।</p>
+        <h2 className="mb-2 mt-4 font-semibold">ডেলিভারি চার্জ (হোম ডেলিভারি, টাকা)</h2>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="ইন সিলেট" id="s-fin">
+            <input id="s-fin" inputMode="numeric" className="field font-latin" value={f.feeIn} onChange={(e) => setF({ ...f, feeIn: e.target.value })} required />
+          </Field>
+          <Field label="আউটার সিলেট" id="s-fout">
+            <input id="s-fout" inputMode="numeric" className="field font-latin" value={f.feeOut} onChange={(e) => setF({ ...f, feeOut: e.target.value })} required />
+          </Field>
+        </div>
+        <p className="mb-3 text-sm text-muted">০ মানে ফ্রি। পিকআপ ও শোরুম থেকে নিলে কোনো চার্জ নেই। পেমেন্ট শুধু ক্যাশ অন ডেলিভারি।</p>
         <Msg error={save.error} ok={save.ok} />
         <button className="btn btn-primary" disabled={save.busy} aria-busy={save.busy}>
           সংরক্ষণ করুন
@@ -85,11 +96,11 @@ export default function SettingsPage() {
 
       <section className="card mt-6 max-w-xl p-4" aria-labelledby="roles">
         <h2 id="roles" className="mb-2 font-semibold">
-          আউটলেট ও পেমেন্ট
+          আউটলেট
         </h2>
         {outlets.data && outlets.data.data.length > 0 ? (
           <>
-            {([['dispatchOutletId', 'হোম ডেলিভারির স্টক যে আউটলেট থেকে'], ['collectionOutletId', 'বাল্ক অর্ডার সংগ্রহের আউটলেট (মদিনা মার্কেট শাখা)']] as const).map(([k, label]) => (
+            {([['dispatchOutletId', 'হোম ডেলিভারির স্টক যে আউটলেট থেকে'], ['collectionOutletId', 'শোরুম থেকে অর্ডার নেওয়ার আউটলেট (মদিনা মার্কেট শাখা)']] as const).map(([k, label]) => (
               <Field key={k} label={label} id={k}>
                 <select
                   id={k}
@@ -111,9 +122,6 @@ export default function SettingsPage() {
         ) : (
           <p className="notice notice-warn text-sm">কোনো আউটলেট নেই। মালিকের দেওয়া তথ্য দিয়ে সেটআপ কমান্ড চালান (docs/SETUP_OWNER_DATA.md)।</p>
         )}
-        <p className="mt-3 text-sm">
-          <b>অনলাইন পেমেন্ট:</b> {data.payments?.enabled ? (data.payments.sandbox ? 'স্যান্ডবক্স (নকল টাকা)' : 'চালু') : 'বন্ধ — বাল্ক অর্ডার নেওয়া যাবে না'}
-        </p>
       </section>
 
       {DEMO && (

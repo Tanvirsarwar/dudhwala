@@ -1,4 +1,4 @@
--- Constraints Prisma cannot express. Appended to migration 0005_v2_domain and
+-- Constraints Prisma cannot express. Appended to migrations 0005/0006 and
 -- applied by the dev bootstrap; every statement is the last line of defence
 -- behind application logic.
 
@@ -37,18 +37,10 @@ ALTER TABLE "order" ADD CONSTRAINT order_method_fields CHECK (
 ALTER TABLE "order" ADD CONSTRAINT order_status_matches_method CHECK (status = 'CANCELLED' OR
   (method = 'HOME_DELIVERY' AND status IN ('PLACED','PREPARING','OUT_FOR_DELIVERY','DELIVERED')) OR
   (method = 'EXPRESS_PICKUP' AND status IN ('PICKUP_REQUESTED','PREPARING','READY_FOR_PICKUP','PICKED_UP')) OR
-  (method = 'BULK_ORDER' AND status IN ('PENDING_PAYMENT','PREPAID','PREPARING','READY_FOR_COLLECTION','COLLECTED')));
--- A bulk order past PENDING_PAYMENT must have a verified payment on record.
-ALTER TABLE "order" ADD CONSTRAINT order_bulk_paid CHECK (
-  method <> 'BULK_ORDER' OR status IN ('PENDING_PAYMENT','CANCELLED') OR payment_status = 'PAID');
-CREATE INDEX order_pending_expiry ON "order" (payment_expires_at) WHERE status = 'PENDING_PAYMENT';
+  (method = 'BULK_ORDER' AND status IN ('PLACED','PREPARING','READY_FOR_COLLECTION','COLLECTED')));
+ALTER TABLE "order" ADD CONSTRAINT order_paid_has_time CHECK ((payment_status = 'PAID') = (paid_at IS NOT NULL));
 ALTER TABLE order_item ADD CONSTRAINT order_item_money
   CHECK (unit_price_poisha > 0 AND quantity > 0 AND line_total_poisha = unit_price_poisha * quantity);
-
--- Payments
-ALTER TABLE payment ADD CONSTRAINT payment_money CHECK (amount_poisha > 0 AND (paid_amount_poisha IS NULL OR paid_amount_poisha > 0));
-ALTER TABLE payment ADD CONSTRAINT payment_currency CHECK (currency = 'BDT');
-ALTER TABLE payment ADD CONSTRAINT payment_paid_is_verified CHECK (status <> 'PAID' OR (verified_at IS NOT NULL AND paid_amount_poisha = amount_poisha));
 
 -- Rate limits
 ALTER TABLE rate_limit_bucket ADD CONSTRAINT rate_limit_count_non_negative CHECK ("count" >= 0);
@@ -61,4 +53,3 @@ END $$;
 CREATE TRIGGER stock_movement_append_only BEFORE UPDATE OR DELETE ON stock_movement FOR EACH ROW EXECUTE FUNCTION forbid_mutation();
 CREATE TRIGGER audit_log_append_only BEFORE UPDATE OR DELETE ON audit_log FOR EACH ROW EXECUTE FUNCTION forbid_mutation();
 CREATE TRIGGER order_status_event_append_only BEFORE UPDATE OR DELETE ON order_status_event FOR EACH ROW EXECUTE FUNCTION forbid_mutation();
-CREATE TRIGGER payment_event_append_only BEFORE DELETE ON payment_event FOR EACH ROW EXECUTE FUNCTION forbid_mutation();

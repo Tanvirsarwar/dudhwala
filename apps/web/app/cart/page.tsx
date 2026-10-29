@@ -68,14 +68,14 @@ export default function CartPage() {
             <div className="notice notice-err" role="alert">
               <p className="font-semibold">
                 <b>{bnDigits(ineligible.size)}</b>
-                <span>টি পণ্য আউটার সিটিতে ডেলিভারি করা যায় না।</span> <span>এগুলো কার্টে চিহ্নিত আছে।</span>
+                <span>টি পণ্য আউটার সিলেটে ডেলিভারি করা যায় না।</span> <span>এগুলো কার্টে চিহ্নিত আছে।</span>
               </p>
               <p className="mt-1 text-sm">
                 <span>চেকআউটের আগে জোন বদলান অথবা এই পণ্যগুলো সরান।</span> <span>কিছু নিজে থেকে সরানো হবে না।</span>
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <button type="button" className="btn btn-primary btn-compact" onClick={() => setZone('IN_CITY')}>
-                  ইন সিটি বেছে নিন
+                  ইন সিলেট বেছে নিন
                 </button>
                 <button
                   type="button"
@@ -91,7 +91,7 @@ export default function CartPage() {
           )}
           {bulk?.isBulk && (
             <p className="notice notice-info" role="note">
-              <b>বাল্ক অর্ডার।</b> <span>এই কার্ট বাল্ক অর্ডারের আওতায় পড়ে। হোম ডেলিভারি ও এক্সপ্রেস পিকআপ নেই; শুধু মদিনা মার্কেট শাখা থেকে সংগ্রহ করা যাবে, আগে পেমেন্ট (ডেমো/সিমুলেটেড) লাগবে।</span>
+              <b>শোরুম থেকে অর্ডার।</b> <span>এই কার্ট শোরুম অর্ডারের আওতায় পড়ে। হোম ডেলিভারি ও এক্সপ্রেস পিকআপ নেই; শুধু মদিনা মার্কেট শাখা থেকে সংগ্রহ করা যাবে, আগে পেমেন্ট (ডেমো/সিমুলেটেড) লাগবে।</span>
             </p>
           )}
           <ul className="grid gap-3">
@@ -110,7 +110,7 @@ export default function CartPage() {
                   </p>
                   {ineligible.has(l.variantId) && (
                     <p className="mt-1">
-                      <span className="badge-ineligible">আউটার সিটিতে ডেলিভারি হয় না</span>
+                      <span className="badge-ineligible">আউটার সিলেটে ডেলিভারি হয় না</span>
                     </p>
                   )}
                   {!l.available && (
@@ -155,7 +155,7 @@ export default function CartPage() {
             {blocked && <p className="mt-2 text-sm text-danger">{ineligible.size > 0 ? 'চিহ্নিত পণ্যগুলো ঠিক করে নিন।' : 'অপ্রাপ্য পণ্যগুলো ঠিক করে নিন।'}</p>}
             {ZONE_ORDERING && bulk && (
               <p className="mt-3 text-xs text-muted">
-                <span>{cfg.isPlaceholder ? 'বাল্ক অর্ডারের সীমা (চূড়ান্ত নয়):' : 'বাল্ক অর্ডারের সীমা:'}</span> <b>{bnDigits(cfg.bulk.minTotalQuantity)}</b> <span>টি বা তার বেশি।</span>
+                <span>{cfg.isPlaceholder ? 'শোরুম অর্ডারের সীমা (চূড়ান্ত নয়):' : 'শোরুম অর্ডারের সীমা:'}</span> <b>{bnDigits(cfg.bulk.minTotalQuantity)}</b> <span>টি বা তার বেশি।</span>
               </p>
             )}
           </aside>

@@ -12,19 +12,19 @@ const { ok, done } = reporter('storefront');
   // ───── A. catalogue + zones ─────
   let [c, p] = await makeContext(b, errs, { at: noon });
   await p.goto(WEB, { waitUntil: 'load' }); await p.waitForTimeout(1200);
-  ok('In City: all 59 real products', (await count(p, '#products .product-grid > li')) === 59);
+  ok('In Sylhet: all 59 real products', (await count(p, '#products .product-grid > li')) === 59);
   const pills = (await p.locator('.pill').allInnerTexts()).map((t) => t.replace(/\s+/g, ' '));
   ok('category bar: All + 3 categories', pills.length === 4 && /দুগ্ধজাত মিষ্টি/.test(pills[1]) && /দই/.test(pills[2]) && /বেকারি/.test(pills[3]), pills.join(' | '));
   ok('no sample products; prices not invented', !/মসুর ডাল|বাসমতি|চানাচুর/.test(await p.locator('main').innerText()) && (await count(p, '#products .price-pending')) === 59);
   ok('photo fallbacks are category tiles (no fake photos, no SVG product art)', (await count(p, '#products .photo-fallback')) === 59 && (await count(p, '#products .photo-fallback[data-cat="bakery"]')) === 25 && (await p.evaluate(() => ![...document.images].some((i) => /\.svg/.test(i.src) && !/logo/.test(i.src)))));
-  await p.getByRole('button', { name: 'আউটার সিটি' }).click(); await p.waitForTimeout(500);
+  await p.getByRole('button', { name: 'আউটার সিলেট' }).click(); await p.waitForTimeout(500);
   const names = await p.locator('#products .product-grid h3').allInnerTexts();
-  ok('Outer City: 25 products (19 Bakery + Ghee, Nimki + 4 Doi)', names.length === 25 && ['ঘি', 'নিমকি', 'বাটি দই', 'কাপ দই', 'প্রিমিয়াম দই', 'প্রিমিয়াম কাপ দই'].every((n) => names.includes(n)));
-  ok('Outer City hides unmarked sweets, other Doi and unverified bakery', !names.some((n) => /রসগোল্লা|কালোজাম|টক দই|মাঠা|ঘোল|ভ্যানিলা বিস্কুট|ড্রাই কেক/.test(n)));
+  ok('Outer Sylhet: 25 products (19 Bakery + Ghee, Nimki + 4 Doi)', names.length === 25 && ['ঘি', 'নিমকি', 'বাটি দই', 'কাপ দই', 'প্রিমিয়াম দই', 'প্রিমিয়াম কাপ দই'].every((n) => names.includes(n)));
+  ok('Outer Sylhet hides unmarked sweets, other Doi and unverified bakery', !names.some((n) => /রসগোল্লা|কালোজাম|টক দই|মাঠা|ঘোল|ভ্যানিলা বিস্কুট|ড্রাই কেক/.test(n)));
   await p.reload({ waitUntil: 'load' }); await p.waitForTimeout(900);
   ok('zone choice survives reload', (await count(p, '#products .product-grid > li')) === 25);
-  await p.getByRole('button', { name: 'ইন সিটি' }).click(); await p.waitForTimeout(400);
-  ok('zone strip: In City promise, no instant delivery', /২৪ ঘণ্টার মধ্যে ডেলিভারি/.test(await p.locator('.zone-bar').innerText()));
+  await p.getByRole('button', { name: 'ইন সিলেট' }).click(); await p.waitForTimeout(400);
+  ok('zone strip: In Sylhet promise, no instant delivery', /২৪ ঘণ্টার মধ্যে ডেলিভারি/.test(await p.locator('.zone-bar').innerText()));
   await c.close();
 
   // ───── B. search + sort + filters (prices set through the admin API so sorting can be tested) ─────
@@ -59,7 +59,7 @@ const { ok, done } = reporter('storefront');
   // ───── C. product page + cart ─────
   [c, p] = await makeContext(b, errs, { at: noon });
   await p.goto(`${WEB}/p/bk-bun`, { waitUntil: 'load' }); await p.waitForTimeout(900);
-  ok('product page: price ৳30, both delivery zones, no fake stock claim', /৳\s?৩০/.test(await p.locator('article').innerText()) && /ইন সিটি:/.test(await p.locator('article').innerText()) && !/স্টকে আছে/.test(await p.locator('article').innerText()));
+  ok('product page: price ৳30, both delivery zones, no fake stock claim', /৳\s?৩০/.test(await p.locator('article').innerText()) && /ইন সিলেট:/.test(await p.locator('article').innerText()) && !/স্টকে আছে/.test(await p.locator('article').innerText()));
   await p.getByRole('button', { name: 'বাড়ান' }).click(); await p.getByRole('button', { name: 'কার্টে যোগ করুন', exact: true }).click(); await p.waitForTimeout(700);
   ok('add to cart: success message with link, header badge updates', /কার্টে যোগ হয়েছে/.test(await p.locator('article').innerText()) && /২/.test(await p.locator('header a[href="/cart"]').innerText()));
   await p.goto(`${WEB}/cart`, { waitUntil: 'load' }); await p.waitForTimeout(800);
@@ -74,12 +74,12 @@ const { ok, done } = reporter('storefront');
   // zone change re-validates the cart
   await addToCart(c, 'ds-01', 2); await addToCart(c, 'bk-bun', 1);
   await p.goto(`${WEB}/cart`, { waitUntil: 'load' }); await p.waitForTimeout(700);
-  await p.getByRole('button', { name: 'আউটার সিটি' }).click(); await p.waitForTimeout(500);
-  ok('zone change: ineligible line flagged, not silently removed; checkout blocked', /আউটার সিটিতে ডেলিভারি হয় না/.test(await p.locator('main').innerText()) && (await count(p, 'main ul > li.card')) === 2 && (await p.locator('a:has-text("চেকআউট")').getAttribute('aria-disabled')) === 'true');
+  await p.getByRole('button', { name: 'আউটার সিলেট' }).click(); await p.waitForTimeout(500);
+  ok('zone change: ineligible line flagged, not silently removed; checkout blocked', /আউটার সিলেটে ডেলিভারি হয় না/.test(await p.locator('main').innerText()) && (await count(p, 'main ul > li.card')) === 2 && (await p.locator('a:has-text("চেকআউট")').getAttribute('aria-disabled')) === 'true');
   await p.getByRole('button', { name: 'চিহ্নিত পণ্যগুলো সরান' }).click(); await p.waitForTimeout(700);
   ok('explicit remove clears only the flagged item', (await count(p, 'main ul > li.card')) === 1 && (await p.locator('a:has-text("চেকআউট")').getAttribute('aria-disabled')) !== 'true');
   await p.goto(`${WEB}/p/ds-01`, { waitUntil: 'load' }); await p.waitForTimeout(700);
-  ok('ineligible product in Outer City: add button disabled with reason', await p.getByRole('button', { name: 'কার্টে যোগ করুন', exact: true }).isDisabled());
+  ok('ineligible product in Outer Sylhet: add button disabled with reason', await p.getByRole('button', { name: 'কার্টে যোগ করুন', exact: true }).isDisabled());
   await p.goto(`${WEB}/p/does-not-exist`, { waitUntil: 'load' });
   ok('unknown product → not-found page with a way home', /পাওয়া যায়নি|404/.test(await p.locator('body').innerText()) && (await p.getByRole('link').filter({ hasText: /প্রথম পাতা|হোম|ফিরে/ }).count()) > 0);
   await c.close();
@@ -137,13 +137,13 @@ const { ok, done } = reporter('storefront');
   await p.waitForTimeout(5600); ok('pickup confirmed only once the outlet marks it ready', /পিকআপ নিশ্চিত — অর্ডার প্রস্তুত/.test(await p.locator('main').innerText()));
   // bulk
   await addToCart(c, 'bk-bun', 20); await p.goto(`${WEB}/cart`, { waitUntil: 'load' }); await p.waitForTimeout(700);
-  ok('cart shows the bulk notice at the configured threshold', /বাল্ক অর্ডার/.test(await p.locator('main').innerText()));
+  ok('cart shows the bulk notice at the configured threshold', /শোরুম থেকে অর্ডার/.test(await p.locator('main').innerText()));
   await p.goto(`${WEB}/checkout`, { waitUntil: 'load' }); await p.waitForTimeout(800);
   ok('bulk: home delivery + pickup disabled, bulk preselected', (await p.locator('input[name=fulfilment]').nth(0).isDisabled()) && (await p.locator('input[name=fulfilment]').nth(1).isDisabled()) && (await p.locator('input[name=fulfilment]').nth(2).isChecked()));
   const bt = await p.locator('main').innerText(); ok('bulk: Modina Market Branch only, Demo/Simulated Payment, no delivery', /মদিনা মার্কেট শাখা/.test(bt) && /ডেমো\/সিমুলেটেড পেমেন্ট/.test(bt) && /ডেলিভারি নেই/.test(bt));
   await p.fill('#dc-name', 'করিম'); await p.fill('#dc-phone', '01812345678');
   await p.getByRole('button', { name: 'অর্ডার দিন', exact: true }).click(); await p.waitForTimeout(300);
-  ok('bulk without prepayment rejected', /বাল্ক অর্ডারে আগে পেমেন্ট/.test(await p.locator('aside').innerText()) && !/অর্ডার সংরক্ষিত হয়েছে/.test(await p.locator('main').innerText()));
+  ok('bulk without prepayment rejected', /শোরুম অর্ডারে আগে পেমেন্ট/.test(await p.locator('aside').innerText()) && !/অর্ডার সংরক্ষিত হয়েছে/.test(await p.locator('main').innerText()));
   const payBtn = p.locator('button[aria-pressed]', { hasText: /সিমুলেটেড পেমেন্ট/ }); await payBtn.click();
   ok('simulated payment state shown and pressed', (await payBtn.getAttribute('aria-pressed')) === 'true' && /সিমুলেটেড পেমেন্ট সম্পন্ন/.test(await payBtn.innerText()));
   await p.getByRole('button', { name: 'অর্ডার দিন', exact: true }).click(); await p.waitForTimeout(1000);
@@ -164,13 +164,13 @@ const { ok, done } = reporter('storefront');
   ok('bulk search is typo tolerant', /সন্দেশ/.test(await p.locator('.bulk-list').first().innerText()));
   await c.close();
 
-  // Outer City order with Bati Doi
+  // Outer Sylhet order with Bati Doi
   [c, p] = await makeContext(b, errs, { at: noon }); await addToCart(c, 'doi-03', 1); await p.goto(`${WEB}/checkout`, { waitUntil: 'load' }); await p.waitForTimeout(800);
-  ok('In City address hint', /সিলেট সদরের যেকোনো জায়গায়/.test(await p.locator('main').innerText()));
-  await p.getByRole('button', { name: 'আউটার সিটি' }).click(); await p.waitForTimeout(400);
-  ok('Outer City address hint', /সিলেটের বাইরের যেকোনো জায়গায়/.test(await p.locator('main').innerText()));
+  ok('In Sylhet address hint', /সিলেট সদরের যেকোনো জায়গায়/.test(await p.locator('main').innerText()));
+  await p.getByRole('button', { name: 'আউটার সিলেট' }).click(); await p.waitForTimeout(400);
+  ok('Outer Sylhet address hint', /সিলেটের বাইরের যেকোনো জায়গায়/.test(await p.locator('main').innerText()));
   await p.fill('#dc-name', 'করিম'); await p.fill('#dc-phone', '01812345678'); await p.fill('#dc-line1', 'বিয়ানীবাজার, সিলেট'); await p.getByRole('button', { name: 'অর্ডার দিন', exact: true }).click(); await p.waitForTimeout(1000);
-  ok('Outer City order with Bati Doi placed (1–2 days)', /অর্ডার সংরক্ষিত হয়েছে/.test(await p.locator('main').innerText()) && /১-২ দিনের মধ্যে ডেলিভারি/.test(await p.locator('main').innerText()));
+  ok('Outer Sylhet order with Bati Doi placed (1–2 days)', /অর্ডার সংরক্ষিত হয়েছে/.test(await p.locator('main').innerText()) && /১-২ দিনের মধ্যে ডেলিভারি/.test(await p.locator('main').innerText()));
   await c.close();
 
   // ───── F. account + order screens ─────

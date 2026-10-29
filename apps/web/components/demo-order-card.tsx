@@ -18,6 +18,12 @@ export function DemoOrderCard({ order }: { order: DemoOrder }) {
         {STATUS_LABEL[order.status]}
       </p>
       <dl className="mt-2 grid gap-1 text-sm">
+        {order.method === 'HOME_DELIVERY' && order.zone && (
+          <div>
+            <dt className="inline font-semibold">ডেলিভারি জোন: </dt>
+            <dd className="inline">{order.zone === 'IN_CITY' ? 'ইন সিলেট' : 'আউটার সিলেট'}</dd>
+          </div>
+        )}
         {order.method === 'HOME_DELIVERY' && order.etaZone && (
           <div>
             <dt className="inline font-semibold">আনুমানিক ডেলিভারি: </dt>
@@ -73,6 +79,12 @@ export function DemoOrderCard({ order }: { order: DemoOrder }) {
           </li>
         ))}
       </ul>
+      {order.deliveryFeePoisha ? (
+        <p className="mt-1 flex justify-between text-sm">
+          <span>ডেলিভারি চার্জ</span>
+          <span>{taka(order.deliveryFeePoisha)}</span>
+        </p>
+      ) : null}
       <p className="mt-2 flex justify-between border-t border-line pt-2 font-bold">
         <span>মোট</span>
         <span className={order.totalPoisha === null ? 'price-pending' : ''}>{taka(order.totalPoisha)}</span>

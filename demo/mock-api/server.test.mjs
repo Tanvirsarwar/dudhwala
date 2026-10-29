@@ -106,7 +106,7 @@ test('orders: server prices the lines, repeats zone + bulk rules, never leaks co
   const sv = (await call('GET', `/admin/products/${sweet.id}`, { cookie: admin.cookie })).json.variants[0].id;
   const bv = (await call('GET', `/admin/products/${bakery.id}`, { cookie: admin.cookie })).json.variants;
   const home = (lines, zone) => call('POST', '/orders', { body: { method: 'HOME_DELIVERY', zone, lines, address: addr } });
-  assert.equal((await home([{ variantId: sv, quantity: 1 }], 'OUTER_CITY')).json.error.code, 'NOT_DELIVERABLE', 'unflagged sweet cannot go Outer City');
+  assert.equal((await home([{ variantId: sv, quantity: 1 }], 'OUTER_CITY')).json.error.code, 'NOT_DELIVERABLE', 'unflagged sweet cannot go Outer Sylhet');
   assert.equal((await home([{ variantId: sv, quantity: 1 }], null)).status, 422);
   assert.equal((await home([{ variantId: 'nope', quantity: 1 }], 'IN_CITY')).status, 409);
   assert.equal((await home([{ variantId: bv[0].id, quantity: 0 }], 'IN_CITY')).status, 400);

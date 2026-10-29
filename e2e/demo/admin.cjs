@@ -29,7 +29,7 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
  const pid=p.url().split('/').pop(); ok('edit page loads form with names', await p.inputValue('#f-en')==='Kheer Mohan');
  await p.fill('#f-bn','ক্ষীরমোহন (বিশেষ)'); await p.fill('#f-descriptionBn','ছানা ও ক্ষীরের মিষ্টি'); await p.locator('input[aria-label="সাইজ 1 লেবেল"]').fill('৫০০ গ্রাম'); await p.locator('input[aria-label="সাইজ 1 দাম"]').fill('450'); await p.locator('input[aria-label="সাইজ 1 স্টক"]').fill('12');
  await p.getByRole('button',{name:'+ আরেকটি সাইজ যোগ করুন'}).click(); await p.locator('input[aria-label="সাইজ 2 লেবেল"]').fill('১ কেজি'); await p.locator('input[aria-label="সাইজ 2 দাম"]').fill('850'); await p.locator('input[aria-label="সাইজ 2 পুরোনো দাম"]').fill('900'); await p.locator('input[aria-label="সাইজ 2 স্টক"]').fill('0');
- await p.selectOption('#f-outer','approved'); ok('outer-city result updates live', /আউটার সিটিতে ১-২ দিনে ডেলিভারি হবে/.test(await p.locator('main').innerText()));
+ await p.selectOption('#f-outer','approved'); ok('outer-city result updates live', /আউটার সিলেটে ১-২ দিনে ডেলিভারি হবে/.test(await p.locator('main').innerText()));
  await p.getByRole('button',{name:'সংরক্ষণ করুন'}).click(); await p.waitForTimeout(900); ok('saved message shown', /সংরক্ষণ হয়েছে/.test(await p.locator('.action-bar').innerText()));
  const d=await (await c.request.get(W+'/v1/catalog/products/ds-07')).json();
  ok('storefront detail reflects name, description, sizes, price, offer, stock-out', d.nameBn==='ক্ষীরমোহন (বিশেষ)' && d.content.descriptionBn==='ছানা ও ক্ষীরের মিষ্টি' && d.variants.length===2 && d.variants[0].pricePoisha===45000 && d.variants[1].compareAtPoisha===90000 && d.variants[1].availability==='OUT_OF_STOCK' && d.outerCityStatus==='approved');
@@ -41,8 +41,8 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
  const d2=await (await c.request.get(W+'/v1/catalog/products/ds-07')).json(); ok('valid PNG upload shows on storefront product', d2.images.length===1 && /\/v1\/media\/photos\/ds-07\.png\?v=/.test(d2.images[0].url));
  const imgRes=await c.request.get(W+d2.images[0].url); ok('image served with correct type + nosniff', imgRes.headers()['content-type']==='image/png' && imgRes.headers()['x-content-type-options']==='nosniff');
  await p.getByRole('button',{name:'ছবি মুছুন'}).click(); await p.waitForTimeout(700); ok('image delete works', (await (await c.request.get(W+'/v1/catalog/products/ds-07')).json()).images.length===0);
- // storefront Outer City now includes the product
- const [sc,sp]=await mk({width:1366,height:900}); await sp.goto(W,{waitUntil:'load'}); await sp.getByRole('button',{name:'আউটার সিটি'}).click(); await sp.waitForTimeout(600); ok('Outer City storefront now lists the approved sweet (26 products)', await sp.locator('#products .product-grid > li').count()===26, ''+await sp.locator('#products .product-grid > li').count()); await sc.close();
+ // storefront Outer Sylhet now includes the product
+ const [sc,sp]=await mk({width:1366,height:900}); await sp.goto(W,{waitUntil:'load'}); await sp.getByRole('button',{name:'আউটার সিলেট'}).click(); await sp.waitForTimeout(600); ok('Outer Sylhet storefront now lists the approved sweet (26 products)', await sp.locator('#products .product-grid > li').count()===26, ''+await sp.locator('#products .product-grid > li').count()); await sc.close();
  // hide product, new product, category
  await p.goto(A+'/products/'+pid,{waitUntil:'load'}); await p.waitForTimeout(800); await p.locator('label',{hasText:'দোকানে দেখান'}).locator('input').uncheck(); await p.getByRole('button',{name:'সংরক্ষণ করুন'}).click(); await p.waitForTimeout(800);
  ok('hidden product disappears from storefront', (await c.request.get(W+'/v1/catalog/products/ds-07')).status()===404 && !(await (await c.request.get(W+'/v1/catalog/products?limit=48')).json()).data.some(x=>x.slug==='ds-07'));
@@ -71,7 +71,7 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
  const pick=await place('pickup'); ok('pickup order saved', !!pick.id && /এখনো নিশ্চিত নয়/.test(pick.txt), pick.id);
  const bulk=await place('bulk'); ok('bulk order saved', !!bulk.id, bulk.id);
  await p.goto(A+'/',{waitUntil:'load'}); await p.waitForTimeout(1200); t=await p.locator('main').innerText(); ok('dashboard counts the 3 orders + latest list', /DEMO-/.test(t) && await p.locator('main a[href="/orders"]').first().innerText().then(x=>/3/.test(x)));
- await p.goto(A+'/orders',{waitUntil:'load'}); await p.waitForTimeout(900); ok('orders list shows all 3 methods', await p.locator('tbody tr').count()===3 && /হোম ডেলিভারি/.test(await p.locator('tbody').innerText()) && /এক্সপ্রেস পিকআপ/.test(await p.locator('tbody').innerText()) && /বাল্ক অর্ডার/.test(await p.locator('tbody').innerText()));
+ await p.goto(A+'/orders',{waitUntil:'load'}); await p.waitForTimeout(900); ok('orders list shows all 3 methods', await p.locator('tbody tr').count()===3 && /হোম ডেলিভারি/.test(await p.locator('tbody').innerText()) && /এক্সপ্রেস পিকআপ/.test(await p.locator('tbody').innerText()) && /শোরুম থেকে অর্ডার/.test(await p.locator('tbody').innerText()));
  await p.selectOption('#om','BULK_ORDER'); await p.waitForTimeout(600); ok('filter by type', await p.locator('tbody tr').count()===1); await p.selectOption('#om','');
  await p.goto(A+'/orders/'+pick.id,{waitUntil:'load'}); await p.waitForTimeout(900); const ot=await p.locator('main').innerText(); ok('pickup order detail: customer phone, outlet, pickup time, no delivery wording', /01712345678/.test(ot) && /পিকআপ আউটলেট/.test(ot) && /পিকআপের সময়/.test(ot) && !/ঠিকানা:/.test(ot));
  await p.getByRole('button',{name:'প্রস্তুত করা হচ্ছে'}).click(); await p.waitForTimeout(700);

@@ -398,7 +398,7 @@ createServer(async (req, res) => {
         if (b.categorySlug !== undefined) { if (!catOf(b.categorySlug)) throw new Bad('Unknown category'); next.categorySlug = b.categorySlug; }
         if (typeof b.active === 'boolean') next.active = b.active;
         if (typeof b.nameVerified === 'boolean') next.nameVerified = b.nameVerified;
-        if (b.outerCityStatus !== undefined) { if (!OUTER_FLAGS.includes(b.outerCityStatus)) throw new Bad('Unknown Outer City setting'); next.outerCityStatus = b.outerCityStatus; }
+        if (b.outerCityStatus !== undefined) { if (!OUTER_FLAGS.includes(b.outerCityStatus)) throw new Bad('Unknown Outer Sylhet setting'); next.outerCityStatus = b.outerCityStatus; }
         if (b.content && typeof b.content === 'object') for (const k of Object.keys(next.content)) if (k in b.content) next.content[k] = text(b.content[k], 2000, { label: k }) ?? null;
         if (b.variants !== undefined) {
           if (!Array.isArray(b.variants) || b.variants.length < 1 || b.variants.length > 20) throw new Bad('A product needs 1-20 sizes/options');

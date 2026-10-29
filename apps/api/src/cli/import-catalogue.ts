@@ -1,5 +1,5 @@
 /**
- * Idempotent catalogue import. Reads the product master (names and Outer City marks only: no prices, pack sizes,
+ * Idempotent catalogue import. Reads the product master (names and Outer Sylhet marks only: no prices, pack sizes,
  * stock or photos exist in the source) and creates what is missing:
  *   - categories by slug
  *   - products by slug (the source id), each with ONE blank option whose price is NULL

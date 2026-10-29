@@ -120,7 +120,7 @@ function ProductsInner() {
                 <th>ক্যাটাগরি</th>
                 <th>দাম (৳)</th>
                 <th>স্টক</th>
-                <th>আউটার সিটি</th>
+                <th>আউটার সিলেট</th>
                 <th>দোকানে</th>
               </tr>
             </thead>

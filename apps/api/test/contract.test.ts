@@ -34,7 +34,7 @@ describe('API shapes the UI depends on', () => {
     const cart = (await c.put(`/v1/cart/items/${variant.id}`).send({ quantity: 1 }).expect(200)).body;
     has(cart, ['id', 'lines', 'subtotalPoisha', 'itemCount', 'warnings']);
     has(cart.lines[0], ['variantId', 'productSlug', 'categorySlug', 'outerCityStatus', 'nameBn', 'labelBn', 'unitPricePoisha', 'quantity', 'lineTotalPoisha', 'available', 'maxQty']);
-    has((await request(h.app.getHttpServer()).get('/v1/config').expect(200)).body, ['hours', 'bulk', 'payments']);
+    has((await request(h.app.getHttpServer()).get('/v1/config').expect(200)).body, ['hours', 'bulk', 'deliveryFees', 'paymentMethods']);
     has((await request(h.app.getHttpServer()).get('/v1/outlets').expect(200)).body[0], ['id', 'code', 'nameBn', 'nameEn', 'addressLine', 'hours']);
   });
 
@@ -42,7 +42,7 @@ describe('API shapes the UI depends on', () => {
     const { variant } = await makeProduct(h, { stock: 5, outletId: shop.outlet.id });
     const c = await customer(h);
     const o = (await postOrder(c, home([{ variantId: variant.id, quantity: 1 }])).expect(201)).body;
-    has(o, ['id', 'orderNumber', 'createdAt', 'method', 'zone', 'status', 'paymentStatus', 'lines', 'totalPoisha', 'address', 'contact', 'pickupAt', 'outlet', 'history']);
+    has(o, ['id', 'orderNumber', 'createdAt', 'method', 'zone', 'status', 'paymentMethod', 'paymentStatus', 'lines', 'deliveryFeePoisha', 'totalPoisha', 'address', 'contact', 'pickupAt', 'outlet', 'history']);
     has(o.lines[0], ['variantId', 'productSlug', 'nameBn', 'labelBn', 'quantity', 'unitPricePoisha', 'linePoisha']);
     has(o.address, ['name', 'phone', 'line1', 'landmark']);
     const admin = await adminAgent(h);

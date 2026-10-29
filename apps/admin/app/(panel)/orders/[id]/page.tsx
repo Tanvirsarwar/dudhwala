@@ -21,6 +21,8 @@ interface Order {
   payment?: string;
   /** live */
   paymentStatus?: string;
+  deliveryFeePoisha?: number;
+  subtotalPoisha?: number;
   address?: { name: string; phone: string; line1: string; landmark: string };
   contact?: { name: string; phone: string };
   outlet?: { nameBn: string };
@@ -85,7 +87,7 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
               {o.zone && (
                 <div>
                   <dt className="inline font-semibold">জোন: </dt>
-                  <dd className="inline">{o.zone === 'IN_CITY' ? 'ইন সিটি' : 'আউটার সিটি'}</dd>
+                  <dd className="inline">{o.zone === 'IN_CITY' ? 'ইন সিলেট' : 'আউটার সিলেট'}</dd>
                 </div>
               )}
               {o.outlet && (
@@ -102,7 +104,7 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
               )}
               <div>
                 <dt className="inline font-semibold">পেমেন্ট: </dt>
-                <dd className="inline">{PAYMENT_BN[o.paymentStatus ?? o.payment ?? ''] ?? o.paymentStatus ?? o.payment}</dd>
+                <dd className="inline">{o.paymentStatus ? 'ক্যাশ অন ডেলিভারি · ' : ''}{PAYMENT_BN[o.paymentStatus ?? o.payment ?? ''] ?? o.paymentStatus ?? o.payment}</dd>
               </div>
             </dl>
           </section>
@@ -130,6 +132,14 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
                 ))}
               </tbody>
               <tfoot>
+                {o.deliveryFeePoisha ? (
+                  <tr>
+                    <td colSpan={3} className="text-right">
+                      ডেলিভারি চার্জ
+                    </td>
+                    <td>{taka(o.deliveryFeePoisha)}</td>
+                  </tr>
+                ) : null}
                 <tr>
                   <td colSpan={3} className="text-right font-semibold">
                     মোট
@@ -179,6 +189,24 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
             <Msg error={act.error} ok={act.ok} />
             {o.method === 'EXPRESS_PICKUP' && <p className="mt-2 text-xs text-muted">"পিকআপ নিশ্চিত — অর্ডার প্রস্তুত" দিলে তবেই গ্রাহক পিকআপ নিশ্চিত দেখবেন।</p>}
           </section>
+          {o.paymentStatus && (
+            <section className="card p-4" aria-labelledby="pay">
+              <h2 id="pay" className="mb-2 font-semibold">
+                পেমেন্ট (ক্যাশ অন ডেলিভারি)
+              </h2>
+              <p className="mb-2 text-sm">{PAYMENT_BN[o.paymentStatus]}</p>
+              {canEdit && o.status !== 'CANCELLED' ? (
+                <button
+                  type="button"
+                  className={`btn btn-sm ${o.paymentStatus === 'PAID' ? 'btn-ghost' : 'btn-primary'}`}
+                  disabled={act.busy}
+                  onClick={() => void act.run(async () => setData(await api<Order>(`/admin/orders/${encodeURIComponent(o.id)}/payment`, { method: 'PATCH', body: { paymentStatus: o.paymentStatus === 'PAID' ? 'UNPAID' : 'PAID' } })), 'পেমেন্টের অবস্থা বদলানো হয়েছে')}
+                >
+                  {o.paymentStatus === 'PAID' ? 'ভুল হয়েছে — বাকি করুন' : 'টাকা পাওয়া গেছে'}
+                </button>
+              ) : null}
+            </section>
+          )}
           <section className="card p-4" aria-labelledby="hi">
             <h2 id="hi" className="mb-2 font-semibold">
               ইতিহাস

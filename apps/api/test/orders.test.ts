@@ -228,12 +228,11 @@ describe('bulk classification (quantity OR amount)', () => {
     expect((await postOrder(c, home([line(variant.id, 5)]))).body.error.code).toBe('BULK_REQUIRED');
     expect((await postOrder(c, home([line(variant.id, 4)]))).status).toBe(201);
   });
-  it('a bulk order cannot be placed while online payment is disabled, and reserves nothing', async () => {
+  it('a showroom (bulk-size) order is placed for collection, unpaid cash, and reserves stock at the collection outlet', async () => {
     const { variant } = await makeProduct(h, { priceTaka: 10, stock: 100, outletId: shop.outlet.id });
-    const res = await postOrder(c, bulk([line(variant.id, 20)]));
-    expect(res.status).toBe(503);
-    expect(res.body.error.code).toBe('PAYMENTS_DISABLED');
-    expect((await stockOf(variant.id)).reservedQuantity).toBe(0);
+    const res = await postOrder(c, bulk([line(variant.id, 20)])).expect(201);
+    expect(res.body).toMatchObject({ method: 'BULK_ORDER', status: 'PLACED', paymentMethod: 'COD', paymentStatus: 'UNPAID', outlet: { id: shop.outlet.id } });
+    expect((await stockOf(variant.id)).reservedQuantity).toBe(20);
   });
 });
 

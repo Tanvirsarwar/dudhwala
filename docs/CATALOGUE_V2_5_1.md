@@ -1,10 +1,10 @@
 # V2.5.1 catalogue mapping (demo)
 
-Source: `dudhwala-product-delivery-eligibility.md` (transcription of photographed printed lists). **Names and Outer City marks only.** The source has no prices, pack sizes, stock, photos or outlet mapping, so none were invented: prices and stock are `null` in `demo/mock-api/catalogue.json`, each product has one unlabelled placeholder variant, and the UI shows "Price to be announced".
+Source: `dudhwala-product-delivery-eligibility.md` (transcription of photographed printed lists). **Names and Outer Sylhet marks only.** The source has no prices, pack sizes, stock, photos or outlet mapping, so none were invented: prices and stock are `null` in `demo/mock-api/catalogue.json`, each product has one unlabelled placeholder variant, and the UI shows "Price to be announced".
 
 English names (`nameEn`) are transliterations for the bilingual UI and need the owner's approval. Dairy Sweets rows 21-22 were unreadable and are **not** included.
 
-## Outer City state
+## Outer Sylhet state
 
 | State | Count |
 |---|---|
@@ -13,29 +13,29 @@ English names (`nameEn`) are transliterations for the bilingual UI and need the 
 | eligible (ticked item) | 6 |
 | eligible (Bakery rule) | 19 |
 
-Rules (one place: `ELIGIBILITY_RULES` in `packages/shared/src/ordering.ts`): In City = everything. Outer City = whole Bakery + items flagged `approved` in Dairy Sweets and Doi / Dairy. V2.5.1: the owner confirmed that **Bati Doi, Premium Doi, Premium Cup Doi and Cup Doi are delivered to Outer Sylhet**, so those four are flagged `approved`; the other seven Doi items stay In City only. Items flagged `pending_*` or `disabled` are always excluded.
+Rules (one place: `ELIGIBILITY_RULES` in `packages/shared/src/ordering.ts`): In Sylhet = everything. Outer Sylhet = whole Bakery + items flagged `approved` in Dairy Sweets and Doi / Dairy. V2.5.1: the owner confirmed that **Bati Doi, Premium Doi, Premium Cup Doi and Cup Doi are delivered to Outer Sylhet**, so those four are flagged `approved`; the other seven Doi items stay In Sylhet only. Items flagged `pending_*` or `disabled` are always excluded.
 
 ## Products still needing owner confirmation
 
 | ID | Bangla | English (proposed) | Why |
 |---|---|---|---|
-| ds-04 | মতি লাড্ডু | Moti Laddu | spelling unclear in source; kept out of Outer City until verified |
+| ds-04 | মতি লাড্ডু | Moti Laddu | spelling unclear in source; kept out of Outer Sylhet until verified |
 | ds-11 | সরপোড়া সন্দেশ | Sarpora Sandesh | spelling unclear in source |
 | ds-12 | দধিয়া সন্দেশ | Dadhiya Sandesh | spelling unclear in source |
 | ds-14 | বোন্দে সন্দেশ | Bonde Sandesh | spelling unclear in source |
 | ds-20 | সরভোল | Sarbhol | spelling unclear in source |
-| bk-vanilla-biscuit | ভ্যানিলা বিস্কুট | Vanilla Biscuit | spelling unclear in source; kept out of Outer City until verified |
-| bk-salt-biscuit | সল্ট বিস্কুট | Salt Biscuit | spelling unclear in source; kept out of Outer City until verified |
-| bk-dry-cake | ড্রাই কেক | Dry Cake | spelling unclear in source; kept out of Outer City until verified |
-| bk-sweet-cake | সুইট কেক | Sweet Cake | spelling unclear in source; kept out of Outer City until verified |
-| bk-bos-cake | বোস কেক | Bos Cake | spelling unclear in source; kept out of Outer City until verified |
-| bk-honey-toast | হানিম টোস্ট | Hanim Toast | spelling unclear in source; kept out of Outer City until verified |
+| bk-vanilla-biscuit | ভ্যানিলা বিস্কুট | Vanilla Biscuit | spelling unclear in source; kept out of Outer Sylhet until verified |
+| bk-salt-biscuit | সল্ট বিস্কুট | Salt Biscuit | spelling unclear in source; kept out of Outer Sylhet until verified |
+| bk-dry-cake | ড্রাই কেক | Dry Cake | spelling unclear in source; kept out of Outer Sylhet until verified |
+| bk-sweet-cake | সুইট কেক | Sweet Cake | spelling unclear in source; kept out of Outer Sylhet until verified |
+| bk-bos-cake | বোস কেক | Bos Cake | spelling unclear in source; kept out of Outer Sylhet until verified |
+| bk-honey-toast | হানিম টোস্ট | Hanim Toast | spelling unclear in source; kept out of Outer Sylhet until verified |
 
 ## Full list
 
 ### Dairy Sweets (দুগ্ধজাত মিষ্টি)
 
-| ID | Bangla | English | Outer City |
+| ID | Bangla | English | Outer Sylhet |
 |---|---|---|---|
 | ds-01 | সাদা রসগোল্লা | White Rasgulla | no |
 | ds-02 | কালোজাম | Kalojam | no |
@@ -63,7 +63,7 @@ Rules (one place: `ELIGIBILITY_RULES` in `packages/shared/src/ordering.ts`): In 
 
 ### Doi / Dairy (দই ও দুগ্ধজাত)
 
-| ID | Bangla | English | Outer City |
+| ID | Bangla | English | Outer Sylhet |
 |---|---|---|---|
 | doi-01 | প্রিমিয়াম দই সরা | Premium Doi Shara | no |
 | doi-02 | পাতিল দই | Patil Doi | no |
@@ -79,7 +79,7 @@ Rules (one place: `ELIGIBILITY_RULES` in `packages/shared/src/ordering.ts`): In 
 
 ### Bakery (বেকারি)
 
-| ID | Bangla | English | Outer City |
+| ID | Bangla | English | Outer Sylhet |
 |---|---|---|---|
 | bk-badam-biscuit | বাদাম বিস্কুট | Badam Biscuit | yes |
 | bk-kaju-badam-biscuit | কাজু বাদাম বিস্কুট | Cashew Nut Biscuit | yes |

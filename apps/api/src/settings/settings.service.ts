@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { z } from 'zod';
-import { BULK_CONFIG, DEFAULT_ORDERING_CONFIG, type OrderingConfig } from '@dudhwala/shared';
+import { BULK_CONFIG, DEFAULT_ORDERING_CONFIG, NO_DELIVERY_FEES, type OrderingConfig } from '@dudhwala/shared';
 import { PrismaService, type Tx } from '../prisma/prisma.service.js';
 import type { Prisma } from '../generated/prisma/client.js';
 
@@ -18,12 +18,12 @@ export const SETTINGS = {
     schema: z.object({ minTotalQuantity: z.number().int().min(1).max(100_000), minTotalPoisha: z.number().int().min(100).max(10_000_000_000), approved: z.boolean() }),
     default: { minTotalQuantity: BULK_CONFIG.minTotalQuantity, minTotalPoisha: BULK_CONFIG.minTotalPoisha, approved: false },
   },
-  /** Outlet where bulk orders are collected (Modina Market Branch). Resolved by outlet code during setup; null until then. */
+  /** Outlet where showroom (bulk-size) orders are collected (Modina Market Branch). Resolved by outlet code during setup; null until then. */
   'bulk.collectionOutletId': { schema: z.string().uuid().nullable(), default: null as string | null },
   /** Outlet whose stock supplies home delivery. null until the owner names one. */
   'fulfilment.dispatchOutletId': { schema: z.string().uuid().nullable(), default: null as string | null },
-  /** Minutes a bulk order waits for its payment before stock is released. */
-  'payments.holdMinutes': { schema: z.number().int().min(5).max(240), default: 30 },
+  /** Home-delivery fee per zone in poisha (the shop's choice; 0 = free). Pickup and showroom collection are never charged. */
+  'delivery.fees': { schema: z.object({ IN_CITY: z.number().int().min(0).max(1_000_000), OUTER_CITY: z.number().int().min(0).max(1_000_000) }), default: { ...NO_DELIVERY_FEES } },
   /** Owner-supplied pages (About, FAQ, policies). Text is never written in code. */
   'content.pages': {
     schema: z.array(z.object({ slug: z.string().regex(/^[a-z-]{2,40}$/), titleBn: z.string().min(1).max(120), bodyBn: z.string().min(1).max(20_000) }).strict()).max(30),
