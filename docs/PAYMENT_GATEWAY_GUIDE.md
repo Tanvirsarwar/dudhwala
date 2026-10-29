@@ -1,3 +1,5 @@
+> **Superseded in part (Phase 2).** This document describes the original delivery-slot / area / COD / rider design, which the Phase 2 backend replaced. Current documents: [PHASE2_BACKEND](PHASE2_BACKEND.md), [ADMIN_AND_API_CONTRACT](ADMIN_AND_API_CONTRACT.md), [DEPLOY_PHASE2](DEPLOY_PHASE2.md). Where they disagree, Phase 2 wins.
+
 # Payment Gateway Onboarding and Reconciliation Guide
 
 Status: v1.0 — 2026-10-21. Gateway choice is still a business decision (OPEN_DECISIONS E1). The platform ships two adapters behind one interface (`apps/api/src/payments/gateway.ts`):

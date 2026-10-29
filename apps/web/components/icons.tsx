@@ -32,8 +32,27 @@ export const BottleIcon = () => (
     <path d="M7 12h10" />
   </svg>
 );
-export const PhoneIcon = () => (
-  <svg {...base} width={18} height={18}>
-    <path d="M5 3h3l2 5-2.5 1.5a11 11 0 0 0 5 5L14 12l5 2v3a2 2 0 0 1-2 2A15 15 0 0 1 3 5a2 2 0 0 1 2-2z" />
+
+const big = { ...base, width: 64, height: 64, strokeWidth: 1.4 };
+/** Category line icons for products without a photo (decorative). */
+export const SweetIcon = () => (
+  <svg {...big}>
+    <circle cx="8.5" cy="15" r="4.2" />
+    <circle cx="15.5" cy="15" r="4.2" />
+    <circle cx="12" cy="8.6" r="4.2" />
+    <path d="M10.6 7.2c.5-.5 1.1-.8 1.8-.8" />
+  </svg>
+);
+export const CupIcon = () => (
+  <svg {...big}>
+    <path d="M5 9h14l-1.6 10.2a2 2 0 0 1-2 1.8H8.6a2 2 0 0 1-2-1.8z" />
+    <path d="M4 9h16M8 5.5h8" />
+    <path d="M9 13.5q3 2 6 0" />
+  </svg>
+);
+export const BreadIcon = () => (
+  <svg {...big}>
+    <path d="M5 10.5a3.5 3.5 0 0 1 2-6.3h10a3.5 3.5 0 0 1 2 6.3V18a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z" />
+    <path d="M9 11v5M12 11v5M15 11v5" />
   </svg>
 );

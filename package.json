@@ -10,7 +10,9 @@
     "build": "pnpm -r --if-present build",
     "lint": "pnpm -r --if-present lint",
     "typecheck": "pnpm -r --if-present typecheck",
-    "test": "pnpm -r --if-present test"
+    "test": "pnpm -r --if-present test",
+    "test:demo": "node --test demo/mock-api/catalogue.test.mjs demo/mock-api/server.test.mjs",
+    "test:demo:browser": "node e2e/demo/run.cjs"
   },
   "pnpm": {
     "overrides": {

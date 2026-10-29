@@ -1,3 +1,5 @@
+> **Superseded in part (Phase 2).** This document describes the original delivery-slot / area / COD / rider design, which the Phase 2 backend replaced. Current documents: [PHASE2_BACKEND](PHASE2_BACKEND.md), [ADMIN_AND_API_CONTRACT](ADMIN_AND_API_CONTRACT.md), [DEPLOY_PHASE2](DEPLOY_PHASE2.md). Where they disagree, Phase 2 wins.
+
 # Free staging preview (Vercel + Render + Supabase, demo data only)
 
 Goal: a public **demo** of the real Dudhwala storefront and admin on free tiers, with synthetic data, no custom domain, no real payments and no real SMS.
@@ -61,7 +63,7 @@ The API must know the final site URLs. Use names such as `dudhwala-staging-web` 
 ### 3.3 Render: the API
 
 1. render.com → sign in with GitHub → grant access to `Tanvirsarwar/dudhwala`.
-2. **New → Blueprint** → pick the repository and the branch `claude/premium-ui-catalog-images` → Render reads `render.yaml` → it asks for the variables marked below. Whether a free web service needs a payment card is **unverified**; if Render asks for one and you do not want to give it, stop here and tell me, and we will pick another host.
+2. **New → Blueprint** → pick the repository (Render uses the repository's default branch, `claude/vibrant-brahmagupta-r00411`, which now contains everything) → Render reads `render.yaml` → it asks for the variables marked below. Whether a free web service needs a payment card is **unverified**; if Render asks for one and you do not want to give it, stop here and tell me, and we will pick another host.
 3. Fill in:
 
 | Variable | Value |
@@ -104,7 +106,7 @@ Environment variables (all environments). Those marked build are compiled in: ch
 | `NEXT_PUBLIC_MEDIA_ORIGINS` | `https://<project-ref>.supabase.co https://wellfoodonline.com` (second entry only for the third-party demo photos) | same | build |
 | `NEXT_PUBLIC_ALLOW_INDEXING` | leave unset | n/a | build |
 
-**Branch:** the repository's default branch is `claude/vibrant-brahmagupta-r00411` (the initial import: it has none of the preview changes, no proxy, no staging files). Vercel and Render propose the default branch, so choose `claude/premium-ui-catalog-images` explicitly when importing, and under **Settings → Git → Production Branch** set `claude/premium-ui-catalog-images` (the repository has no `main`). Merging PR #1 is your decision; until then deploy from this branch. Deploy. The production URL of each project is the one to share. Preview deployment URLs may ask for a Vercel login (Vercel's deployment protection); the production URL should not.
+**Branch:** the repository's default branch is `claude/vibrant-brahmagupta-r00411`. Pull request #1 (the premium UI, staging files and fixes) has been merged into it, so deploy from that branch: keep Vercel's proposed branch and leave Production Branch as the default. Create the API through the **Blueprint** (Docker, `render.yaml`), not as a plain Node web service with `pnpm run build`: a generic build never ran `prisma generate`, which caused `Cannot find module '../generated/prisma/client.js'` in `apps/api`.
 
 ### 3.5 Finish wiring
 

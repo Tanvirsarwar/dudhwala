@@ -77,7 +77,7 @@ export function OtpLogin({ onDone, title = 'মোবাইল নম্বর �
         </form>
       )}
       {error && (
-        <p id="otp-error" role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-danger">
+        <p id="otp-error" role="alert" className="mt-3 rounded-lg bg-danger-bg p-3 text-sm text-danger">
           {error}
         </p>
       )}

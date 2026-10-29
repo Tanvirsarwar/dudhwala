@@ -1,203 +1,274 @@
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { totpAt } from '../src/auth/totp.js';
-import { browser, loginStaff, makeOutlet, makeStaff, PASSWORD, resetDb, startHarness, TEST_ENV, type Harness } from './support/harness.js';
+import { adminAgent, browser, makeStaff, managerAgent, PASSWORD, resetDb, startHarness, TEST_ENV, type Harness } from './support/harness.js';
+import { customer } from './support/shop.js';
 
 let h: Harness;
 beforeAll(async () => (h = await startHarness()));
 afterAll(async () => h.close());
 beforeEach(async () => {
   await resetDb(h.prisma);
-  h.sms.sent = [];
+  h.clock.t = new Date('2026-11-01T06:00:00Z');
 });
 
-describe('customer phone OTP', () => {
-  it('registers and logs in a customer, normalising Bangla digits', async () => {
-    const agent = await browser(h.app, TEST_ENV.WEB_ORIGIN);
-    const r = await agent.post('/v1/auth/otp/request').send({ phone: '০১৭১২৩৪৫৬৭৮' }).expect(200);
-    expect(h.sms.sent[0]?.to).toBe('+8801712345678');
-    const v = await agent.post('/v1/auth/otp/verify').send({ challengeId: r.body.challengeId, code: h.sms.lastCode() }).expect(200);
-    expect(v.body.isNew).toBe(true);
-    const me = await agent.get('/v1/me').expect(200);
-    expect(me.body.role).toBe('CUSTOMER');
-    expect(me.body.user.phone).toBe('+8801712345678');
+const BAD = 'ইমেইল বা পাসওয়ার্ড সঠিক নয়';
+const cookieOf = (res: request.Response, name: string) => ((res.headers['set-cookie'] ?? []) as unknown as string[]).find((c) => c.startsWith(`${name}=`)) ?? '';
+
+describe('staff login pages', () => {
+  it('an admin signs in on the admin page, a manager on the manager page', async () => {
+    const admin = await makeStaff(h.prisma, 'ADMIN');
+    const mgr = await makeStaff(h.prisma, 'MANAGER', { withMfa: false });
+    const a = await (await browser(h.app)).post('/v1/auth/staff/login').send({ login: admin.email, password: PASSWORD }).expect(200);
+    expect(a.body).toMatchObject({ role: 'ADMIN', mfaRequired: true });
+    const m = await (await browser(h.app)).post('/v1/auth/staff/login').send({ login: mgr.email, password: PASSWORD, as: 'manager' }).expect(200);
+    expect(m.body).toMatchObject({ role: 'MANAGER', mfaRequired: false });
   });
 
-  it('stores only a hash of the code', async () => {
-    const agent = await browser(h.app, TEST_ENV.WEB_ORIGIN);
-    const r = await agent.post('/v1/auth/otp/request').send({ phone: '01712345678' }).expect(200);
-    const row = await h.prisma.otpChallenge.findUniqueOrThrow({ where: { id: r.body.challengeId } });
-    expect(row.codeHash).not.toContain(h.sms.lastCode());
+  it('each role is refused on the other page with the same message as a wrong password', async () => {
+    const admin = await makeStaff(h.prisma, 'ADMIN');
+    const mgr = await makeStaff(h.prisma, 'MANAGER', { withMfa: false });
+    const wrongPage1 = await (await browser(h.app)).post('/v1/auth/staff/login').send({ login: admin.email, password: PASSWORD, as: 'manager' });
+    const wrongPage2 = await (await browser(h.app)).post('/v1/auth/staff/login').send({ login: mgr.email, password: PASSWORD });
+    const wrongPw = await (await browser(h.app)).post('/v1/auth/staff/login').send({ login: admin.email, password: 'nope-nope-nope-nope' });
+    const unknown = await (await browser(h.app)).post('/v1/auth/staff/login').send({ login: 'nobody@test.local', password: PASSWORD });
+    for (const r of [wrongPage1, wrongPage2, wrongPw, unknown]) {
+      expect(r.status).toBe(401);
+      expect(r.body.error.code).toBe('UNAUTHENTICATED');
+      expect(r.headers['set-cookie']).toBeUndefined();
+    }
+    expect(new Set([wrongPage1, wrongPage2, wrongPw, unknown].map((r) => r.body.error.message)).size).toBe(1);
+    expect(BAD.length).toBeGreaterThan(0);
   });
 
-  it('enforces resend wait and hourly limit', async () => {
-    const agent = await browser(h.app, TEST_ENV.WEB_ORIGIN);
-    await agent.post('/v1/auth/otp/request').send({ phone: '01812345678' }).expect(200);
-    const again = await agent.post('/v1/auth/otp/request').send({ phone: '01812345678' }).expect(429);
-    expect(again.headers['retry-after']).toBeDefined();
+  it('a customer account cannot use the staff login', async () => {
+    const c = await customer(h);
+    const res = await (await browser(h.app)).post('/v1/auth/staff/login').send({ login: c.phone, password: PASSWORD });
+    expect(res.status).toBe(401);
+  });
+
+  it('locks the account after 5 wrong passwords, even for the right password', async () => {
+    const admin = await makeStaff(h.prisma, 'ADMIN');
+    for (let i = 0; i < 5; i++) {
+      expect((await (await browser(h.app)).post('/v1/auth/staff/login').send({ login: admin.email, password: `wrong-password-${i}` })).status).toBe(401);
+    }
+    const locked = await (await browser(h.app)).post('/v1/auth/staff/login').send({ login: admin.email, password: PASSWORD });
+    expect(locked.status).toBe(423);
+    expect(locked.body.error.code).toBe('ACCOUNT_LOCKED');
+    h.clock.advance(16 * 60_000);
+    expect((await (await browser(h.app)).post('/v1/auth/staff/login').send({ login: admin.email, password: PASSWORD })).status).toBe(200);
+  });
+
+  it('rate-limits login attempts per IP', async () => {
+    let limited = false;
+    for (let i = 0; i < 40 && !limited; i++) {
+      const r = await (await browser(h.app)).post('/v1/auth/staff/login').send({ login: `nobody${i}@test.local`, password: 'x'.repeat(14) });
+      limited = r.status === 429;
+    }
+    expect(limited).toBe(true);
+  });
+
+  it('a suspended account cannot sign in or keep a session', async () => {
+    const admin = await makeStaff(h.prisma, 'ADMIN');
+    const agent = await (async () => {
+      const a = await browser(h.app);
+      await a.post('/v1/auth/staff/login').send({ login: admin.email, password: PASSWORD }).expect(200);
+      return a;
+    })();
+    await h.prisma.user.update({ where: { id: admin.user.id }, data: { status: 'SUSPENDED' } });
+    expect((await agent.get('/v1/me')).status).toBe(401);
+    expect((await (await browser(h.app)).post('/v1/auth/staff/login').send({ login: admin.email, password: PASSWORD })).status).toBe(401);
+  });
+
+  it('stores passwords as argon2id hashes', async () => {
+    const admin = await makeStaff(h.prisma, 'ADMIN');
+    expect((await h.prisma.user.findUniqueOrThrow({ where: { id: admin.user.id } })).passwordHash).toMatch(/^\$argon2id\$/);
+  });
+});
+
+describe('admin two-factor', () => {
+  it('blocks admin routes until the code is verified', async () => {
+    const admin = await makeStaff(h.prisma, 'ADMIN');
+    const a = await browser(h.app);
+    await a.post('/v1/auth/staff/login').send({ login: admin.email, password: PASSWORD }).expect(200);
+    const blocked = await a.get('/v1/admin/summary');
+    expect(blocked.status).toBe(401);
+    expect(blocked.body.error.code).toBe('MFA_REQUIRED');
+    expect((await a.post('/v1/auth/staff/mfa').send({ code: '000000' })).status).toBe(401);
+    h.clock.advance(31_000);
+    await a.post('/v1/auth/staff/mfa').send({ code: totpAt(admin.secret, h.clock.now()) }).expect(204);
+    await a.get('/v1/admin/summary').expect(200);
+  });
+
+  it('a TOTP code cannot be reused', async () => {
+    const admin = await makeStaff(h.prisma, 'ADMIN');
+    const code = () => totpAt(admin.secret, h.clock.now());
+    const a = await browser(h.app);
+    await a.post('/v1/auth/staff/login').send({ login: admin.email, password: PASSWORD }).expect(200);
+    h.clock.advance(31_000);
+    const used = code();
+    await a.post('/v1/auth/staff/mfa').send({ code: used }).expect(204);
+    const b = await browser(h.app);
+    await b.post('/v1/auth/staff/login').send({ login: admin.email, password: PASSWORD }).expect(200);
+    expect((await b.post('/v1/auth/staff/mfa').send({ code: used })).status).toBe(401);
+  });
+
+  it('an admin without 2FA enrolled can enrol, then proceeds', async () => {
+    const admin = await makeStaff(h.prisma, 'ADMIN', { withMfa: false });
+    const a = await browser(h.app);
+    const login = await a.post('/v1/auth/staff/login').send({ login: admin.email, password: PASSWORD }).expect(200);
+    expect(login.body).toMatchObject({ mfaRequired: true, mfaEnrolled: false });
+    expect((await a.get('/v1/admin/summary')).body.error.code).toBe('MFA_REQUIRED');
+    const enrol = await a.post('/v1/auth/staff/mfa/enroll').send({}).expect(200);
+    expect(enrol.body.secret).toMatch(/^[A-Z2-7]+$/);
+    h.clock.advance(31_000);
+    const confirm = await a.post('/v1/auth/staff/mfa/confirm').send({ code: totpAt(enrol.body.secret, h.clock.now()) }).expect(200);
+    expect(confirm.body.recoveryCodes).toHaveLength(10);
+    await a.get('/v1/admin/summary').expect(200);
+    expect((await h.prisma.user.findUniqueOrThrow({ where: { id: admin.user.id } })).mfaTotpSecretEnc?.toString()).not.toContain(enrol.body.secret); // stored encrypted
+  });
+
+  it('a recovery code works once', async () => {
+    const admin = await makeStaff(h.prisma, 'ADMIN', { withMfa: false });
+    const a = await browser(h.app);
+    await a.post('/v1/auth/staff/login').send({ login: admin.email, password: PASSWORD }).expect(200);
+    const enrol = await a.post('/v1/auth/staff/mfa/enroll').send({}).expect(200);
+    h.clock.advance(31_000);
+    const { recoveryCodes } = (await a.post('/v1/auth/staff/mfa/confirm').send({ code: totpAt(enrol.body.secret, h.clock.now()) }).expect(200)).body as { recoveryCodes: string[] };
+    const b = await browser(h.app);
+    await b.post('/v1/auth/staff/login').send({ login: admin.email, password: PASSWORD }).expect(200);
+    await b.post('/v1/auth/staff/mfa').send({ code: recoveryCodes[0] }).expect(204);
+    const c2 = await browser(h.app);
+    await c2.post('/v1/auth/staff/login').send({ login: admin.email, password: PASSWORD }).expect(200);
+    expect((await c2.post('/v1/auth/staff/mfa').send({ code: recoveryCodes[0] })).status).toBe(401);
+  });
+});
+
+describe('sessions and cookies', () => {
+  it('staff cookie is HttpOnly + SameSite=Strict; logout ends the session server-side', async () => {
+    const admin = await makeStaff(h.prisma, 'MANAGER', { withMfa: false });
+    const a = await browser(h.app);
+    const res = await a.post('/v1/auth/staff/login').send({ login: admin.email, password: PASSWORD, as: 'manager' }).expect(200);
+    const c = cookieOf(res, 'dw_admin_sid');
+    expect(c).toMatch(/HttpOnly/);
+    expect(c).toMatch(/SameSite=Strict/);
+    const raw = c.split(';')[0]!.split('=')[1]!;
+    await a.get('/v1/me').expect(200);
+    await a.post('/v1/auth/logout').send({}).expect(204);
+    expect((await request(h.app.getHttpServer()).get('/v1/me').set('cookie', `dw_admin_sid=${raw}`)).status).toBe(401); // the old cookie is dead
+  });
+
+  it('staff sessions expire after 30 idle minutes and after 12 hours', async () => {
+    const mgr = await managerAgent(h);
+    await mgr.get('/v1/me').expect(200);
+    h.clock.advance(29 * 60_000);
+    await mgr.get('/v1/me').expect(200);
+    h.clock.advance(31 * 60_000);
+    expect((await mgr.get('/v1/me')).status).toBe(401);
+    const m2 = await managerAgent(h);
+    for (let i = 0; i < 25; i++) {
+      h.clock.advance(29 * 60_000);
+      if ((await m2.get('/v1/me')).status === 401) break;
+    }
+    expect((await m2.get('/v1/me')).status).toBe(401); // absolute limit
+  });
+
+  it('stores only a hash of the session token', async () => {
+    const mgr = await makeStaff(h.prisma, 'MANAGER', { withMfa: false });
+    const a = await browser(h.app);
+    const res = await a.post('/v1/auth/staff/login').send({ login: mgr.email, password: PASSWORD, as: 'manager' });
+    const raw = cookieOf(res, 'dw_admin_sid').split(';')[0]!.split('=')[1]!;
+    const sessions = await h.prisma.session.findMany();
+    expect(sessions.some((s) => s.tokenHash === raw)).toBe(false);
+    expect(sessions[0]!.tokenHash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('a staff cookie is ignored on customer routes and the customer cookie on admin routes', async () => {
+    const c = await customer(h);
+    expect((await c.get('/v1/admin/summary')).status).toBe(403); // a customer is not staff
+    const admin = await adminAgent(h);
+    expect((await admin.get('/v1/orders')).status).toBe(401);
+  });
+});
+
+describe('customer OTP login', () => {
+  it('signs in with the texted code and creates the account once', async () => {
+    const c = await customer(h, '01712340001');
+    expect((await c.get('/v1/me').expect(200)).body.role).toBe('CUSTOMER');
+    const again = await customer(h, '01712340001');
+    expect(again.userId).toBe(c.userId);
+    expect(await h.prisma.user.count({ where: { phone: '+8801712340001' } })).toBe(1);
+  });
+
+  it('rejects a wrong code, and locks the challenge after 5 attempts', async () => {
+    const a = await browser(h.app, TEST_ENV.WEB_ORIGIN);
+    a.set('x-dw-audience', 'customer');
+    const r = await a.post('/v1/auth/otp/request').send({ phone: '01712340002' }).expect(200);
+    const real = h.sms.lastCode();
+    const wrong = real === '000000' ? '111111' : '000000';
+    for (let i = 0; i < 5; i++) expect((await a.post('/v1/auth/otp/verify').send({ challengeId: r.body.challengeId, code: wrong })).status).toBe(401);
+    const late = await a.post('/v1/auth/otp/verify').send({ challengeId: r.body.challengeId, code: real });
+    expect(late.status).toBe(401);
+    expect(late.body.error.code).toBe('OTP_EXPIRED');
+  });
+
+  it('a code works once and expires after 5 minutes', async () => {
+    const a = await browser(h.app, TEST_ENV.WEB_ORIGIN);
+    a.set('x-dw-audience', 'customer');
+    const r = await a.post('/v1/auth/otp/request').send({ phone: '01712340003' }).expect(200);
+    const code = h.sms.lastCode();
+    await a.post('/v1/auth/otp/verify').send({ challengeId: r.body.challengeId, code }).expect(200);
+    expect((await a.post('/v1/auth/otp/verify').send({ challengeId: r.body.challengeId, code })).status).toBe(401);
+    const r2 = await a.post('/v1/auth/otp/request').send({ phone: '01712340004' }).expect(200);
+    const code2 = h.sms.lastCode();
+    h.clock.advance(6 * 60_000);
+    expect((await a.post('/v1/auth/otp/verify').send({ challengeId: r2.body.challengeId, code: code2 })).body.error.code).toBe('OTP_EXPIRED');
+  });
+
+  it('limits requests: one per minute per phone, 5 per hour', async () => {
+    const a = await browser(h.app, TEST_ENV.WEB_ORIGIN);
+    a.set('x-dw-audience', 'customer');
+    await a.post('/v1/auth/otp/request').send({ phone: '01712340005' }).expect(200);
+    expect((await a.post('/v1/auth/otp/request').send({ phone: '01712340005' })).status).toBe(429);
     for (let i = 0; i < 4; i++) {
       h.clock.advance(61_000);
-      await agent.post('/v1/auth/otp/request').send({ phone: '01812345678' }).expect(200);
+      await a.post('/v1/auth/otp/request').send({ phone: '01712340005' }).expect(200);
     }
     h.clock.advance(61_000);
-    await agent.post('/v1/auth/otp/request').send({ phone: '01812345678' }).expect(429);
+    expect((await a.post('/v1/auth/otp/request').send({ phone: '01712340005' })).status).toBe(429);
   });
 
-  it('locks a challenge after 5 wrong attempts, even with the right code after', async () => {
-    const agent = await browser(h.app, TEST_ENV.WEB_ORIGIN);
-    const r = await agent.post('/v1/auth/otp/request').send({ phone: '01912345678' }).expect(200);
-    const good = h.sms.lastCode();
-    const bad = good === '000000' ? '111111' : '000000';
-    for (let i = 0; i < 5; i++) await agent.post('/v1/auth/otp/verify').send({ challengeId: r.body.challengeId, code: bad }).expect(401);
-    const last = await agent.post('/v1/auth/otp/verify').send({ challengeId: r.body.challengeId, code: good }).expect(401);
-    expect(last.body.error.code).toBe('OTP_EXPIRED');
+  it('rejects a malformed number and never reveals whether the number is registered', async () => {
+    const a = await browser(h.app, TEST_ENV.WEB_ORIGIN);
+    expect((await a.post('/v1/auth/otp/request').send({ phone: '12345' })).status).toBe(400);
+    const known = await a.post('/v1/auth/otp/request').send({ phone: '01712340006' });
+    h.clock.advance(61_000);
+    const fresh = await a.post('/v1/auth/otp/request').send({ phone: '01912340006' });
+    expect(Object.keys(known.body).sort()).toEqual(Object.keys(fresh.body).sort());
   });
 
-  it('rejects expired codes and code reuse', async () => {
-    const agent = await browser(h.app, TEST_ENV.WEB_ORIGIN);
-    const r = await agent.post('/v1/auth/otp/request').send({ phone: '01512345678' }).expect(200);
+  it('the OTP is stored hashed', async () => {
+    const a = await browser(h.app, TEST_ENV.WEB_ORIGIN);
+    await a.post('/v1/auth/otp/request').send({ phone: '01712340007' }).expect(200);
     const code = h.sms.lastCode();
-    h.clock.advance(5 * 60_000 + 1);
-    await agent.post('/v1/auth/otp/verify').send({ challengeId: r.body.challengeId, code }).expect(401);
-
-    h.clock.advance(60_000);
-    const r2 = await agent.post('/v1/auth/otp/request').send({ phone: '01512345678' }).expect(200);
-    const code2 = h.sms.lastCode();
-    await agent.post('/v1/auth/otp/verify').send({ challengeId: r2.body.challengeId, code: code2 }).expect(200);
-    await agent.post('/v1/auth/otp/verify').send({ challengeId: r2.body.challengeId, code: code2 }).expect(401);
-  });
-
-  it('rejects invalid phone numbers', async () => {
-    const agent = await browser(h.app, TEST_ENV.WEB_ORIGIN);
-    const r = await agent.post('/v1/auth/otp/request').send({ phone: '+441234567890' }).expect(400);
-    expect(h.sms.sent).toHaveLength(0);
-    expect(r.body.error.code).toBe('VALIDATION_FAILED');
+    expect((await h.prisma.otpChallenge.findFirstOrThrow()).codeHash).not.toContain(code);
   });
 });
 
 describe('CSRF and origin', () => {
-  it('rejects state-changing requests without a CSRF token', async () => {
-    const r = await request(h.app.getHttpServer()).post('/v1/auth/otp/request').send({ phone: '01712345678' }).expect(403);
-    expect(r.body.error.message).toMatch(/CSRF/);
-  });
-  it('rejects a forged token and unknown origins', async () => {
-    const agent = await browser(h.app);
-    await agent.post('/v1/auth/otp/request').set('x-csrf-token', 'abc.def').send({ phone: '01712345678' }).expect(403);
-    await agent.post('/v1/auth/otp/request').set('origin', 'https://evil.example').send({ phone: '01712345678' }).expect(403);
-  });
-});
-
-describe('staff login and MFA', () => {
-  it('requires TOTP for managers before any permissioned route', async () => {
-    const outlet = await makeOutlet(h.prisma);
-    const mgr = await makeStaff(h.prisma, 'OUTLET_MANAGER', outlet.id);
-    const agent = await browser(h.app);
-    const login = await agent.post('/v1/auth/staff/login').send({ login: mgr.email, password: PASSWORD }).expect(200);
-    expect(login.body).toEqual({ mfaRequired: true, mfaEnrolled: true });
-    const blocked = await agent.get(`/v1/admin/outlets/${outlet.id}`).expect(401);
-    expect(blocked.body.error.code).toBe('MFA_REQUIRED');
-    await agent.post('/v1/auth/staff/mfa').send({ code: '000000' }).expect(401);
-    await agent.post('/v1/auth/staff/mfa').send({ code: totpAt(mgr.secret, h.clock.now()) }).expect(204);
-    await agent.get(`/v1/admin/outlets/${outlet.id}`).expect(200);
-  });
-
-  it('rejects TOTP replay of the same code', async () => {
-    const sa = await makeStaff(h.prisma, 'SUPER_ADMIN', null);
-    const a1 = await browser(h.app);
-    await a1.post('/v1/auth/staff/login').send({ login: sa.email, password: PASSWORD }).expect(200);
-    const code = totpAt(sa.secret, h.clock.now());
-    await a1.post('/v1/auth/staff/mfa').send({ code }).expect(204);
-    const a2 = await browser(h.app);
-    await a2.post('/v1/auth/staff/login').send({ login: sa.email, password: PASSWORD }).expect(200);
-    await a2.post('/v1/auth/staff/mfa').send({ code }).expect(401);
-  });
-
-  it('lets an unenrolled manager only enrol, then works after enrolment', async () => {
-    const outlet = await makeOutlet(h.prisma);
-    const mgr = await makeStaff(h.prisma, 'OUTLET_MANAGER', outlet.id, { withMfa: false });
-    const agent = await browser(h.app);
-    const login = await agent.post('/v1/auth/staff/login').send({ login: mgr.email, password: PASSWORD }).expect(200);
-    expect(login.body).toEqual({ mfaRequired: true, mfaEnrolled: false });
-    await agent.get(`/v1/admin/outlets/${outlet.id}/inventory`).expect(401);
-    const e = await agent.post('/v1/auth/staff/mfa/enroll').expect(200);
-    expect(e.body.otpauthUri).toMatch(/^otpauth:\/\/totp\//);
-    const c = await agent.post('/v1/auth/staff/mfa/confirm').send({ code: totpAt(e.body.secret, h.clock.now()) }).expect(200);
-    expect(c.body.recoveryCodes).toHaveLength(10);
-    await agent.get(`/v1/admin/outlets/${outlet.id}/inventory`).expect(200);
-    const stored = await h.prisma.user.findUniqueOrThrow({ where: { id: mgr.user.id } });
-    expect(Buffer.from(stored.mfaTotpSecretEnc ?? []).toString('latin1')).not.toContain(e.body.secret);
-  });
-
-  it('accepts a recovery code exactly once', async () => {
-    const outlet = await makeOutlet(h.prisma);
-    const mgr = await makeStaff(h.prisma, 'OUTLET_MANAGER', outlet.id, { withMfa: false });
+  it('rejects writes without a CSRF token, with a forged one, and from a foreign origin', async () => {
+    const mgr = await makeStaff(h.prisma, 'MANAGER', { withMfa: false });
+    const body = { login: mgr.email, password: PASSWORD, as: 'manager' };
+    expect((await request(h.app.getHttpServer()).post('/v1/auth/staff/login').send(body)).status).toBe(403);
     const a = await browser(h.app);
-    await a.post('/v1/auth/staff/login').send({ login: mgr.email, password: PASSWORD }).expect(200);
-    const e = await a.post('/v1/auth/staff/mfa/enroll').expect(200);
-    const { body } = await a.post('/v1/auth/staff/mfa/confirm').send({ code: totpAt(e.body.secret, h.clock.now()) }).expect(200);
-    const rc = body.recoveryCodes[0] as string;
-    const b = await browser(h.app);
-    await b.post('/v1/auth/staff/login').send({ login: mgr.email, password: PASSWORD }).expect(200);
-    await b.post('/v1/auth/staff/mfa').send({ code: rc }).expect(204);
-    const c2 = await browser(h.app);
-    await c2.post('/v1/auth/staff/login').send({ login: mgr.email, password: PASSWORD }).expect(200);
-    await c2.post('/v1/auth/staff/mfa').send({ code: rc }).expect(401);
+    expect((await a.post('/v1/auth/staff/login').set('x-csrf-token', 'forged.token').send(body)).status).toBe(403);
+    expect((await a.post('/v1/auth/staff/login').set('origin', 'https://evil.example').send(body)).status).toBe(403);
+    expect((await a.post('/v1/auth/staff/login').send(body)).status).toBe(200);
   });
-
-  it('locks the account after 5 failed passwords and audits failures', async () => {
-    const outlet = await makeOutlet(h.prisma);
-    const staff = await makeStaff(h.prisma, 'OUTLET_STAFF', outlet.id);
-    const agent = await browser(h.app);
-    for (let i = 0; i < 5; i++) await agent.post('/v1/auth/staff/login').send({ login: staff.email, password: 'wrong-password!' }).expect(401);
-    const locked = await agent.post('/v1/auth/staff/login').send({ login: staff.email, password: PASSWORD }).expect(423);
-    expect(locked.body.error.code).toBe('ACCOUNT_LOCKED');
-    expect(await h.prisma.auditLog.count({ where: { action: 'auth.staff_login_failed' } })).toBe(5);
-    h.clock.advance(15 * 60_000 + 1);
-    await agent.post('/v1/auth/staff/login').send({ login: staff.email, password: PASSWORD }).expect(200);
-  });
-
-  it('lets staff log in with a phone number typed in local or Bangla-digit form', async () => {
-    const outlet = await makeOutlet(h.prisma);
-    const rider = await makeStaff(h.prisma, 'DELIVERY_STAFF', outlet.id);
-    await h.prisma.user.update({ where: { id: rider.user.id }, data: { phone: '+8801711000222' } });
-    for (const login of ['01711000222', '০১৭১১০০০২২২', '+8801711000222']) {
-      const agent = await browser(h.app);
-      await agent.post('/v1/auth/staff/login').send({ login, password: PASSWORD }).expect(200);
-    }
-  });
-
-  it('gives the same error for unknown accounts and wrong passwords', async () => {
-    const agent = await browser(h.app);
-    const r = await agent.post('/v1/auth/staff/login').send({ login: 'nobody@test.local', password: 'x' }).expect(401);
-    expect(r.body.error.message).toBe('Invalid login or password');
-  });
-
-  it('expires idle staff sessions and honours logout', async () => {
-    const outlet = await makeOutlet(h.prisma);
-    const staff = await makeStaff(h.prisma, 'OUTLET_STAFF', outlet.id);
-    const agent = await loginStaff(h, staff);
-    await agent.get(`/v1/admin/outlets/${outlet.id}`).expect(200);
-    h.clock.advance(31 * 60_000);
-    await agent.get(`/v1/admin/outlets/${outlet.id}`).expect(401);
-    const again = await loginStaff(h, staff);
-    await again.post('/v1/auth/logout').expect(204);
-    await again.get(`/v1/admin/outlets/${outlet.id}`).expect(401);
-  });
-
-  it('cuts off a deactivated staff member immediately', async () => {
-    const outlet = await makeOutlet(h.prisma);
-    const sa = await makeStaff(h.prisma, 'SUPER_ADMIN', null);
-    const staff = await makeStaff(h.prisma, 'OUTLET_STAFF', outlet.id);
-    const s = await loginStaff(h, staff);
-    const admin = await loginStaff(h, sa);
-    const a = await h.prisma.outletStaff.findUniqueOrThrow({ where: { userId: staff.user.id } });
-    await admin.post(`/v1/admin/outlets/${outlet.id}/staff/${a.id}/deactivate`).expect(200);
-    await s.get(`/v1/admin/outlets/${outlet.id}`).expect(401);
-  });
-});
-
-describe('health', () => {
-  it('is ready when seeded', async () => {
-    await request(h.app.getHttpServer()).get('/v1/health/ready').expect(200);
+  it('admin writes also need CSRF', async () => {
+    const admin = await adminAgent(h);
+    const cookie = admin.jar.getCookies({ domain: '127.0.0.1', path: '/', script: false, secure: false } as never).map((c: { name: string; value: string }) => `${c.name}=${c.value}`).join('; ');
+    const res = await request(h.app.getHttpServer()).post('/v1/admin/categories').set('cookie', cookie).send({ nameBn: 'ক', nameEn: 'a' });
+    expect(res.status).toBe(403);
   });
 });

@@ -1,0 +1,15 @@
+{
+  "outlets": [
+    {
+      "code": "MODINA-MARKET",
+      "nameBn": "মদিনা মার্কেট শাখা",
+      "nameEn": "Modina Market Branch",
+      "addressLine": "REPLACE_WITH_REAL_ADDRESS",
+      "phone": "REPLACE_WITH_REAL_PHONE",
+      "status": "ACTIVE",
+      "hours": [{ "weekday": 0, "opens": "10:00", "closes": "22:00" }]
+    }
+  ],
+  "dispatchOutletCode": "MODINA-MARKET",
+  "collectionOutletCode": "MODINA-MARKET"
+}

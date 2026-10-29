@@ -1,0 +1,612 @@
+{
+ "_notice": "Product NAMES and delivery-eligibility marks transcribed from dudhwala-product-delivery-eligibility.md (photographed printed lists). It contains NO prices, pack sizes, stock or photos: those are intentionally absent (null) until the shop's product master is supplied. nameEn values are transliterations for the bilingual UI and need the owner's approval. Dairy Sweets rows 21-22 (unreadable) are not included.",
+ "categories": [
+  {
+   "slug": "dairy-sweets",
+   "nameBn": "দুগ্ধজাত মিষ্টি",
+   "nameEn": "Dairy Sweets"
+  },
+  {
+   "slug": "doi-dairy",
+   "nameBn": "দই ও দুগ্ধজাত",
+   "nameEn": "Doi / Dairy"
+  },
+  {
+   "slug": "bakery",
+   "nameBn": "বেকারি",
+   "nameEn": "Bakery"
+  }
+ ],
+ "products": [
+  {
+   "id": "ds-01",
+   "category": "dairy-sweets",
+   "nameBn": "সাদা রসগোল্লা",
+   "nameEn": "White Rasgulla",
+   "kind": "sweet",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Dairy Sweets list no. 01"
+  },
+  {
+   "id": "ds-02",
+   "category": "dairy-sweets",
+   "nameBn": "কালোজাম",
+   "nameEn": "Kalojam",
+   "kind": "sweet",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Dairy Sweets list no. 02"
+  },
+  {
+   "id": "ds-03",
+   "category": "dairy-sweets",
+   "nameBn": "গোলাপজাম",
+   "nameEn": "Golapjam",
+   "kind": "sweet",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Dairy Sweets list no. 03"
+  },
+  {
+   "id": "ds-04",
+   "category": "dairy-sweets",
+   "nameBn": "মতি লাড্ডু",
+   "nameEn": "Moti Laddu",
+   "kind": "sweet",
+   "nameVerified": false,
+   "outerCity": "pending_verification",
+   "source": "Dairy Sweets list no. 04"
+  },
+  {
+   "id": "ds-05",
+   "category": "dairy-sweets",
+   "nameBn": "রসমালাই",
+   "nameEn": "Rosh Malai",
+   "kind": "sweet",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Dairy Sweets list no. 05"
+  },
+  {
+   "id": "ds-06",
+   "category": "dairy-sweets",
+   "nameBn": "দুধরাজ",
+   "nameEn": "Dudhraj",
+   "kind": "sweet",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Dairy Sweets list no. 06"
+  },
+  {
+   "id": "ds-07",
+   "category": "dairy-sweets",
+   "nameBn": "ক্ষীরমোহন",
+   "nameEn": "Kheer Mohan",
+   "kind": "sweet",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Dairy Sweets list no. 07"
+  },
+  {
+   "id": "ds-08",
+   "category": "dairy-sweets",
+   "nameBn": "জাফরান ভোগ",
+   "nameEn": "Zafran Bhog",
+   "kind": "sweet",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Dairy Sweets list no. 08"
+  },
+  {
+   "id": "ds-09",
+   "category": "dairy-sweets",
+   "nameBn": "মালাইচপ",
+   "nameEn": "Malai Chop",
+   "kind": "sweet",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Dairy Sweets list no. 09"
+  },
+  {
+   "id": "ds-10",
+   "category": "dairy-sweets",
+   "nameBn": "কাঁচা সন্দেশ",
+   "nameEn": "Kacha Sandesh",
+   "kind": "sweet",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Dairy Sweets list no. 10"
+  },
+  {
+   "id": "ds-11",
+   "category": "dairy-sweets",
+   "nameBn": "সরপোড়া সন্দেশ",
+   "nameEn": "Sarpora Sandesh",
+   "kind": "sweet",
+   "nameVerified": false,
+   "outerCity": null,
+   "source": "Dairy Sweets list no. 11"
+  },
+  {
+   "id": "ds-12",
+   "category": "dairy-sweets",
+   "nameBn": "দধিয়া সন্দেশ",
+   "nameEn": "Dadhiya Sandesh",
+   "kind": "sweet",
+   "nameVerified": false,
+   "outerCity": null,
+   "source": "Dairy Sweets list no. 12"
+  },
+  {
+   "id": "ds-13",
+   "category": "dairy-sweets",
+   "nameBn": "গুড়ের সন্দেশ",
+   "nameEn": "Gurer Sandesh",
+   "kind": "sweet",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Dairy Sweets list no. 13"
+  },
+  {
+   "id": "ds-14",
+   "category": "dairy-sweets",
+   "nameBn": "বোন্দে সন্দেশ",
+   "nameEn": "Bonde Sandesh",
+   "kind": "sweet",
+   "nameVerified": false,
+   "outerCity": null,
+   "source": "Dairy Sweets list no. 14"
+  },
+  {
+   "id": "ds-15",
+   "category": "dairy-sweets",
+   "nameBn": "অরেঞ্জ সন্দেশ",
+   "nameEn": "Orange Sandesh",
+   "kind": "sweet",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Dairy Sweets list no. 15"
+  },
+  {
+   "id": "ds-16",
+   "category": "dairy-sweets",
+   "nameBn": "সাদা চমচম",
+   "nameEn": "White Chomchom",
+   "kind": "sweet",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Dairy Sweets list no. 16"
+  },
+  {
+   "id": "ds-17",
+   "category": "dairy-sweets",
+   "nameBn": "বাদামী চমচম",
+   "nameEn": "Brown Chomchom",
+   "kind": "sweet",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Dairy Sweets list no. 17"
+  },
+  {
+   "id": "ds-18",
+   "category": "dairy-sweets",
+   "nameBn": "পাতা চমচম",
+   "nameEn": "Pata Chomchom",
+   "kind": "sweet",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Dairy Sweets list no. 18"
+  },
+  {
+   "id": "ds-19",
+   "category": "dairy-sweets",
+   "nameBn": "কাশ্মীরী ভোগ",
+   "nameEn": "Kashmiri Bhog",
+   "kind": "sweet",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Dairy Sweets list no. 19"
+  },
+  {
+   "id": "ds-20",
+   "category": "dairy-sweets",
+   "nameBn": "সরভোল",
+   "nameEn": "Sarbhol",
+   "kind": "sweet",
+   "nameVerified": false,
+   "outerCity": null,
+   "source": "Dairy Sweets list no. 20"
+  },
+  {
+   "id": "ds-23",
+   "category": "dairy-sweets",
+   "nameBn": "দুধ",
+   "nameEn": "Milk",
+   "kind": "bottle",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Dairy Sweets list no. 23"
+  },
+  {
+   "id": "ds-24",
+   "category": "dairy-sweets",
+   "nameBn": "ঘি",
+   "nameEn": "Ghee",
+   "kind": "jar",
+   "nameVerified": true,
+   "outerCity": "approved",
+   "source": "Dairy Sweets list no. 24"
+  },
+  {
+   "id": "ds-25",
+   "category": "dairy-sweets",
+   "nameBn": "নিমকি",
+   "nameEn": "Nimki",
+   "kind": "pouch",
+   "nameVerified": true,
+   "outerCity": "approved",
+   "source": "Dairy Sweets list no. 25"
+  },
+  {
+   "id": "doi-01",
+   "category": "doi-dairy",
+   "nameBn": "প্রিমিয়াম দই সরা",
+   "nameEn": "Premium Doi Shara",
+   "kind": "cup",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Doi list no. 01"
+  },
+  {
+   "id": "doi-02",
+   "category": "doi-dairy",
+   "nameBn": "পাতিল দই",
+   "nameEn": "Patil Doi",
+   "kind": "cup",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Doi list no. 02"
+  },
+  {
+   "id": "doi-03",
+   "category": "doi-dairy",
+   "nameBn": "বাটি দই",
+   "nameEn": "Bati Doi",
+   "kind": "cup",
+   "nameVerified": true,
+   "outerCity": "approved",
+   "source": "Doi list no. 03"
+  },
+  {
+   "id": "doi-04",
+   "category": "doi-dairy",
+   "nameBn": "প্রিমিয়াম দই",
+   "nameEn": "Premium Doi",
+   "kind": "cup",
+   "nameVerified": true,
+   "outerCity": "approved",
+   "source": "Doi list no. 04"
+  },
+  {
+   "id": "doi-05",
+   "category": "doi-dairy",
+   "nameBn": "টক দই",
+   "nameEn": "Tok Doi (Sour Curd)",
+   "kind": "cup",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Doi list no. 05"
+  },
+  {
+   "id": "doi-06",
+   "category": "doi-dairy",
+   "nameBn": "প্রিমিয়াম কাপ দই",
+   "nameEn": "Premium Cup Doi",
+   "kind": "cup",
+   "nameVerified": true,
+   "outerCity": "approved",
+   "source": "Doi list no. 06"
+  },
+  {
+   "id": "doi-07",
+   "category": "doi-dairy",
+   "nameBn": "কাপ দই",
+   "nameEn": "Cup Doi",
+   "kind": "cup",
+   "nameVerified": true,
+   "outerCity": "approved",
+   "source": "Doi list no. 07"
+  },
+  {
+   "id": "doi-08",
+   "category": "doi-dairy",
+   "nameBn": "মাঠা ৫০০ গ্রাম",
+   "nameEn": "Matha 500 g",
+   "kind": "bottle",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Doi list no. 08"
+  },
+  {
+   "id": "doi-09",
+   "category": "doi-dairy",
+   "nameBn": "মাঠা ২৫০ গ্রাম",
+   "nameEn": "Matha 250 g",
+   "kind": "bottle",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Doi list no. 09"
+  },
+  {
+   "id": "doi-10",
+   "category": "doi-dairy",
+   "nameBn": "ঘোল ৫০০ গ্রাম",
+   "nameEn": "Ghol 500 g",
+   "kind": "bottle",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Doi list no. 10"
+  },
+  {
+   "id": "doi-11",
+   "category": "doi-dairy",
+   "nameBn": "ঘোল ২৫০ গ্রাম",
+   "nameEn": "Ghol 250 g",
+   "kind": "bottle",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Doi list no. 11"
+  },
+  {
+   "id": "bk-badam-biscuit",
+   "category": "bakery",
+   "nameBn": "বাদাম বিস্কুট",
+   "nameEn": "Badam Biscuit",
+   "kind": "cookie",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Bakery list (readable name)"
+  },
+  {
+   "id": "bk-kaju-badam-biscuit",
+   "category": "bakery",
+   "nameBn": "কাজু বাদাম বিস্কুট",
+   "nameEn": "Cashew Nut Biscuit",
+   "kind": "cookie",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Bakery list (readable name)"
+  },
+  {
+   "id": "bk-coconut-biscuit",
+   "category": "bakery",
+   "nameBn": "কোকোনাট বিস্কুট",
+   "nameEn": "Coconut Biscuit",
+   "kind": "cookie",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Bakery list (readable name)"
+  },
+  {
+   "id": "bk-vanilla-biscuit",
+   "category": "bakery",
+   "nameBn": "ভ্যানিলা বিস্কুট",
+   "nameEn": "Vanilla Biscuit",
+   "kind": "cookie",
+   "nameVerified": false,
+   "outerCity": "pending_verification",
+   "source": "Bakery list (name to verify)"
+  },
+  {
+   "id": "bk-salt-biscuit",
+   "category": "bakery",
+   "nameBn": "সল্ট বিস্কুট",
+   "nameEn": "Salt Biscuit",
+   "kind": "cookie",
+   "nameVerified": false,
+   "outerCity": "pending_verification",
+   "source": "Bakery list (name to verify)"
+  },
+  {
+   "id": "bk-dry-cake",
+   "category": "bakery",
+   "nameBn": "ড্রাই কেক",
+   "nameEn": "Dry Cake",
+   "kind": "loaf",
+   "nameVerified": false,
+   "outerCity": "pending_verification",
+   "source": "Bakery list (name to verify)"
+  },
+  {
+   "id": "bk-cha-toast",
+   "category": "bakery",
+   "nameBn": "চা টোস্ট",
+   "nameEn": "Cha Toast",
+   "kind": "loaf",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Bakery list (readable name)"
+  },
+  {
+   "id": "bk-charcoal",
+   "category": "bakery",
+   "nameBn": "চারকোল",
+   "nameEn": "Charcoal",
+   "kind": "loaf",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Bakery list (readable name)"
+  },
+  {
+   "id": "bk-sweet-cake",
+   "category": "bakery",
+   "nameBn": "সুইট কেক",
+   "nameEn": "Sweet Cake",
+   "kind": "loaf",
+   "nameVerified": false,
+   "outerCity": "pending_verification",
+   "source": "Bakery list (name to verify)"
+  },
+  {
+   "id": "bk-fruit-cake",
+   "category": "bakery",
+   "nameBn": "ফ্রুট কেক",
+   "nameEn": "Fruit Cake",
+   "kind": "loaf",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Bakery list (readable name)"
+  },
+  {
+   "id": "bk-butter-toast",
+   "category": "bakery",
+   "nameBn": "বাটার টোস্ট",
+   "nameEn": "Butter Toast",
+   "kind": "loaf",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Bakery list (readable name)"
+  },
+  {
+   "id": "bk-badam-toast",
+   "category": "bakery",
+   "nameBn": "বাদাম টোস্ট",
+   "nameEn": "Badam Toast",
+   "kind": "loaf",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Bakery list (readable name)"
+  },
+  {
+   "id": "bk-bread-toast",
+   "category": "bakery",
+   "nameBn": "ব্রেড টোস্ট",
+   "nameEn": "Bread Toast",
+   "kind": "loaf",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Bakery list (readable name)"
+  },
+  {
+   "id": "bk-baby-toast",
+   "category": "bakery",
+   "nameBn": "বেবি টোস্ট",
+   "nameEn": "Baby Toast",
+   "kind": "loaf",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Bakery list (readable name)"
+  },
+  {
+   "id": "bk-badam-cake",
+   "category": "bakery",
+   "nameBn": "বাদাম কেক",
+   "nameEn": "Badam Cake",
+   "kind": "loaf",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Bakery list (readable name)"
+  },
+  {
+   "id": "bk-toast-cake",
+   "category": "bakery",
+   "nameBn": "টোস্ট কেক",
+   "nameEn": "Toast Cake",
+   "kind": "loaf",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Bakery list (readable name)"
+  },
+  {
+   "id": "bk-bos-cake",
+   "category": "bakery",
+   "nameBn": "বোস কেক",
+   "nameEn": "Bos Cake",
+   "kind": "loaf",
+   "nameVerified": false,
+   "outerCity": "pending_verification",
+   "source": "Bakery list (name to verify)"
+  },
+  {
+   "id": "bk-babarkhani",
+   "category": "bakery",
+   "nameBn": "বাবরখানি",
+   "nameEn": "Babarkhani",
+   "kind": "loaf",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Bakery list (readable name)"
+  },
+  {
+   "id": "bk-honey-toast",
+   "category": "bakery",
+   "nameBn": "হানিম টোস্ট",
+   "nameEn": "Hanim Toast",
+   "kind": "loaf",
+   "nameVerified": false,
+   "outerCity": "pending_verification",
+   "source": "Bakery list (name to verify)"
+  },
+  {
+   "id": "bk-boro-bread",
+   "category": "bakery",
+   "nameBn": "বড় ব্রেড",
+   "nameEn": "Large Bread",
+   "kind": "loaf",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Bakery list (readable name)"
+  },
+  {
+   "id": "bk-choto-bread",
+   "category": "bakery",
+   "nameBn": "ছোট ব্রেড",
+   "nameEn": "Small Bread",
+   "kind": "loaf",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Bakery list (readable name)"
+  },
+  {
+   "id": "bk-bun",
+   "category": "bakery",
+   "nameBn": "বন",
+   "nameEn": "Bun",
+   "kind": "loaf",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Bakery list (readable name)"
+  },
+  {
+   "id": "bk-nagra",
+   "category": "bakery",
+   "nameBn": "নাগরা",
+   "nameEn": "Nagra",
+   "kind": "loaf",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Bakery list (readable name)"
+  },
+  {
+   "id": "bk-semai-500",
+   "category": "bakery",
+   "nameBn": "বিভিন্ন স্বাদের সেমাই — ৫০০ গ্রাম",
+   "nameEn": "Assorted Flavour Semai — 500 g",
+   "kind": "pouch",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Bakery list (readable name)"
+  },
+  {
+   "id": "bk-semai-250",
+   "category": "bakery",
+   "nameBn": "বিভিন্ন স্বাদের সেমাই — ২৫০ গ্রাম",
+   "nameEn": "Assorted Flavour Semai — 250 g",
+   "kind": "pouch",
+   "nameVerified": true,
+   "outerCity": null,
+   "source": "Bakery list (readable name)"
+  }
+ ]
+}

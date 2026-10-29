@@ -1,3 +1,5 @@
+> **Superseded in part (Phase 2).** This document describes the original delivery-slot / area / COD / rider design, which the Phase 2 backend replaced. Current documents: [PHASE2_BACKEND](PHASE2_BACKEND.md), [ADMIN_AND_API_CONTRACT](ADMIN_AND_API_CONTRACT.md), [DEPLOY_PHASE2](DEPLOY_PHASE2.md). Where they disagree, Phase 2 wins.
+
 # Deployment Runbook
 
 Status: v1.0 — 2026-10-21. Everything here is implemented in the repository and was exercised locally and in GitHub Actions, except steps that need a hosting account, domain, gateway merchant account or SMS provider (marked **[needs account]**). The hosting provider is still to be chosen with the business (OPEN_DECISIONS H1); the steps are provider-neutral because the deliverables are standard container images.

@@ -1,22 +1,23 @@
-import { Inject, Injectable, OnApplicationBootstrap, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ENV, type Env } from '../config/env.js';
 import { Clock } from '../common/clock.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RateLimitService } from '../rate-limit/rate-limit.service.js';
-import { JobsService } from './jobs.service.js';
 
-export const MAINTENANCE_JOB = 'maintenance.cleanup';
 const DAY = 86_400_000;
 
 /**
- * Removes expired short-lived security records. Keeps 30 days of expired
- * sessions/OTP challenges for incident investigation, then deletes them
- * (data minimisation, SECURITY_REVIEW §6). Re-schedules itself hourly.
+ * In-process housekeeping (no queue needed at this scale; every task is idempotent and safe if two instances run it):
+ *  - every hour: delete expired short-lived security records (sessions/OTP after 30 days, idempotency records after 1 day,
+ *    rate-limit windows after 2 days, expired anonymous carts)
+ * Disabled when NODE_ENV=test (tests call the methods directly).
  */
 @Injectable()
-export class MaintenanceJob implements OnModuleInit, OnApplicationBootstrap {
+export class MaintenanceJob implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger('Maintenance');
+  private timers: NodeJS.Timeout[] = [];
+
   constructor(
-    @Inject(JobsService) private readonly jobs: JobsService,
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(RateLimitService) private readonly limits: RateLimitService,
     @Inject(Clock) private readonly clock: Clock,
@@ -24,32 +25,25 @@ export class MaintenanceJob implements OnModuleInit, OnApplicationBootstrap {
   ) {}
 
   onModuleInit(): void {
-    this.jobs.register(MAINTENANCE_JOB, async () => {
-      await this.cleanup();
-      await this.scheduleNext();
-    });
+    if (this.env.NODE_ENV === 'test') return;
+    const run = (name: string, fn: () => Promise<unknown>) => () => void fn().catch((e: unknown) => this.logger.error(`${name} failed: ${e instanceof Error ? e.message : String(e)}`));
+    this.timers.push(setInterval(run('cleanup', () => this.cleanup()), 3_600_000).unref());
   }
 
-  /** Ensures one pending maintenance job exists (idempotent; safe on every boot). */
-  async scheduleNext(): Promise<void> {
-    const pending = await this.prisma.job.count({ where: { type: MAINTENANCE_JOB, status: 'PENDING' } });
-    if (pending === 0) await this.jobs.enqueue(MAINTENANCE_JOB, {}, { runAt: new Date(this.clock.now().getTime() + 3_600_000) });
+  onModuleDestroy(): void {
+    for (const t of this.timers) clearInterval(t);
   }
 
-  async onApplicationBootstrap(): Promise<void> {
-    if (this.env.NODE_ENV !== 'test') await this.scheduleNext();
-  }
-
-  async cleanup(): Promise<{ sessions: number; otps: number; idempotency: number; rateLimits: number; jobs: number }> {
+  async cleanup(): Promise<{ sessions: number; otps: number; idempotency: number; rateLimits: number; carts: number }> {
     const now = this.clock.now().getTime();
     const monthAgo = new Date(now - 30 * DAY);
-    const [sessions, otps, idempotency, jobs] = await Promise.all([
+    const [sessions, otps, idempotency, carts] = await Promise.all([
       this.prisma.session.deleteMany({ where: { OR: [{ expiresAt: { lt: monthAgo } }, { revokedAt: { lt: monthAgo } }] } }),
       this.prisma.otpChallenge.deleteMany({ where: { expiresAt: { lt: monthAgo } } }),
       this.prisma.idempotencyRecord.deleteMany({ where: { createdAt: { lt: new Date(now - DAY) } } }),
-      this.prisma.job.deleteMany({ where: { status: 'DONE', createdAt: { lt: new Date(now - 7 * DAY) } } }),
+      this.prisma.cart.deleteMany({ where: { expiresAt: { lt: new Date(now) } } }),
     ]);
     const rateLimits = await this.limits.purge(2 * DAY);
-    return { sessions: sessions.count, otps: otps.count, idempotency: idempotency.count, rateLimits, jobs: jobs.count };
+    return { sessions: sessions.count, otps: otps.count, idempotency: idempotency.count, rateLimits, carts: carts.count };
   }
 }
