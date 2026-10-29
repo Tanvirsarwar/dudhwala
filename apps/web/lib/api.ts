@@ -7,7 +7,9 @@
  */
 
 export const PUBLIC_API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/v1';
-const SERVER_API = process.env.API_INTERNAL_URL ?? PUBLIC_API;
+// Server components need an absolute URL. In same-origin mode (NEXT_PUBLIC_API_URL="/v1") that is API_INTERNAL_URL,
+// or the proxy target plus the same path.
+const SERVER_API = process.env.API_INTERNAL_URL ?? (PUBLIC_API.startsWith('/') && process.env.API_PROXY_TARGET ? `${process.env.API_PROXY_TARGET}${PUBLIC_API}` : PUBLIC_API);
 
 export class ApiError extends Error {
   constructor(
@@ -21,8 +23,12 @@ export class ApiError extends Error {
 }
 
 /** Server-side fetch of public data. Returns null on 404 so pages can call notFound(). */
+// The local demo has an admin that edits data live, so its pages must never serve a cached copy of the catalogue.
+const NO_CACHE = process.env.NEXT_PUBLIC_DEMO_BRANDING === '1';
+
 export async function serverGet<T>(path: string, revalidate = 30): Promise<T | null> {
-  const res = await fetch(`${SERVER_API}${path}`, { next: { revalidate }, headers: { 'x-dw-audience': 'customer' } });
+  if (SERVER_API.startsWith('/')) throw new Error('API_INTERNAL_URL (or API_PROXY_TARGET) must be set: server-side requests need an absolute API URL');
+  const res = await fetch(`${SERVER_API}${path}`, { ...(NO_CACHE ? { cache: 'no-store' as const } : { next: { revalidate } }), headers: { 'x-dw-audience': 'customer' } });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`API ${res.status} for ${path}`);
   return (await res.json()) as T;
@@ -37,15 +43,18 @@ const BN_ERRORS: Record<string, string> = {
   FORBIDDEN: 'এই কাজের অনুমতি নেই।',
   NOT_FOUND: 'খুঁজে পাওয়া যায়নি।',
   VALIDATION_FAILED: 'তথ্যগুলো আবার দেখে নিন — কিছু একটা সঠিক নয়।',
-  SLOT_FULL: 'এই ডেলিভারি সময়টি পূর্ণ হয়ে গেছে। অন্য সময় বেছে নিন।',
   OUT_OF_STOCK: 'দুঃখিত, কিছু পণ্য এখন স্টকে নেই।',
-  COUPON_INVALID: 'কুপনটি প্রযোজ্য নয়।',
-  AREA_NOT_SERVICEABLE: 'এই এলাকায় এখন ডেলিভারি দেওয়া হচ্ছে না।',
-  MIN_ORDER_NOT_MET: 'ন্যূনতম অর্ডারের পরিমাণ পূরণ হয়নি।',
-  COD_NOT_ELIGIBLE: 'এই অর্ডারে ক্যাশ অন ডেলিভারি নেওয়া যাচ্ছে না।',
-  PRICE_CHANGED: 'কিছু পণ্যের দাম বদলেছে। কার্ট আবার দেখে নিন।',
-  PAYMENT_PROVIDER_UNAVAILABLE: 'অনলাইন পেমেন্ট এখন পাওয়া যাচ্ছে না। একটু পরে চেষ্টা করুন বা ক্যাশ অন ডেলিভারি নিন।',
-  NO_SINGLE_OUTLET: 'সব পণ্য একসাথে একটি আউটলেট থেকে পাঠানো যাচ্ছে না। কার্ট থেকে কিছু পণ্য সরিয়ে দেখুন।',
+  PRODUCT_UNAVAILABLE: 'কিছু পণ্য আর পাওয়া যাচ্ছে না। কার্ট আবার দেখে নিন।',
+  PRICE_NOT_SET: 'কিছু পণ্যের দাম এখনো নির্ধারিত হয়নি, তাই অর্ডার করা যাচ্ছে না।',
+  NOT_DELIVERABLE: 'কিছু পণ্য এই জোনে ডেলিভারি করা যায় না।',
+  ZONE_REQUIRED: 'ডেলিভারি জোন বেছে নিন।',
+  ORDERING_CLOSED: 'এখন অর্ডার নেওয়া বন্ধ আছে।',
+  PICKUP_INVALID: 'পিকআপের সময় সঠিক নয়। অন্তত ১ ঘণ্টা পরের, আউটলেট খোলা থাকার সময় বেছে নিন।',
+  BULK_REQUIRED: 'এই অর্ডার শোরুম অর্ডারের আওতায় পড়ে। শোরুম থেকে অর্ডার হিসেবে দিন।',
+  NOT_BULK: 'কার্টে শোরুম অর্ডারের ন্যূনতম পরিমাণ নেই।',
+  BULK_NOT_CONFIGURED: 'শোরুম থেকে অর্ডার এখনো চালু হয়নি।',
+  IDEMPOTENCY_CONFLICT: 'এই অর্ডারের তথ্য বদলে গেছে। পাতাটি রিফ্রেশ করে আবার চেষ্টা করুন।',
+  SERVICE_UNAVAILABLE: 'সেবাটি এখন চালু নেই। কিছুক্ষণ পরে চেষ্টা করুন।',
   CONFLICT: 'অবস্থা বদলে গেছে। পাতাটি রিফ্রেশ করে আবার চেষ্টা করুন।',
   INVALID_TRANSITION: 'এই অর্ডারে এখন এটি করা যাবে না।',
 };
@@ -90,6 +99,20 @@ export async function api<T = unknown>(path: string, init: { method?: string; bo
 /** Notifies header badges etc. that the cart changed. */
 export const cartChanged = () => window.dispatchEvent(new Event('dw:cart'));
 
+import type { OuterCityStatus } from '@dudhwala/shared';
+
+/** Whole-catalogue load: the API caps a page at 48, so fetch pages until `total` is reached. */
+export async function fetchAllProducts(get: <T>(path: string) => Promise<T | null>): Promise<ProductCardData[]> {
+  const out: ProductCardData[] = [];
+  for (let page = 1; page <= 20; page++) {
+    const r = await get<ProductList>(`/catalog/products?limit=48&page=${page}&sort=newest`);
+    if (!r) break;
+    out.push(...r.data);
+    if (out.length >= r.total || r.data.length === 0) break;
+  }
+  return out;
+}
+
 // ── Shared response types ──
 
 export interface ProductCardData {
@@ -99,9 +122,11 @@ export interface ProductCardData {
   nameEn: string | null;
   categorySlug: string;
   image: { url: string; altBn: string } | null;
-  fromPricePoisha: number;
+  /** null = price not supplied yet (never invented) */
+  fromPricePoisha: number | null;
+  outerCityStatus?: OuterCityStatus | null;
   inStock: boolean;
-  variants: { id: string; labelBn: string; pricePoisha: number; compareAtPoisha: number | null; availability: 'IN_STOCK' | 'OUT_OF_STOCK' }[];
+  variants: { id: string; labelBn: string; pricePoisha: number | null; compareAtPoisha: number | null; availability: 'IN_STOCK' | 'OUT_OF_STOCK' }[];
 }
 
 export interface ProductList {
@@ -118,19 +143,10 @@ export interface Category {
   nameEn: string | null;
 }
 
-export interface Area {
-  id: string;
-  slug: string;
-  nameBn: string;
-  nameEn: string | null;
-}
-
 export interface CartView {
   id: string | null;
-  areaId: string | null;
-  couponCode: string | null;
-  lines: { variantId: string; productSlug: string; nameBn: string; nameEn: string | null; labelBn: string; image: string | null; unitPricePoisha: number; quantity: number; lineTotalPoisha: number; available: boolean; maxQty: number }[];
-  subtotalPoisha: number;
+  lines: { variantId: string; productSlug: string; nameBn: string; nameEn: string | null; labelBn: string; image: string | null; unitPricePoisha: number | null; quantity: number; lineTotalPoisha: number | null; available: boolean; maxQty: number; categorySlug?: string; outerCityStatus?: OuterCityStatus | null }[];
+  subtotalPoisha: number | null;
   itemCount: number;
   warnings: { variantId: string; code: string }[];
 }

@@ -7,22 +7,23 @@ import { PrismaService } from '../prisma/prisma.service.js';
 export class HealthController {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
+  /** Liveness: the process is up. Touches nothing else. */
   @Get('live')
   @Public()
   live() {
     return { status: 'ok' };
   }
 
-  /** Readiness: DB reachable and seeded system roles present. Exposes no versions or secrets. */
+  /** Readiness: database reachable and migrated (the V2 tables exist). Exposes no versions, hosts or secrets. */
   @Get('ready')
   @Public()
   async ready() {
     try {
-      const roles = await this.prisma.role.count();
-      if (roles < 5) throw new Error('roles not seeded');
+      await this.prisma.$queryRaw`SELECT 1 FROM setting LIMIT 1`;
+      await this.prisma.$queryRaw`SELECT 1 FROM "order" LIMIT 1`;
       return { status: 'ok' };
     } catch {
-      throw new AppError('CONFLICT', 'Not ready');
+      throw new AppError('SERVICE_UNAVAILABLE', 'Not ready');
     }
   }
 }

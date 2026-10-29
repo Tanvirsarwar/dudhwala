@@ -25,11 +25,11 @@ export function Listing({ list, basePath, params }: { list: ProductList; basePat
         <span className="text-muted">{bnDigits(list.total)}টি পণ্য</span>
         <span className="mx-1 text-line">|</span>
         {SORTS.map(([k, label]) => (
-          <Link key={k} href={href({ sort: k, page: undefined })} aria-current={(params.sort ?? 'relevance') === k ? 'true' : undefined} className={`rounded-full px-3 py-1 ${(params.sort ?? 'relevance') === k ? 'bg-brand-600 text-white' : 'bg-white hover:bg-brand-100'}`}>
+          <Link key={k} href={href({ sort: k, page: undefined })} aria-current={(params.sort ?? 'relevance') === k ? 'true' : undefined} className={`rounded-full px-3 py-1 ${(params.sort ?? 'relevance') === k ? 'bg-brand-600 text-on-brand' : 'bg-surface hover:bg-brand-100'}`}>
             {label}
           </Link>
         ))}
-        <Link href={href({ inStock: params.inStock ? undefined : 'true', page: undefined })} aria-pressed={params.inStock ? 'true' : 'false'} className={`rounded-full px-3 py-1 ${params.inStock ? 'bg-accent-500 text-brand-700' : 'bg-white hover:bg-brand-100'}`}>
+        <Link href={href({ inStock: params.inStock ? undefined : 'true', page: undefined })} aria-pressed={params.inStock ? 'true' : 'false'} className={`rounded-full px-3 py-1 ${params.inStock ? 'bg-accent-500 text-brand-900' : 'bg-surface hover:bg-brand-100'}`}>
           শুধু স্টকে আছে
         </Link>
       </div>

@@ -60,7 +60,6 @@ export class OtpService {
       data: {
         id,
         phone,
-        purpose: 'LOGIN',
         codeHash: this.hash(id, code),
         maxAttempts: OTP_POLICY.maxAttempts,
         expiresAt: new Date(now.getTime() + OTP_POLICY.ttlMs),
@@ -99,8 +98,6 @@ export class OtpService {
         user = await tx.user.create({
           data: { id: newId(), phone: ch.phone, kind: 'CUSTOMER', phoneVerifiedAt: now, lastLoginAt: now },
         });
-        const role = await tx.role.findUniqueOrThrow({ where: { code: 'CUSTOMER' } });
-        await tx.userRole.create({ data: { userId: user.id, roleId: role.id } });
       } else {
         await tx.user.update({ where: { id: user.id }, data: { lastLoginAt: now, phoneVerifiedAt: user.phoneVerifiedAt ?? now } });
       }

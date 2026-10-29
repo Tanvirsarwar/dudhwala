@@ -7,7 +7,7 @@ import { parse } from '../common/http.js';
 import { ENV, type Env } from '../config/env.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CSRF_COOKIE, issueCsrfToken } from '../access/csrf.js';
-import { CurrentPrincipal, Public, StaffAny } from '../access/decorators.js';
+import { CurrentPrincipal, Public, StaffRead } from '../access/decorators.js';
 import type { Principal, StaffPrincipal } from '../access/principal.js';
 import { OtpService } from './otp.service.js';
 import { SessionService } from './session.service.js';
@@ -16,7 +16,7 @@ import { CartService } from '../cart/cart.service.js';
 
 const OtpRequest = z.object({ phone: z.string().min(10).max(20) }).strict();
 const OtpVerify = z.object({ challengeId: z.string().uuid(), code: z.string().min(4).max(12) }).strict();
-const StaffLogin = z.object({ login: z.string().min(3).max(120), password: z.string().min(1).max(256) }).strict();
+const StaffLogin = z.object({ login: z.string().min(3).max(120), password: z.string().min(1).max(256), as: z.enum(['admin', 'manager']).optional() }).strict();
 const MfaCode = z.object({ code: z.string().min(6).max(16) }).strict();
 const ChangePassword = z.object({ currentPassword: z.string().min(1).max(256), newPassword: z.string().min(12).max(256) }).strict();
 
@@ -64,39 +64,39 @@ export class AuthController {
     const b = parse(StaffLogin, body);
     // Staff may type a phone number in local form (017…); stored numbers are E.164.
     const login = tryNormalizeBdMobile(b.login) ?? b.login.trim().toLowerCase();
-    return this.staff.login(login, b.password, req, res);
+    return this.staff.login(login, b.password, b.as === 'manager' ? 'MANAGER' : 'ADMIN', req, res);
   }
 
   @Post('staff/mfa/enroll')
-  @StaffAny({ allowWithoutMfa: true })
+  @StaffRead({ allowWithoutMfa: true })
   @HttpCode(200)
   enroll(@CurrentPrincipal() p: StaffPrincipal, @Req() req: Request) {
     return this.staff.beginEnrollment(p, req);
   }
 
   @Post('staff/mfa/confirm')
-  @StaffAny({ allowWithoutMfa: true })
+  @StaffRead({ allowWithoutMfa: true })
   @HttpCode(200)
   confirm(@CurrentPrincipal() p: StaffPrincipal, @Body() body: unknown, @Req() req: Request) {
     return this.staff.confirmEnrollment(p, parse(MfaCode, body).code, req);
   }
 
   @Post('staff/mfa')
-  @StaffAny({ allowWithoutMfa: true })
+  @StaffRead({ allowWithoutMfa: true })
   @HttpCode(204)
   async mfa(@CurrentPrincipal() p: StaffPrincipal, @Body() body: unknown, @Req() req: Request): Promise<void> {
     await this.staff.verifyMfa(p, parse(MfaCode, body).code, req);
   }
 
-  /** Logs out the session for the calling app (admin by default; storefront sends x-dw-audience: customer). */
   @Post('staff/password')
-  @StaffAny()
+  @StaffRead()
   @HttpCode(204)
   async changePassword(@CurrentPrincipal() p: StaffPrincipal, @Body() body: unknown, @Req() req: Request): Promise<void> {
     const b = parse(ChangePassword, body);
     await this.staff.changePassword(p, b.currentPassword, b.newPassword, req);
   }
 
+  /** Logs out the session for the calling app (admin by default; storefront sends x-dw-audience: customer). */
   @Post('logout')
   @Public()
   @HttpCode(204)
@@ -119,12 +119,6 @@ export class MeController {
       select: { id: true, fullName: true, email: true, phone: true, mfaEnabled: true },
     });
     if (p.kind === 'CUSTOMER') return { user, role: 'CUSTOMER' };
-    return {
-      user,
-      role: p.staff.role,
-      outletId: p.staff.outletId,
-      mfaVerified: p.mfaVerified,
-      permissions: [...p.staff.permissions].sort(),
-    };
+    return { user, role: p.role, canEdit: p.role === 'ADMIN', mfaVerified: p.mfaVerified };
   }
 }

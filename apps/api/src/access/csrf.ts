@@ -21,9 +21,7 @@ function validToken(secret: string, token: string): boolean {
 }
 
 /**
- * CSRF + Origin protection for state-changing requests (SECURITY_REVIEW §5).
- * Runs before AccessGuard. Webhook routes are exempt: gateways cannot send our
- * token, so webhooks are verified server-to-server instead.
+ * CSRF + Origin protection for state-changing requests. Runs before AccessGuard.
  */
 @Injectable()
 export class CsrfGuard implements CanActivate {
@@ -34,9 +32,7 @@ export class CsrfGuard implements CanActivate {
 
   canActivate(ctx: ExecutionContext): boolean {
     const req = ctx.switchToHttp().getRequest<Request>();
-    // Webhooks are authenticated by signature + server-side verification; the payment
-    // simulator's own hosted page posts back to itself (it stands in for a gateway domain).
-    if (SAFE.has(req.method) || req.path.startsWith('/v1/webhooks/') || req.path.startsWith('/v1/payments/simulator/')) return true;
+    if (SAFE.has(req.method)) return true;
     const origin = req.header('origin');
     if (origin && !this.origins.includes(origin)) throw new AppError('FORBIDDEN', 'Origin not allowed');
     const cookie = (req.cookies as Record<string, string | undefined> | undefined)?.[CSRF_COOKIE];

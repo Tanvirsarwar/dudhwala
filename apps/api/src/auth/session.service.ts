@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { effectivePermissions, type StaffRole } from '@dudhwala/shared';
 import { Clock } from '../common/clock.js';
 import { randomToken, sha256Hex, newId } from '../common/crypto.js';
 import { ENV, type Env } from '../config/env.js';
@@ -10,11 +9,10 @@ import type { Principal } from '../access/principal.js';
 export const CUSTOMER_COOKIE = 'dw_sid';
 export const STAFF_COOKIE = 'dw_admin_sid';
 
-/** Lifetimes from SECURITY_REVIEW §2. */
+/** Session lifetimes: customers 30 days (7 idle); staff 12 hours (30 minutes idle). */
 const POLICY = {
   CUSTOMER: { absoluteMs: 30 * 86_400_000, idleMs: 7 * 86_400_000 },
   STAFF: { absoluteMs: 12 * 3_600_000, idleMs: 30 * 60_000 },
-  DELIVERY_STAFF: { absoluteMs: 12 * 3_600_000, idleMs: 2 * 3_600_000 },
 } as const;
 
 /** Only write last_seen_at when it is this stale, to avoid a write per request. */
@@ -37,11 +35,11 @@ export class SessionService {
     kind: 'CUSTOMER' | 'STAFF',
     req: Request,
     res: Response,
-    opts: { role?: StaffRole; mfaVerified?: boolean } = {},
+    opts: { mfaVerified?: boolean } = {},
     tx: Tx = this.prisma,
   ): Promise<string> {
     const token = randomToken();
-    const policy = kind === 'CUSTOMER' ? POLICY.CUSTOMER : opts.role === 'DELIVERY_STAFF' ? POLICY.DELIVERY_STAFF : POLICY.STAFF;
+    const policy = kind === 'CUSTOMER' ? POLICY.CUSTOMER : POLICY.STAFF;
     const now = this.clock.now();
     const id = newId();
     await tx.session.create({
@@ -82,12 +80,7 @@ export class SessionService {
     if (!token || token.length > 128) return null;
 
     const now = this.clock.now();
-    const session = await this.prisma.session.findUnique({
-      where: { tokenHash: sha256Hex(token) },
-      include: {
-        user: { include: { outletAssignment: { include: { role: true } }, roles: { include: { role: true } } } },
-      },
-    });
+    const session = await this.prisma.session.findUnique({ where: { tokenHash: sha256Hex(token) }, include: { user: true } });
     if (!session || session.revokedAt || session.expiresAt <= now) return null;
     if (session.kind !== (staffToken ? 'STAFF' : 'CUSTOMER')) return null;
     if (session.user.status !== 'ACTIVE') return null;
@@ -97,29 +90,15 @@ export class SessionService {
       if (now.getTime() - session.lastSeenAt.getTime() > POLICY.CUSTOMER.idleMs) return null;
       principal = { kind: 'CUSTOMER', userId: session.userId, sessionId: session.id };
     } else {
-      const isSuperAdmin = session.user.roles.some((r) => r.role.code === 'SUPER_ADMIN');
-      const assignment = session.user.outletAssignment;
-      let role: StaffRole;
-      let outletId: string | null;
-      let extra: string[] = [];
-      if (isSuperAdmin) {
-        role = 'SUPER_ADMIN';
-        outletId = null;
-      } else if (assignment?.active) {
-        role = assignment.role.code as StaffRole;
-        outletId = assignment.outletId;
-        extra = assignment.extraPermissions;
-      } else {
-        return null; // staff without an active assignment has no access
-      }
-      const idle = role === 'DELIVERY_STAFF' ? POLICY.DELIVERY_STAFF.idleMs : POLICY.STAFF.idleMs;
-      if (now.getTime() - session.lastSeenAt.getTime() > idle) return null;
+      if (!session.user.staffRole) return null; // staff session for an account that lost its role
+      if (now.getTime() - session.lastSeenAt.getTime() > POLICY.STAFF.idleMs) return null;
       principal = {
         kind: 'STAFF',
         userId: session.userId,
         sessionId: session.id,
+        role: session.user.staffRole,
+        mfaEnabled: session.user.mfaEnabled,
         mfaVerified: session.mfaVerified,
-        staff: { role, outletId, permissions: effectivePermissions(role, extra) },
       };
     }
 

@@ -1,37 +1,22 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import { MFA_REQUIRED_ROLES, type Permission, type StaffRole } from '@dudhwala/shared';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { api, ApiError } from './api';
 
 export interface Me {
-  user: { id: string; fullName: string | null; email: string | null; phone: string | null; mfaEnabled: boolean };
-  role: StaffRole;
-  outletId: string | null;
-  mfaVerified: boolean;
-  permissions: Permission[];
+  role: 'ADMIN' | 'MANAGER';
+  /** false for managers: they can look at everything and change nothing (the API refuses writes as well) */
+  canEdit: boolean;
+  mfaVerified?: boolean;
+  user: { fullName: string; email: string; mfaEnabled?: boolean };
 }
-
-export interface OutletLite {
-  id: string;
-  code: string;
-  nameBn: string;
-  status: string;
-}
-
 interface SessionValue {
   me: Me;
-  can: (p: Permission) => boolean;
-  isSuper: boolean;
-  outlets: OutletLite[];
-  /** The outlet the screens act on: fixed for outlet staff; chosen by a Super Admin (null = all outlets). */
-  outletId: string | null;
-  setOutletId: (id: string | null) => void;
-  reloadOutlets: () => Promise<void>;
+  canEdit: boolean;
+  isManager: boolean;
   logout: () => Promise<void>;
 }
-
 const Ctx = createContext<SessionValue | null>(null);
 
 export function useSession(): SessionValue {
@@ -40,88 +25,68 @@ export function useSession(): SessionValue {
   return v;
 }
 
-const OUTLET_KEY = 'dw.admin.outlet';
-const readStored = () => {
+const AREA_KEY = 'dw.staff.area';
+/** Remembers which login page the user came from, so "log out" / "session expired" returns them to the right one. */
+export const rememberArea = (role: 'ADMIN' | 'MANAGER') => {
   try {
-    return window.localStorage.getItem(OUTLET_KEY);
+    window.localStorage.setItem(AREA_KEY, role === 'MANAGER' ? 'manager' : 'admin');
   } catch {
-    return null;
+    /* storage blocked: falls back to the admin login page */
   }
 };
-const writeStored = (id: string | null) => {
+const loginPath = () => {
   try {
-    if (id) window.localStorage.setItem(OUTLET_KEY, id);
-    else window.localStorage.removeItem(OUTLET_KEY);
+    return window.localStorage.getItem(AREA_KEY) === 'manager' ? '/manager/login' : '/login';
   } catch {
-    /* storage unavailable: selection lasts for this page view */
+    return '/login';
   }
 };
 
-/** Loads the staff session; sends the user to login / two-factor / rider app as needed. */
-export function SessionProvider({ children, area }: { children: React.ReactNode; area: 'admin' | 'rider' }) {
+export function SessionProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const pathname = usePathname();
   const [me, setMe] = useState<Me | null>(null);
-  const [outlets, setOutlets] = useState<OutletLite[]>([]);
-  const [chosen, setChosen] = useState<string | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
-
-  const loadOutlets = useCallback(async () => {
-    setOutlets(await api<OutletLite[]>('/admin/outlets'));
-  }, []);
 
   useEffect(() => {
     let alive = true;
-    (async () => {
-      try {
-        const m = await api<Me & { role: string }>('/me');
+    api<Me>('/me')
+      .then((m) => {
         if (!alive) return;
-        if ((m.role as string) === 'CUSTOMER') return router.replace('/login');
-        const needsMfa = MFA_REQUIRED_ROLES.has(m.role) && !m.mfaVerified;
-        if (needsMfa) return router.replace(m.user.mfaEnabled ? '/login/mfa' : '/login/enroll');
-        if (m.role === 'DELIVERY_STAFF' && area !== 'rider') return router.replace('/rider');
-        if (m.role !== 'DELIVERY_STAFF' && area === 'rider') return router.replace('/');
-        setMe(m);
-        if (m.role === 'SUPER_ADMIN') setChosen(readStored());
-        if (m.role !== 'DELIVERY_STAFF') await loadOutlets();
-      } catch (e) {
+        if (m.mfaVerified === false) router.replace('/mfa');
+        else setMe(m);
+      })
+      .catch((e: unknown) => {
         if (!alive) return;
-        if (e instanceof ApiError && e.status === 401) router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+        if (e instanceof ApiError && e.status === 401) router.replace(loginPath());
         else setFailed(e instanceof Error ? e.message : 'Could not load your session');
-      }
-    })();
-    const onUnauth = () => router.replace('/login');
+      });
+    const onUnauth = () => router.replace(loginPath());
+    const onMfa = () => router.replace('/mfa');
     window.addEventListener('dw:unauthenticated', onUnauth);
+    window.addEventListener('dw:mfa', onMfa);
     return () => {
       alive = false;
       window.removeEventListener('dw:unauthenticated', onUnauth);
+      window.removeEventListener('dw:mfa', onMfa);
     };
-  }, []);
+  }, [router]);
 
-  const value = useMemo<SessionValue | null>(() => {
-    if (!me) return null;
-    const perms = new Set(me.permissions);
-    const isSuper = me.role === 'SUPER_ADMIN';
-    const valid = chosen && outlets.some((o) => o.id === chosen) ? chosen : null;
-    return {
-      me,
-      can: (p) => perms.has(p),
-      isSuper,
-      outlets,
-      outletId: isSuper ? valid : me.outletId,
-      setOutletId: (id) => {
-        setChosen(id);
-        writeStored(id);
+  const value = useMemo<SessionValue | null>(
+    () =>
+      me && {
+        me,
+        canEdit: me.canEdit,
+        isManager: me.role === 'MANAGER',
+        logout: async () => {
+          const to = loginPath();
+          await api('/auth/logout', { method: 'POST' }).catch(() => undefined);
+          window.location.href = to;
+        },
       },
-      reloadOutlets: loadOutlets,
-      logout: async () => {
-        await api('/auth/logout', { method: 'POST' }).catch(() => undefined);
-        window.location.href = '/login';
-      },
-    };
-  }, [me, chosen, outlets, loadOutlets]);
+    [me],
+  );
 
-  if (failed) {
+  if (failed)
     return (
       <div className="p-6" role="alert">
         <p className="font-semibold text-danger">সেশন লোড করা যায়নি।</p>
@@ -131,7 +96,6 @@ export function SessionProvider({ children, area }: { children: React.ReactNode;
         </button>
       </div>
     );
-  }
   if (!value) return <p className="p-6 text-muted">লোড হচ্ছে…</p>;
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

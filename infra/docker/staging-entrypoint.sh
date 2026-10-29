@@ -1,9 +1,10 @@
 #!/bin/sh
 # Free-tier staging entrypoint (see docs/FREE_STAGING.md). NOT used for production.
 #   1. applies committed Prisma migrations (idempotent; `migrate deploy` never drops or resets anything)
-#   2. optionally loads the labelled DEMO catalogue          (STAGING_SEED_DEMO=true)
-#   3. optionally creates the first Super Admin               (STAGING_ADMIN_EMAIL + SUPER_ADMIN_PASSWORD)
-#   4. starts the API
+#   2. optionally imports the product catalogue               (STAGING_IMPORT_CATALOGUE=true)
+#   3. optionally applies the owner's outlet/setup file       (STAGING_SETUP_FILE=/path)
+#   4. optionally creates the first admin                     (STAGING_ADMIN_EMAIL + STAFF_PASSWORD)
+#   5. starts the API
 # Secrets are read from the environment and never printed.
 set -eu
 cd /repo/apps/api
@@ -31,14 +32,19 @@ fi
 echo "[staging] applying migrations"
 DATABASE_URL="$MIGRATE_URL" pnpm exec prisma migrate deploy
 
-if [ "${STAGING_SEED_DEMO:-}" = "true" ]; then
-  echo "[staging] loading demo catalogue (idempotent)"
-  node dist/seed/demo/demo-seed.js seed
+if [ "${STAGING_IMPORT_CATALOGUE:-}" = "true" ]; then
+  echo "[staging] importing the product catalogue (idempotent; products start hidden and unpriced)"
+  node dist/cli/import-catalogue.js ${STAGING_ACTIVATE_CATALOGUE:+--activate} || echo "[staging] catalogue import skipped"
 fi
 
-if [ -n "${STAGING_ADMIN_EMAIL:-}" ] && [ -n "${SUPER_ADMIN_PASSWORD:-}" ]; then
-  echo "[staging] ensuring first Super Admin exists"
-  node dist/cli/create-super-admin.js --email "$STAGING_ADMIN_EMAIL" --name "${STAGING_ADMIN_NAME:-Staging Admin}" || echo "[staging] super admin step skipped (already exists or rejected)"
+if [ -n "${STAGING_SETUP_FILE:-}" ] && [ -f "$STAGING_SETUP_FILE" ]; then
+  echo "[staging] applying owner setup file"
+  node dist/cli/setup.js --file "$STAGING_SETUP_FILE" || echo "[staging] setup step skipped"
+fi
+
+if [ -n "${STAGING_ADMIN_EMAIL:-}" ] && [ -n "${STAFF_PASSWORD:-}" ]; then
+  echo "[staging] ensuring the first admin exists"
+  node dist/cli/create-staff.js --role admin --email "$STAGING_ADMIN_EMAIL" --name "${STAGING_ADMIN_NAME:-Staging Admin}" || echo "[staging] admin step skipped (already exists or rejected)"
 fi
 
 echo "[staging] starting API"

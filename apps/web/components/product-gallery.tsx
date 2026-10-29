@@ -9,14 +9,14 @@ interface Img {
 }
 
 /** Main photo with a thumbnail strip when a product has more than one image. */
-export function ProductGallery({ images, name }: { images: Img[]; name: string }) {
+export function ProductGallery({ images, name, category = '' }: { images: Img[]; name: string; category?: string }) {
   const [i, setI] = useState(0);
   const cur = images[i];
   return (
     <div>
       <div className="card aspect-square overflow-hidden">
         {/* key forces a fresh load/fade-in per image */}
-        <ProductImage key={cur?.url ?? 'none'} src={cur?.url ?? null} alt={cur?.altBn ?? name} eager />
+        <ProductImage key={cur?.url ?? 'none'} src={cur?.url ?? null} alt={cur?.altBn ?? name} category={category} eager />
       </div>
       {images.length > 1 && (
         <ul className="mt-3 flex gap-2 overflow-x-auto pb-1" aria-label="ছবির তালিকা">

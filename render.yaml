@@ -8,7 +8,6 @@ services:
     runtime: docker
     plan: free
     region: singapore
-    branch: claude/premium-ui-catalog-images   # change to the branch you deploy from (e.g. main after review)
     dockerfilePath: ./infra/docker/api.staging.Dockerfile
     dockerContext: .
     healthCheckPath: /v1/health/ready
@@ -28,7 +27,6 @@ services:
       - { key: SESSION_SECRET, generateValue: true }
       - { key: OTP_HMAC_KEY, generateValue: true }
       - { key: DATA_ENCRYPTION_KEY, generateValue: true }
-      - { key: PAYMENTS_WEBHOOK_SECRET, generateValue: true }
       # media: Supabase Storage through its S3-compatible API
       - { key: MEDIA_STORAGE, value: s3 }
       - { key: STORAGE_ENDPOINT, sync: false }
@@ -37,15 +35,12 @@ services:
       - { key: STORAGE_ACCESS_KEY_ID, sync: false }
       - { key: STORAGE_SECRET_ACCESS_KEY, sync: false }
       - { key: MEDIA_PUBLIC_URL, sync: false }
-      # payments: simulator only (fake money). Online payment stays hidden at checkout until a Super Admin turns it on.
-      - { key: PAYMENTS_PROVIDER, value: fake }
-      - { key: ALLOW_PAYMENT_SIMULATOR, value: "true" }
       # SMS: the API refuses to start on staging without an https SMS URL. This reserved ".invalid" host can never
       # resolve, so no SMS is ever sent (and customer OTP login is therefore unavailable in this preview).
       - { key: SMS_PROVIDER, value: http }
       - { key: SMS_HTTP_URL, value: "https://sms-disabled.invalid/send" }
-      # one-time bootstrap (see docs/FREE_STAGING.md): remove SUPER_ADMIN_PASSWORD after the first successful boot
-      - { key: STAGING_SEED_DEMO, value: "true" }
+      # one-time bootstrap (see docs/FREE_STAGING.md): remove STAFF_PASSWORD after the first successful boot
+      - { key: STAGING_IMPORT_CATALOGUE, value: "true" }
       - { key: STAGING_ADMIN_EMAIL, sync: false }
       - { key: STAGING_ADMIN_NAME, value: Staging Admin }
-      - { key: SUPER_ADMIN_PASSWORD, sync: false }
+      - { key: STAFF_PASSWORD, sync: false }

@@ -17,6 +17,13 @@ export function Tilt({ children, max = 6, className = '' }: { children: ReactNod
     const el = ref.current;
     if (!el || !motionAllowed()) return;
     let raf = 0;
+    // The 3D transform exists only while the pointer is over the element (data-active). At rest the element has no
+    // transform, so dozens of idle cards do not each become a separate compositor layer.
+    let off: ReturnType<typeof setTimeout> | undefined;
+    const enter = () => {
+      clearTimeout(off);
+      el.setAttribute('data-active', '');
+    };
     const move = (e: PointerEvent) => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
@@ -31,11 +38,15 @@ export function Tilt({ children, max = 6, className = '' }: { children: ReactNod
       cancelAnimationFrame(raf);
       el.style.setProperty('--rx', '0');
       el.style.setProperty('--ry', '0');
+      off = setTimeout(() => el.removeAttribute('data-active'), 320); // after the ease-out transition
     };
+    el.addEventListener('pointerenter', enter);
     el.addEventListener('pointermove', move);
     el.addEventListener('pointerleave', reset);
     return () => {
       cancelAnimationFrame(raf);
+      clearTimeout(off);
+      el.removeEventListener('pointerenter', enter);
       el.removeEventListener('pointermove', move);
       el.removeEventListener('pointerleave', reset);
     };

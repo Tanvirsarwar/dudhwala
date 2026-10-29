@@ -1,3 +1,5 @@
+> **Superseded in part (Phase 2).** This document describes the original delivery-slot / area / COD / rider design, which the Phase 2 backend replaced. Current documents: [PHASE2_BACKEND](PHASE2_BACKEND.md), [ADMIN_AND_API_CONTRACT](ADMIN_AND_API_CONTRACT.md), [DEPLOY_PHASE2](DEPLOY_PHASE2.md). Where they disagree, Phase 2 wins.
+
 # Operations Guide — Staff, Riders and Super Admin
 
 Status: v1.0 — 2026-10-21. For day-to-day use of the admin site (`admin.<domain>`) and the rider screen (`admin.<domain>/rider`). Button names are written exactly as they appear on screen (Bangla). Train every staff member on their own section before launch (IMPLEMENTATION_PLAN §6).

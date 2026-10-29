@@ -1,13 +1,15 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { BottleIcon } from './icons';
+import { BottleIcon, BreadIcon, CupIcon, SweetIcon } from './icons';
+
+const FALLBACK_ICON: Record<string, () => React.JSX.Element> = { 'dairy-sweets': SweetIcon, 'doi-dairy': CupIcon, bakery: BreadIcon };
 
 /**
- * Real photo, or a flat brand tile saying the photo is coming (never a stock/AI image — UI_UX_SPEC §5).
+ * Real photo, or an intentional category tile (dot grid + line icon) saying the photo is coming. Never a stock/AI/fake product image.
  * Shows a shimmer until the file has loaded, then fades the photo in.
  */
-export function ProductImage({ src, alt, eager = false }: { src: string | null; alt: string; eager?: boolean }) {
+export function ProductImage({ src, alt, category = '', eager = false }: { src: string | null; alt: string; category?: string; eager?: boolean }) {
   const [state, setState] = useState<'loading' | 'ready' | 'failed'>('loading');
   const ref = useRef<HTMLImageElement>(null);
   // A server-rendered <img> can finish (or fail) before React hydrates and attaches handlers; check once on mount.
@@ -17,10 +19,11 @@ export function ProductImage({ src, alt, eager = false }: { src: string | null; 
     setState(img.naturalWidth === 0 ? 'failed' : 'ready');
   }, [src]);
   if (!src || state === 'failed') {
+    const Icon = FALLBACK_ICON[category] ?? BottleIcon;
     return (
-      <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-brand-100 text-brand-600" role="img" aria-label={`${alt} — ছবি শীঘ্রই আসছে`}>
-        <BottleIcon />
-        <span className="text-xs">ছবি শীঘ্রই আসছে</span>
+      <div className="photo-fallback" data-cat={category} role="img" aria-label={`${alt} — ছবি শীঘ্রই আসছে`}>
+        <Icon />
+        <small>ছবি শীঘ্রই আসছে</small>
       </div>
     );
   }

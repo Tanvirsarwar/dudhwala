@@ -1,6 +1,8 @@
 import { formatTaka } from '@dudhwala/shared';
 
-export const taka = (poisha: number) => formatTaka(poisha, 'bn');
+/** Price text. A missing price is shown as pending, never guessed. */
+export const PRICE_PENDING = 'দাম শীঘ্রই জানানো হবে';
+export const taka = (poisha: number | null) => (poisha === null ? PRICE_PENDING : formatTaka(poisha, 'bn'));
 
 const BN = '০১২৩৪৫৬৭৮৯';
 export const bnDigits = (s: string | number) => String(s).replace(/\d/g, (d) => BN[Number(d)] ?? d);
@@ -24,6 +26,14 @@ export function timeLabel(iso: string | Date): string {
   const period = p.h < 12 ? 'সকাল' : p.h < 16 ? 'দুপুর' : p.h < 18 ? 'বিকাল' : 'সন্ধ্যা';
   const h12 = p.h % 12 === 0 ? 12 : p.h % 12;
   return `${period} ${bnDigits(h12)}:${bnDigits(String(p.min).padStart(2, '0'))}`;
+}
+
+/** Bangla clock label for minutes after midnight (e.g. 600 -> "সকাল ১০:০০"); same wording as timeLabel. */
+export function minuteLabel(minutes: number): string {
+  const h = Math.floor(minutes / 60) % 24;
+  const period = h < 12 ? 'সকাল' : h < 16 ? 'দুপুর' : h < 18 ? 'বিকাল' : 'সন্ধ্যা';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${period} ${bnDigits(h12)}:${bnDigits(String(minutes % 60).padStart(2, '0'))}`;
 }
 
 export const slotLabel = (start: string, end: string) => `${dayLabel(start)} · ${timeLabel(start)} – ${timeLabel(end)}`;

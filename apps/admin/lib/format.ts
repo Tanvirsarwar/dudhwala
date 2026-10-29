@@ -22,11 +22,6 @@ function dhakaParts(iso: string | Date) {
 }
 const two = (n: number) => String(n).padStart(2, '0');
 
-export function todayDhaka(): string {
-  const p = dhakaParts(new Date());
-  return `${p.y}-${two(p.m)}-${two(p.day)}`;
-}
-
 export function dateTime(iso: string | Date | null | undefined): string {
   if (!iso) return '—';
   const p = dhakaParts(iso);
@@ -38,60 +33,18 @@ export function time(iso: string | Date): string {
   return `${two(p.h)}:${two(p.min)}`;
 }
 
-export const slot = (start: string, end: string) => `${dateTime(start).slice(0, 10)} ${time(start)}–${time(end)}`;
+import { ORDER_STATUS_BN as DEMO_STATUS_BN, ORDER_STATUS_LABEL_BN } from '@dudhwala/shared';
 
-export const ORDER_STATUS: Record<string, string> = {
-  PENDING_PAYMENT: 'পেমেন্টের অপেক্ষায়',
-  PLACED: 'নতুন',
-  CONFIRMED: 'নিশ্চিত',
-  PREPARING: 'প্রস্তুত হচ্ছে',
-  READY_FOR_DISPATCH: 'পাঠানোর জন্য প্রস্তুত',
-  OUT_FOR_DELIVERY: 'ডেলিভারির পথে',
-  DELIVERED: 'ডেলিভারি সম্পন্ন',
-  DELIVERY_FAILED: 'ডেলিভারি ব্যর্থ',
-  CANCELLED: 'বাতিল',
-  REJECTED: 'প্রত্যাখ্যাত',
-  EXPIRED: 'মেয়াদোত্তীর্ণ',
+export { METHOD_BN, ORDER_STATUS_FLOW } from '@dudhwala/shared';
+/** Labels for demo (DEMO_*) and live statuses. */
+export const ORDER_STATUS_BN: Record<string, string> = { ...DEMO_STATUS_BN, ...ORDER_STATUS_LABEL_BN };
+
+export const PAYMENT_BN: Record<string, string> = {
+  NOT_REQUIRED_DEMO: 'ক্যাশ অন ডেলিভারি / আউটলেটে (ডেমো)',
+  DEMO_UNPAID: 'ডেমো/সিমুলেটেড পেমেন্ট — বাকি',
+  DEMO_PAID_SIMULATED: 'ডেমো/সিমুলেটেড পেমেন্ট — সম্পন্ন',
+  UNPAID: 'বাকি — ডেলিভারি/পিকআপের সময় নগদে নেওয়া হবে',
+  PAID: 'টাকা পাওয়া গেছে',
 };
 
-/** Button labels for moving an order into each status. */
-export const TRANSITION_LABEL: Record<string, string> = {
-  CONFIRMED: 'নিশ্চিত করুন',
-  REJECTED: 'প্রত্যাখ্যান',
-  PREPARING: 'প্রস্তুত শুরু',
-  READY_FOR_DISPATCH: 'প্রস্তুত — পাঠানো যাবে',
-  OUT_FOR_DELIVERY: 'রাইডারের হাতে দিন',
-  DELIVERED: 'ডেলিভারি সম্পন্ন',
-  DELIVERY_FAILED: 'ডেলিভারি ব্যর্থ',
-  CANCELLED: 'বাতিল',
-};
-
-export const PAYMENT_STATUS: Record<string, string> = {
-  UNPAID: 'বাকি',
-  PENDING: 'যাচাই হচ্ছে',
-  PAID: 'পরিশোধিত',
-  FAILED: 'ব্যর্থ',
-  CANCELLED: 'বাতিল',
-  PARTIALLY_REFUNDED: 'আংশিক ফেরত',
-  REFUNDED: 'ফেরত',
-};
-
-export const COD_STATUS: Record<string, string> = {
-  PENDING: 'সংগ্রহ বাকি',
-  COLLECTED: 'রাইডারের কাছে',
-  HANDED_OVER: 'জমা হয়েছে',
-  DISCREPANCY: 'গরমিল',
-  NOT_COLLECTED: 'সংগ্রহ হয়নি',
-};
-
-export const ROLE: Record<string, string> = {
-  SUPER_ADMIN: 'সুপার অ্যাডমিন',
-  OUTLET_MANAGER: 'আউটলেট ম্যানেজার',
-  OUTLET_STAFF: 'আউটলেট স্টাফ',
-  DELIVERY_STAFF: 'ডেলিভারি রাইডার',
-};
-
-export const WEEKDAYS = ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহস্পতি', 'শুক্র', 'শনি'];
-
-/** Reasons the order transition endpoint requires. */
-export const NEEDS_REASON = new Set(['REJECTED', 'CANCELLED', 'DELIVERY_FAILED']);
+export const ROLE_BN: Record<string, string> = { ADMIN: 'অ্যাডমিন', MANAGER: 'ম্যানেজার' };
