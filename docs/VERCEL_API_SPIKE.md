@@ -17,7 +17,7 @@
 Nothing else changed: schema, migrations, business code and existing tests are as before.
 
 ## Verified locally
-- `tsc` and eslint clean. API tests **161/161** (157 existing + 4 new serverless tests), and **161/161 again with the pool forced to one connection** (`TEST_POOL_MAX=1`), which shows no code path needs a second connection while a transaction is open.
+- `tsc` and eslint clean. API tests **157/157** (152 existing + 1 pool-size + 4 serverless tests), and **157/157 again with the pool forced to one connection** (`TEST_POOL_MAX=1`), which shows no code path needs a second connection while a transaction is open.
 - `vercel build` (Vercel CLI 65.9, run locally against `apps/api`) succeeded. The function bundle is 53 MB (limit 250 MB) and contains `argon2/prebuilds/linux-x64/argon2.glibc.node`, `@img/sharp-linux-x64` (and musl), the generated Prisma client (pure JS driver adapter, no engine binary) and `@dudhwala/shared`.
 - That bundle, started on its own with `NODE_ENV=production` against a local PostgreSQL 16 (migrations through 0006): `/v1/health/live`, `/v1/health/ready`, `/v1/catalog/categories` OK; `/v1/health/runtime` reports Argon2 ok, Sharp ok, a `FOR UPDATE` transaction ok, session time zone UTC.
 
