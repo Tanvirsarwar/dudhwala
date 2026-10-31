@@ -8,11 +8,11 @@ import { ENV, type Env } from '../config/env.js';
  * (verify-full: chain and host name). `sslmode`/`ssl*` URL parameters are removed first because pg lets them
  * override the explicit `ssl` option.
  */
-export function poolConfig(env: Pick<Env, 'DATABASE_URL'> & { DATABASE_CA_CERT?: string }) {
+export function poolConfig(env: Pick<Env, 'DATABASE_URL'> & { DATABASE_CA_CERT?: string; DATABASE_POOL_MAX?: number }) {
   // The pg adapter sends timestamps without a zone; pin the session to UTC so they are stored
   // correctly whatever the server's default TimeZone is (found in M7: a server set to
   // Asia/Dhaka stored app-written times 6 h off from DB-generated defaults).
-  const base = { options: '-c TimeZone=UTC' };
+  const base = { options: '-c TimeZone=UTC', ...(env.DATABASE_POOL_MAX ? { max: env.DATABASE_POOL_MAX } : {}) };
   if (!env.DATABASE_CA_CERT) return { connectionString: env.DATABASE_URL, ...base };
   const url = new URL(env.DATABASE_URL);
   for (const k of [...url.searchParams.keys()]) if (/^ssl/i.test(k)) url.searchParams.delete(k);

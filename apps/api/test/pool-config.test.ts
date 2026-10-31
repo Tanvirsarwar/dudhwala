@@ -16,4 +16,9 @@ describe('poolConfig (database TLS)', () => {
     const cfg = poolConfig({ DATABASE_URL: 'postgresql://u:p@h:5432/d', DATABASE_CA_CERT: '-----BEGIN CERTIFICATE-----\\nabc\\n-----END CERTIFICATE-----' });
     expect((cfg as { ssl: { ca: string } }).ssl.ca).toBe('-----BEGIN CERTIFICATE-----\nabc\n-----END CERTIFICATE-----');
   });
+
+  it('caps the pool at DATABASE_POOL_MAX (1 per serverless instance) with and without a CA', () => {
+    expect(poolConfig({ DATABASE_URL: 'postgresql://u:p@h:6543/d', DATABASE_POOL_MAX: 1 })).toMatchObject({ max: 1 });
+    expect(poolConfig({ DATABASE_URL: 'postgresql://u:p@h:6543/d', DATABASE_CA_CERT: '-----BEGIN CERTIFICATE-----\nabc\n-----END CERTIFICATE-----', DATABASE_POOL_MAX: 1 })).toMatchObject({ max: 1, ssl: { rejectUnauthorized: true } });
+  });
 });

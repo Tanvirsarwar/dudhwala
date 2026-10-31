@@ -61,5 +61,8 @@
     "dist",
     "prisma",
     "prisma.config.ts"
-  ]
+  ],
+  "engines": {
+    "node": "22.x"
+  }
 }

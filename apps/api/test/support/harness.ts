@@ -47,6 +47,8 @@ export const TEST_RAW_ENV: Record<string, string> = {
   SESSION_SECRET: 'test-session-secret-0123456789abcdef',
   OTP_HMAC_KEY: 'test-otp-hmac-key-0123456789abcdef',
   DATA_ENCRYPTION_KEY: KEY,
+  // TEST_POOL_MAX=1 reproduces a serverless instance (one connection) to catch code that needs a second one inside a transaction
+  ...(process.env.TEST_POOL_MAX ? { DATABASE_POOL_MAX: process.env.TEST_POOL_MAX } : {}),
 };
 export const TEST_ENV = loadEnv(TEST_RAW_ENV);
 const cipher = new DataCipher(KEY, 'k1');
